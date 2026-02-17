@@ -167,9 +167,9 @@ function buildHTML() {
 // ── Control bindings ───────────────────────────────
 function bindControls(container) {
   // Offset buttons
+  // 年龄偏移：无需编辑权限，任何人都可调整
   container.querySelectorAll('.tl-ob').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (!isEditor()) { showToast('🔒 请先解锁编辑'); return; }
       ageOffset += parseInt(btn.dataset.d);
       syncSlider(); draw(); saveConfigDebounced();
     });
@@ -178,14 +178,12 @@ function bindControls(container) {
   // Slider
   const slider = container.querySelector('#tl-slider');
   slider.addEventListener('input', () => {
-    if (!isEditor()) return;
     ageOffset = parseInt(slider.value);
     updateAgeVal(); draw(); saveConfigDebounced();
   });
 
   // Reset ages
   container.querySelector('#tl-reset-ages').addEventListener('click', () => {
-    if (!isEditor()) { showToast('🔒 请先解锁编辑'); return; }
     ageOffset = 0; syncSlider(); draw(); saveConfigDebounced();
     showToast('年龄已归零');
   });
@@ -207,8 +205,7 @@ function updateEditUI(container) {
   const ed = isEditor();
   const addArea = container?.querySelector('#tl-add-area');
   if (addArea) addArea.style.display = ed ? '' : 'none';
-  const slider = container?.querySelector('#tl-slider');
-  if (slider) slider.disabled = !ed;
+  // 滑块始终启用，无需权限检查
   updateSidebar();
 }
 
@@ -726,7 +723,7 @@ async function deleteCharacter(c) {
 function saveConfigDebounced() {
   clearTimeout(cfgTimer);
   cfgTimer = setTimeout(async ()=>{
-    if (!isEditor()) return;
+    // ageOffset 任何人都可保存；pan/zoom 仅编辑者保存（由调用方决定是否传入）
     setSyncStatus('syncing');
     try {
       const res=await supaClient.from('timeline_config').upsert({id:1,age_offset:ageOffset,scale,view_off_x:viewOffX});
