@@ -75,57 +75,40 @@ function buildHTML() {
 
   <!-- Right panel -->
   <div id="tl-panel" class="tl-panel">
-    <!-- Tab bar -->
-    <div class="tl-tabs">
-      <button class="tl-tab active" data-tab="list">📋 列表</button>
-      <button class="tl-tab" data-tab="edit">✏️ 编辑</button>
-    </div>
+    <div class="tl-panel-title">👥 人物列表</div>
 
-    <!-- TAB: 列表 -->
-    <div id="tl-tab-list" class="tl-tab-content">
-      <!-- Age offset (collapsible) -->
-      <div class="tl-section">
-        <div class="tl-section-hdr" id="tl-offset-hdr">
-          <span>🕐 年龄偏移</span>
-          <span class="tl-chevron">▾</span>
-        </div>
-        <div class="tl-section-body" id="tl-offset-body">
-          <div class="tl-offset-row">
-            <button class="tl-ob" data-d="-10">≪</button>
-            <button class="tl-ob" data-d="-1">−</button>
-            <div id="tl-age-val" class="tl-age-val">+0</div>
-            <button class="tl-ob" data-d="1">+</button>
-            <button class="tl-ob" data-d="10">≫</button>
-          </div>
-          <div class="tl-slider-row">
-            <input id="tl-slider" type="range" min="-100" max="100" value="0"/>
-            <button class="small-btn" id="tl-reset-ages">归零</button>
-          </div>
-        </div>
+    <!-- Age offset -->
+    <div class="tl-ctrl">
+      <div class="ctrl-label">🕐 整体年龄偏移</div>
+      <div class="tl-offset-row">
+        <button class="tl-ob" data-d="-10">≪</button>
+        <button class="tl-ob" data-d="-1">−</button>
+        <div id="tl-age-val" class="tl-age-val">+0</div>
+        <button class="tl-ob" data-d="1">+</button>
+        <button class="tl-ob" data-d="10">≫</button>
       </div>
-
-      <!-- Character list -->
-      <div id="tl-clist" class="tl-clist"></div>
-
-      <div class="tl-info">
-        缩放：<b id="tl-info-scale">60</b> px/岁 | 人物：<b id="tl-info-count">0</b>
-        <br><button class="small-btn" id="tl-reset-zoom" style="margin-top:4px">⊡ 重置缩放</button>
+      <div class="tl-slider-row">
+        <input id="tl-slider" type="range" min="-100" max="100" value="0"/>
+        <button class="small-btn" id="tl-reset-ages">归零</button>
       </div>
     </div>
 
-    <!-- TAB: 编辑（需权限） -->
-    <div id="tl-tab-edit" class="tl-tab-content" style="display:none">
-      <div id="tl-edit-locked" style="padding:20px 14px;color:#667;font-size:13px;line-height:1.8">
-        🔒 请先解锁编辑权限
+    <!-- Add character (editor only) -->
+    <div id="tl-add-area" class="tl-add-area" style="display:none">
+      <div class="ctrl-label">＋ 添加人物</div>
+      <input id="tl-inp-name" type="text" placeholder="名字" autocomplete="off"/>
+      <div class="tl-add-row">
+        <input id="tl-inp-age" type="number" placeholder="年龄" min="0" max="200"/>
+        <button class="btn bp" id="tl-btn-add">添加</button>
       </div>
-      <div id="tl-add-area" class="tl-add-area" style="display:none">
-        <div class="ctrl-label">＋ 添加人物</div>
-        <input id="tl-inp-name" type="text" placeholder="名字" autocomplete="off"/>
-        <div class="tl-add-row">
-          <input id="tl-inp-age" type="number" placeholder="年龄" min="0" max="200"/>
-          <button class="btn bp" id="tl-btn-add">添加</button>
-        </div>
-      </div>
+    </div>
+
+    <!-- Character list -->
+    <div id="tl-clist" class="tl-clist"></div>
+
+    <div class="tl-info">
+      缩放：<b id="tl-info-scale">60</b> px/岁 | 人物数：<b id="tl-info-count">0</b>
+      <br><button class="small-btn" id="tl-reset-zoom" style="margin-top:4px">⊡ 重置缩放</button>
     </div>
   </div>
 </div>
@@ -183,26 +166,6 @@ function buildHTML() {
 
 // ── Control bindings ───────────────────────────────
 function bindControls(container) {
-  // Tab switching
-  container.querySelectorAll('.tl-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      container.querySelectorAll('.tl-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      const id = tab.dataset.tab;
-      container.querySelectorAll('.tl-tab-content').forEach(c => c.style.display = 'none');
-      container.querySelector(`#tl-tab-${id}`).style.display = '';
-    });
-  });
-
-  // Collapsible offset section
-  container.querySelector('#tl-offset-hdr')?.addEventListener('click', () => {
-    const body = container.querySelector('#tl-offset-body');
-    const chevron = container.querySelector('#tl-offset-hdr .tl-chevron');
-    const collapsed = body.style.display === 'none';
-    body.style.display = collapsed ? '' : 'none';
-    chevron.textContent = collapsed ? '▾' : '▸';
-  });
-
   // Offset buttons
   // 年龄偏移：无需编辑权限，任何人都可调整
   container.querySelectorAll('.tl-ob').forEach(btn => {
@@ -241,9 +204,8 @@ function bindControls(container) {
 function updateEditUI(container) {
   const ed = isEditor();
   const addArea = container?.querySelector('#tl-add-area');
-  const locked  = container?.querySelector('#tl-edit-locked');
   if (addArea) addArea.style.display = ed ? '' : 'none';
-  if (locked)  locked.style.display  = ed ? 'none' : '';
+  // 滑块始终启用，无需权限检查
   updateSidebar();
 }
 
@@ -764,19 +726,10 @@ async function deleteCharacter(c) {
   if (!isEditor()||!c.id||typeof c.id!=='number') return;
   setSyncStatus('syncing');
   try {
-    // 删 Storage 头像（仅 Storage URL，外链跳过）
-    if (c.avatar && c.avatar.includes('/storage/v1/object/public/avatars/')) {
-      const filename = c.avatar.split('/avatars/').pop();
-      if (filename) {
-        const { error: se } = await supaClient.storage.from('avatars').remove([filename]);
-        if (se) console.warn('[delete] Storage 删除失败:', se.message);
-        else console.log('[delete] 头像已从 Storage 删除:', filename);
-      }
-    }
-    const res = await supaClient.from('characters').delete().eq('id', c.id);
+    const res=await supaClient.from('characters').delete().eq('id',c.id);
     if (res.error) throw res.error;
     setSyncStatus('ok');
-  } catch(e) { dbError('删除人物', e); }
+  } catch(e) { dbError('删除人物',e); }
 }
 
 function saveConfigDebounced() {
