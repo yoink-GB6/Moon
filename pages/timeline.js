@@ -350,15 +350,18 @@ async function confirmEdit(container) {
     else { showToast('年龄上限无效'); return; }
   } else { editTarget.ageLimit = null; }
 
-  closeModal(); draw();
-  await saveCharacter(editTarget);
+  // ★ 必须先保存再关弹窗：closeModal() 会把 editTarget 清为 null
+  const saving = editTarget;   // 保留引用
+  draw();
+  closeModal();
+  await saveCharacter(saving);
   showToast('已更新：' + nm);
 }
 
 async function deleteChar() {
   if (!editTarget || !isEditor()) return;
   if (!confirmDialog(`确定要删除「${editTarget.name}」？`)) return;
-  const c = editTarget;
+  const c = editTarget;          // ★ 先保留引用再关弹窗
   characters = characters.filter(x => x.id !== c.id);
   clearImgCache(c.id);
   closeModal(); draw();
@@ -697,17 +700,26 @@ async function saveCharacter(c) {
   if (!isEditor()) return;
   setSyncStatus('syncing');
   try {
-    const row={name:c.name,base_age:c.baseAge,age_limit:c.ageLimit||null,color:c.color,avatar_url:c.avatar||null,sort_order:c.sortOrder||0};
+    const row = {
+      name:       c.name,
+      base_age:   c.baseAge,
+      age_limit:  c.ageLimit || null,
+      color:      c.color,
+      avatar_url: c.avatar || null,
+      sort_order: c.sortOrder || 0
+    };
+    console.log('[saveCharacter]', c.name, '→ avatar_url:', row.avatar_url);
     let res;
-    if (c.id && typeof c.id==='number') {
-      res = await supaClient.from('characters').update(row).eq('id',c.id);
+    if (c.id && typeof c.id === 'number') {
+      res = await supaClient.from('characters').update(row).eq('id', c.id);
     } else {
       res = await supaClient.from('characters').insert(row).select().single();
-      if (!res.error&&res.data) c.id=res.data.id;
+      if (!res.error && res.data) c.id = res.data.id;
     }
     if (res.error) throw res.error;
+    console.log('[saveCharacter] 成功，id:', c.id);
     setSyncStatus('ok');
-  } catch(e) { dbError('保存人物',e); }
+  } catch(e) { dbError('保存人物', e); }
 }
 
 async function deleteCharacter(c) {
@@ -734,16 +746,34 @@ function saveConfigDebounced() {
 }
 
 async function uploadImage(base64) {
-  const arr=base64.split(','), mime=arr[0].match(/:(.*?);/)[1];
-  const bstr=atob(arr[1]); let n=bstr.length; const u8=new Uint8Array(n);
-  while(n--) u8[n]=bstr.charCodeAt(n);
-  const blob=new Blob([u8],{type:mime});
-  const filename=`avatar_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+  const arr  = base64.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8 = new Uint8Array(n);
+  while (n--) u8[n] = bstr.charCodeAt(n);
+  const blob = new Blob([u8], {type: mime});
+
+  const filename = `avatar_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
   try {
-    const res=await supaClient.storage.from('avatars').upload(filename,blob,{contentType:'image/jpeg',upsert:false});
-    if (res.error) throw res.error;
-    return supaClient.storage.from('avatars').getPublicUrl(filename).data.publicUrl;
-  } catch(e) { dbError('上传图片',e); return null; }
+    const { data: upData, error: upErr } =
+      await supaClient.storage.from('avatars').upload(filename, blob, {
+        contentType: 'image/jpeg',
+        upsert: false
+      });
+    if (upErr) throw upErr;
+
+    // getPublicUrl 不会失败，但要确保拿到的是字符串
+    const { data: urlData } = supaClient.storage.from('avatars').getPublicUrl(filename);
+    const publicUrl = urlData?.publicUrl;
+    if (!publicUrl) throw new Error('getPublicUrl 返回为空');
+    console.log('[upload] 上传成功，URL：', publicUrl);
+    return publicUrl;
+  } catch (e) {
+    console.error('[upload] 上传失败：', e);
+    dbError('上传图片', e);
+    return null;
+  }
 }
 
 function subscribeRealtime() {
