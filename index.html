@@ -372,7 +372,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <div id="sidebar">
       <div id="sidebar-logo">
         🌐 欢迎欢迎~
-        <span>pgzjtfslm</span>
+        <span>pgzjtfslm~</span>
       </div>
       <nav id="sidebar-nav">
         <!-- Nav items injected by router -->
@@ -423,8 +423,8 @@ const ROUTES = [
   },
   {
     id: 'timeline',
-    label: '今天犯点什么坏好呢',
-    icon: '🦊',
+    label: '⏱ 时间轴',
+    icon: '⏱',
     loader: () => import('./pages/timeline.js'),
   },
   {
@@ -554,7 +554,7 @@ document.getElementById('pw-modal').addEventListener('click', e => {
 // ── Init ───────────────────────────────────────────
 initSidebar();
 buildNav();
-navigate('home');  // 默认进入主页
+navigate('home');
 </script>
 
 </body>
