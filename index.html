@@ -67,15 +67,16 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 #sidebar{
   width:var(--sidebar-w);background:var(--panel);border-right:1px solid var(--border);
   display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;
-  transition:transform .3s ease;
+  transition:transform .28s cubic-bezier(0.4,0,0.2,1);
 }
+#sidebar.collapsed{transform:translateX(-100%);}
 #sidebar-logo{
-  padding:16px 16px 10px;
+  padding:12px 14px 10px;display:flex;align-items:flex-start;gap:8px;
   font-size:18px;font-weight:800;color:var(--accent);
   border-bottom:1px solid var(--border);
   letter-spacing:.5px;user-select:none;
 }
-#sidebar-logo span{font-size:11px;display:block;color:var(--muted);font-weight:400;margin-top:2px}
+
 #sidebar-nav{flex:1;overflow-y:auto;padding:8px 0}
 #sidebar-nav::-webkit-scrollbar{width:2px}
 #sidebar-nav::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:2px}
@@ -93,6 +94,29 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
   padding:10px 16px;font-size:11px;color:var(--muted);
   border-top:1px solid var(--border);line-height:1.8;
 }
+
+
+/* Floating expand buttons (when panels are collapsed) */
+.expand-btn-float{
+  position:fixed;display:none;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:50%;
+  background:var(--panel);border:1px solid var(--accent);
+  color:var(--accent);font-size:16px;cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);z-index:200;
+  transition:all .2s;
+}
+.expand-btn-float:hover{background:var(--accent);color:#fff;transform:scale(1.1)}
+#sidebar-expand{top:50%;left:8px;transform:translateY(-50%)}
+#tl-expand{top:50%;right:8px;transform:translateY(-50%)}
+#map-expand{top:50%;right:8px;transform:translateY(-50%)}
+#sidebar.collapsed ~ #sidebar-expand{display:flex}
+
+.panel-toggle-btn{
+  background:none;border:1px solid var(--ibr);color:var(--muted);
+  border-radius:6px;padding:4px 7px;cursor:pointer;font-size:13px;
+  transition:all .15s;flex-shrink:0;line-height:1;
+}
+.panel-toggle-btn:hover{color:var(--accent);border-color:var(--accent)}
 
 /* ── Main content area ── */
 #main-content{
@@ -218,7 +242,9 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .tl-panel{
   width:240px;background:var(--panel);border-left:1px solid var(--border);
   display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;
+  transition:transform .28s cubic-bezier(0.4,0,0.2,1);
 }
+.tl-panel.collapsed{transform:translateX(100%);}
 .tl-panel-title{
   padding:12px 14px 9px;font-size:13px;font-weight:700;
   color:var(--accent);border-bottom:1px solid var(--border);
@@ -367,8 +393,12 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .map-popup-actions{display:flex;gap:7px;padding-top:8px;border-top:1px solid var(--border)}
 
 /* Panel */
-.map-panel{width:240px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width .25s ease,opacity .25s;overflow:hidden}
-.map-panel.collapsed{width:0;opacity:0;pointer-events:none}
+.map-panel{
+  width:240px;background:var(--panel);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;
+  transition:transform .28s cubic-bezier(0.4,0,0.2,1);
+}
+.map-panel.collapsed{transform:translateX(100%);}
 .map-panel-hdr{padding:11px 14px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;flex-shrink:0}
 .map-panel-hdr:hover{background:#22263a}
 #map-panel-chevron{font-size:11px;color:var(--muted)}
@@ -392,6 +422,24 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .char-pick-item.selected{border-color:var(--accent);background:rgba(124,131,247,.1)}
 .char-pick-av{width:32px;height:32px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
 .char-pick-name{font-size:11px;color:#cdd;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
+
+
+/* ════════════════════════════════════════
+   CHARACTERS PAGE
+════════════════════════════════════════ */
+.chars-layout{display:flex;flex-direction:column;height:100%;overflow:hidden;padding:20px 28px}
+.chars-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.chars-header h2{font-size:20px;font-weight:700;color:var(--accent);margin:0}
+.chars-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;padding-bottom:20px}
+.chars-grid::-webkit-scrollbar{width:4px}
+.chars-grid::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:3px}
+.chars-empty{grid-column:1/-1;text-align:center;color:var(--muted);font-size:14px;padding:40px 20px}
+.char-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .18s;user-select:none}
+.char-card:hover{border-color:var(--accent);background:#22263a;transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.char-card-av{width:64px;height:64px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;flex-shrink:0}
+.char-card-name{font-size:15px;font-weight:700;color:#e8eaed;text-align:center}
+.char-card-age{font-size:12px;color:var(--accent);background:rgba(124,131,247,.15);padding:3px 10px;border-radius:12px}
+.char-card-desc{font-size:12px;color:#889;text-align:center;line-height:1.5;max-height:3.6em;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
 
 /* ════════════════════════════════════════
    PLACEHOLDER page (未来页面)
@@ -440,8 +488,11 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <!-- Left sidebar -->
     <div id="sidebar">
       <div id="sidebar-logo">
-        🌐 欢迎欢迎~
-        <span>pgzjtfslm~</span>
+        <div style="flex:1">
+          🌐 欢迎欢迎~
+          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">pgzjtfslm~</span>
+        </div>
+        <button id="sidebar-toggle" class="panel-toggle-btn" title="折叠/展开导航栏">◀</button>
       </div>
       <nav id="sidebar-nav">
         <!-- Nav items injected by router -->
@@ -452,6 +503,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
     </div>
 
     <div id="sidebar-overlay"></div>
+    <button id="sidebar-expand" class="expand-btn-float" title="展开导航栏">▶</button>
 
     <!-- Main area -->
     <div id="main-content">
@@ -489,6 +541,12 @@ const ROUTES = [
     label: '🏠 主页',
     icon: '🏠',
     loader: () => import('./pages/home.js'),
+  },
+  {
+    id: 'characters',
+    label: '👥 人物',
+    icon: '👥',
+    loader: () => import('./pages/characters.js'),
   },
   {
     id: 'timeline',
@@ -618,6 +676,16 @@ document.getElementById('pw-input').addEventListener('keydown', e => {
 document.getElementById('pw-modal').addEventListener('click', e => {
   if (e.target===document.getElementById('pw-modal')) window.closePwModal();
 });
+
+// ── Left sidebar toggle ────────────────────────────
+function toggleSidebarPanel() {
+  const sb = document.getElementById('sidebar');
+  const btn = document.getElementById('sidebar-toggle');
+  const collapsed = sb.classList.toggle('collapsed');
+  btn.textContent = collapsed ? '▶' : '◀';
+}
+document.getElementById('sidebar-toggle')?.addEventListener('click', toggleSidebarPanel);
+document.getElementById('sidebar-expand')?.addEventListener('click', toggleSidebarPanel);
 
 // ── Init ───────────────────────────────────────────
 initSidebar();
