@@ -687,7 +687,7 @@ async function fetchAll() {
   setSyncStatus('syncing');
   try {
     const [charRes,cfgRes] = await Promise.all([
-      supaClient.from('characters').select('*').order('sort_order').order('id'),
+      supaClient.from('characters').select('*').not('base_age', 'is', null).order('sort_order').order('id'),
       supaClient.from('timeline_config').select('*').eq('id',1).single()
     ]);
     if (charRes.error) throw charRes.error;
