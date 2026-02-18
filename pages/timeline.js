@@ -204,11 +204,11 @@ function bindControls(container) {
   });
 
   // Offset buttons
-  // 年龄偏移：无需编辑权限，任何人都可调整
+  // 年龄偏移：本地状态，不同步数据库，每次进入页面重置为 0
   container.querySelectorAll('.tl-ob').forEach(btn => {
     btn.addEventListener('click', () => {
       ageOffset += parseInt(btn.dataset.d);
-      syncSlider(); draw(); saveConfigDebounced();
+      syncSlider(); draw();
     });
   });
 
@@ -216,12 +216,12 @@ function bindControls(container) {
   const slider = container.querySelector('#tl-slider');
   slider.addEventListener('input', () => {
     ageOffset = parseInt(slider.value);
-    updateAgeVal(); draw(); saveConfigDebounced();
+    updateAgeVal(); draw();
   });
 
   // Reset ages
   container.querySelector('#tl-reset-ages').addEventListener('click', () => {
-    ageOffset = 0; syncSlider(); draw(); saveConfigDebounced();
+    ageOffset = 0; syncSlider(); draw();
     showToast('年龄已归零');
   });
 
@@ -777,7 +777,7 @@ async function fetchAll() {
       color:r.color||PALETTE[i%PALETTE.length], avatar:r.avatar_url||undefined, sortOrder:r.sort_order||0
     }));
     const cfg=cfgRes.data;
-    ageOffset=cfg.age_offset||0; scale=cfg.scale||60; viewOffX=cfg.view_off_x||0;
+    ageOffset=0; scale=cfg.scale||60; viewOffX=cfg.view_off_x||0;  // ageOffset always resets to 0 on page load
     syncSlider(); draw(); setSyncStatus('ok');
   } catch(e) { dbError('加载数据',e); }
 }
@@ -830,10 +830,10 @@ async function deleteCharacter(c) {
 function saveConfigDebounced() {
   clearTimeout(cfgTimer);
   cfgTimer = setTimeout(async ()=>{
-    // ageOffset 任何人都可保存；pan/zoom 仅编辑者保存（由调用方决定是否传入）
+    // ageOffset is local-only (not saved); pan/zoom are saved for editors only
     setSyncStatus('syncing');
     try {
-      const res=await supaClient.from('timeline_config').upsert({id:1,age_offset:ageOffset,scale,view_off_x:viewOffX});
+      const res=await supaClient.from('timeline_config').upsert({id:1,scale,view_off_x:viewOffX});
       if (res.error) throw res.error;
       setSyncStatus('ok');
     } catch(e) { dbError('保存配置',e); }
@@ -876,8 +876,9 @@ function subscribeRealtime() {
     .on('postgres_changes',{event:'*',schema:'public',table:'characters'},()=>fetchAll())
     .on('postgres_changes',{event:'*',schema:'public',table:'timeline_config'},payload=>{
       if (!isEditor()&&payload.new) {
-        ageOffset=payload.new.age_offset||0; scale=payload.new.scale||60; viewOffX=payload.new.view_off_x||0;
-        syncSlider(); draw();
+        // ageOffset is local-only, not synced; only update scale and viewOffX
+        scale=payload.new.scale||60; viewOffX=payload.new.view_off_x||0;
+        draw();
       }
     })
     .subscribe();
