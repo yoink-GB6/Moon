@@ -291,6 +291,9 @@ async function deleteChar(container) {
 
   console.log('[deleteChar] proceeding with delete for id:', editCharId);
 
+  // Save ID before closeModal clears it
+  const deletingId = editCharId;
+
   // Delete avatar from storage if it's a storage URL
   if (c.avatar && c.avatar.includes('/storage/v1/object/public/avatars/')) {
     const filename = c.avatar.split('/avatars/').pop();
@@ -305,7 +308,8 @@ async function deleteChar(container) {
 
   setSyncStatus('syncing');
   try {
-    const { error } = await supaClient.from('characters').delete().eq('id', editCharId);
+    console.log('[deleteChar] deleting character with id:', deletingId, 'type:', typeof deletingId);
+    const { error } = await supaClient.from('characters').delete().eq('id', deletingId);
     if (error) throw error;
     await fetchAll(container);
     setSyncStatus('ok');
