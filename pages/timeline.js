@@ -74,7 +74,7 @@ function buildHTML() {
   </div>
 
   <!-- Floating expand button (shows when panel collapsed) -->
-  <button id="tl-expand" class="expand-btn-float" title="展开面板" style="display:none">◀</button>
+  <button id="tl-expand" class="expand-btn-float" title="展开面板">◀</button>
 
   <!-- Right panel -->
   <div id="tl-panel" class="tl-panel">
@@ -254,7 +254,7 @@ function bindControls(container) {
     const expandBtn = container.querySelector('#tl-expand');
     const collapsed = panel.classList.toggle('collapsed');
     chevron.textContent = collapsed ? '▶' : '◀';
-    if (expandBtn) expandBtn.style.display = collapsed ? 'flex' : 'none';
+    if (expandBtn) expandBtn.classList.toggle('show', collapsed);
   }
   container.querySelector('#tl-panel-toggle')?.addEventListener('click', toggleTimelinePanel);
   container.querySelector('#tl-expand')?.addEventListener('click', toggleTimelinePanel);
