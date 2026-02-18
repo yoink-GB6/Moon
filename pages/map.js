@@ -59,6 +59,10 @@ function buildHTML() {
   return `<div class="map-layout">
   <div id="map-cw" class="map-cw">
     <canvas id="map-canvas"></canvas>
+
+    <!-- Floating expand button (shows when panel collapsed) -->
+    <button id="map-expand" class="expand-btn-float" title="展开面板" style="display:none">◀</button>
+
     <div class="map-toolbar">
       <button class="map-tb-btn" id="map-zoom-in"  title="放大">＋</button>
       <button class="map-tb-btn" id="map-zoom-out" title="缩小">－</button>
@@ -341,11 +345,17 @@ function bindPointer(container) {
 
 // ── Panel bindings ─────────────────────────────────
 function bindPanel(container) {
-  container.querySelector('#map-panel-toggle').addEventListener('click',()=>{
+  function toggleMapPanel() {
     panelOpen=!panelOpen;
-    container.querySelector('#map-panel').classList.toggle('collapsed',!panelOpen);
-    container.querySelector('#map-panel-chevron').textContent=panelOpen?'▶':'◀';
-  });
+    const panel = container.querySelector('#map-panel');
+    const chevron = container.querySelector('#map-panel-chevron');
+    const expandBtn = container.querySelector('#map-expand');
+    panel.classList.toggle('collapsed',!panelOpen);
+    chevron.textContent = panelOpen?'◀':'▶';
+    if (expandBtn) expandBtn.style.display = panelOpen ? 'none' : 'flex';
+  }
+  container.querySelector('#map-panel-toggle').addEventListener('click', toggleMapPanel);
+  container.querySelector('#map-expand')?.addEventListener('click', toggleMapPanel);
   container.querySelectorAll('.tl-tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
       container.querySelectorAll('.tl-tab').forEach(t=>t.classList.remove('active'));
