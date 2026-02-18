@@ -46,6 +46,7 @@ export async function mount(container) {
     updateEditUI(container);
     draw();
   });
+  updateEditUI(container);  // Initial UI update based on current auth state
 
   // Resize observer so canvas fills its container
   resizeObserver = new ResizeObserver(() => resizeCanvas());
