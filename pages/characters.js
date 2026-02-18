@@ -279,10 +279,17 @@ async function saveChar(container) {
 }
 
 async function deleteChar(container) {
+  console.log('[deleteChar] editCharId:', editCharId, 'isEditor:', isEditor());
   if (!isEditor() || !editCharId) return;
   const c = allChars.find(x => x.id === editCharId);
+  console.log('[deleteChar] found char:', c);
   if (!c) return;
-  if (!confirmDialog(`确定要删除「${c.name}」？此人物在时间轴和地图中的关联也会被移除。`)) return;
+  if (!confirmDialog(`确定要删除「${c.name}」？此人物在时间轴和地图中的关联也会被移除。`)) {
+    console.log('[deleteChar] user cancelled');
+    return;
+  }
+
+  console.log('[deleteChar] proceeding with delete for id:', editCharId);
 
   // Delete avatar from storage if it's a storage URL
   if (c.avatar && c.avatar.includes('/storage/v1/object/public/avatars/')) {
