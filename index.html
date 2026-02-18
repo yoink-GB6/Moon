@@ -8,9 +8,9 @@
 
 <!-- ★ 填入你的 Supabase 配置 ★ -->
 <script>
-  window.SUPABASE_URL  = 'https://hrgottdtlnihablruxtr.supabase.co';
-  window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhyZ290dGR0bG5paGFibHJ1eHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMTcxOTAsImV4cCI6MjA4Njg5MzE5MH0.6Ng0E96W8VLnATqWgc_o7xVKCrzlewn0J-ba2ChpcE4';
-  window.EDIT_PASSWORD = 'pgzjtfslm';
+  window.SUPABASE_URL  = 'https://YOUR_PROJECT_ID.supabase.co';
+  window.SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+  window.EDIT_PASSWORD = 'YOUR_PASSWORD';
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -109,7 +109,6 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 #sidebar-expand{top:50%;left:8px;transform:translateY(-50%)}
 #tl-expand{top:50%;right:8px;transform:translateY(-50%)}
 #map-expand{top:50%;right:8px;transform:translateY(-50%)}
-#sidebar.collapsed ~ #sidebar-expand{display:flex}
 
 .panel-toggle-btn{
   background:none;border:1px solid var(--ibr);color:var(--muted);
@@ -490,7 +489,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
       <div id="sidebar-logo">
         <div style="flex:1">
           🌐 欢迎欢迎~
-          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">pgzjtfslm~</span>
+          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">公开协作空间</span>
         </div>
         <button id="sidebar-toggle" class="panel-toggle-btn" title="折叠/展开导航栏">◀</button>
       </div>
@@ -681,8 +680,10 @@ document.getElementById('pw-modal').addEventListener('click', e => {
 function toggleSidebarPanel() {
   const sb = document.getElementById('sidebar');
   const btn = document.getElementById('sidebar-toggle');
+  const expandBtn = document.getElementById('sidebar-expand');
   const collapsed = sb.classList.toggle('collapsed');
   btn.textContent = collapsed ? '▶' : '◀';
+  if (expandBtn) expandBtn.style.display = collapsed ? 'flex' : 'none';
 }
 document.getElementById('sidebar-toggle')?.addEventListener('click', toggleSidebarPanel);
 document.getElementById('sidebar-expand')?.addEventListener('click', toggleSidebarPanel);
