@@ -14,6 +14,7 @@ export async function mount(container) {
   container.innerHTML = buildHTML();
   bindControls(container);
   onAuthChange(() => updateUI(container));
+  updateUI(container);  // Initial UI update based on current auth state
   await fetchAll(container);
   subscribeRealtime(container);
 }
