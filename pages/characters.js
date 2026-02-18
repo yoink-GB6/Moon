@@ -136,9 +136,8 @@ function renderGrid(container) {
 }
 
 function openModal(c, container) {
-  if (c && !isEditor()) { showToast('🔒 请先解锁编辑'); return; }
-  if (!c && !isEditor()) { showToast('🔒 请先解锁编辑'); return; }
-  editCharId = c ? c.id : null;
+  editCharId = c ? c.id : null;  // Set ID first, before any early returns
+  if (!isEditor()) { showToast('🔒 请先解锁编辑'); return; }
   pendingAvatar = undefined; pendingAvatarIsFile = false;
   container.querySelector('#char-modal-title').textContent = c ? '编辑人物' : '新建人物';
   container.querySelector('#char-name').value = c ? c.name : '';
