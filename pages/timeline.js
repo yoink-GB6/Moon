@@ -247,13 +247,6 @@ function bindControls(container) {
     showToast('缩放已重置');
   });
 
-  // Add character
-  container.querySelector('#tl-btn-add').addEventListener('click', () => doAdd(container));
-  container.querySelector('#tl-inp-age').addEventListener('keydown', e => { if (e.key==='Enter') doAdd(container); });
-  container.querySelector('#tl-inp-name').addEventListener('keydown', e => { if (e.key==='Enter') container.querySelector('#tl-inp-age').focus(); });
-}
-
-
   // Panel toggle
   function toggleTimelinePanel() {
     const panel = container.querySelector('#tl-panel');
@@ -279,6 +272,8 @@ function bindControls(container) {
       container.querySelector('#tl-select-modal').classList.remove('show');
     }
   });
+}
+
 function updateEditUI(container) {
   const ed = isEditor();
   const addArea = container?.querySelector('#tl-add-area');
@@ -521,24 +516,6 @@ async function addCharFromTable(char, container) {
   showToast(`已添加：${c.name}`);
 }
 
-
-async function doAdd(container) {
-  if (!isEditor()) { showToast('🔒 请先解锁编辑'); return; }
-  const nm  = container.querySelector('#tl-inp-name').value.trim();
-  const age = parseInt(container.querySelector('#tl-inp-age').value);
-  if (!nm)                    { showToast('请输入名字'); return; }
-  if (isNaN(age)||age<0||age>200) { showToast('请输入有效年龄'); return; }
-  if (characters.some(c => c.name===nm)) { showToast('已存在同名人物：'+nm); return; }
-  const c = {
-    id: 'tmp_'+Date.now(), name:nm, baseAge:age-ageOffset,
-    color: PALETTE[characters.length % PALETTE.length], sortOrder: characters.length
-  };
-  characters.push(c); draw();
-  container.querySelector('#tl-inp-name').value = '';
-  container.querySelector('#tl-inp-age').value  = '';
-  await saveCharacter(c);
-  showToast('已添加：'+nm+'('+age+'岁)');
-}
 
 // ── Canvas geometry helpers ────────────────────────
 function dispAge(c) {
