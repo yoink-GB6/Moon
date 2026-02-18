@@ -256,15 +256,19 @@ async function saveChar(container) {
     avatar_url: avatarUrl !== undefined ? avatarUrl : (editCharId ? allChars.find(c=>c.id===editCharId)?.avatar : null),
   };
 
+  const savingId = editCharId;  // Save ID before closeModal clears it
+  console.log('[saveChar] editCharId:', editCharId, '→ savingId:', savingId, 'name:', name);
   closeModal(container);
 
   setSyncStatus('syncing');
   try {
-    if (editCharId) {
-      const { error } = await supaClient.from('characters').update(row).eq('id', editCharId);
+    if (savingId != null) {  // Strict check: allow 0 but reject null/undefined
+      console.log('[saveChar] UPDATE mode for id:', savingId);
+      const { error } = await supaClient.from('characters').update(row).eq('id', savingId);
       if (error) throw error;
       showToast('人物已更新');
     } else {
+      console.log('[saveChar] INSERT mode for new character:', name);
       const { error } = await supaClient.from('characters').insert(row);
       if (error) throw error;
       showToast('人物已创建');
