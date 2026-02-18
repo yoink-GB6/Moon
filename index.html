@@ -464,9 +464,9 @@ input:focus,textarea:focus{border-color:var(--accent)}
   #menu-btn{display:block}
   #sidebar{
     position:fixed;left:0;top:0;bottom:0;z-index:200;
-    transform:translateX(-100%);
+    transform:translateX(-100%);  /* Hidden by default on mobile */
   }
-  #sidebar.open{transform:translateX(0)}
+  #sidebar.open{transform:translateX(0) !important}  /* Mobile hamburger menu overrides collapsed state */
   #toast{bottom:16px}
   .tl-panel{width:200px}
   .page-home{padding:20px}
@@ -474,7 +474,8 @@ input:focus,textarea:focus{border-color:var(--accent)}
 }
 @media(min-width:769px){
   #menu-btn{display:none}
-  #sidebar{transform:none!important;position:relative}
+  /* Desktop: sidebar uses .collapsed class, not transform:none */
+  #sidebar{position:absolute}  /* Keep absolute, allow .collapsed to work */
 }
 </style>
 </head>
@@ -495,7 +496,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
       <div id="sidebar-logo">
         <div style="flex:1">
           🌐 欢迎欢迎~
-          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">pgzjtfslm~</span>
+          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">pgsjtfslm</span>
         </div>
         <button id="sidebar-toggle" class="panel-toggle-btn" title="折叠/展开导航栏">◀</button>
       </div>
@@ -687,7 +688,9 @@ function toggleSidebarPanel() {
   const sb = document.getElementById('sidebar');
   const btn = document.getElementById('sidebar-toggle');
   const expandBtn = document.getElementById('sidebar-expand');
+  console.log('[toggleSidebarPanel] sidebar:', sb, 'collapsed before:', sb?.classList.contains('collapsed'));
   const collapsed = sb.classList.toggle('collapsed');
+  console.log('[toggleSidebarPanel] collapsed after:', collapsed, 'classList:', sb?.classList.toString());
   btn.textContent = collapsed ? '▶' : '◀';
   if (expandBtn) expandBtn.classList.toggle('show', collapsed);
 }
