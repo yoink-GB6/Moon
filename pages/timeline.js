@@ -111,6 +111,23 @@ function buildHTML() {
         </div>
       </div>
 
+      <!-- Quick add character (editor only) -->
+      <div class="tl-section" id="tl-quick-add-section" style="display:none">
+        <div class="tl-section-hdr">
+          <span>➕ 快速添加人物</span>
+        </div>
+        <div class="tl-section-body" style="padding:10px 13px">
+          <input id="tl-quick-name" type="text" placeholder="名字" autocomplete="off" style="width:100%;margin-bottom:8px"/>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <input id="tl-quick-age" type="number" placeholder="当前年龄" min="0" max="200" style="flex:1"/>
+            <button class="btn bp" id="tl-quick-add-btn" style="flex-shrink:0">添加</button>
+          </div>
+          <div style="font-size:11px;color:#889;line-height:1.5">
+            💡 输入当前显示年龄（已含偏移 <span id="tl-quick-offset-hint">+0</span>）
+          </div>
+        </div>
+      </div>
+
       <!-- Character list -->
       <div id="tl-clist" class="tl-clist"></div>
 
@@ -214,6 +231,15 @@ function bindControls(container) {
     showToast('缩放已重置');
   });
 
+  // Quick add character
+  container.querySelector('#tl-quick-add-btn')?.addEventListener('click', () => doQuickAdd(container));
+  container.querySelector('#tl-quick-age')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doQuickAdd(container);
+  });
+  container.querySelector('#tl-quick-name')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') container.querySelector('#tl-quick-age')?.focus();
+  });
+
   // Panel toggle
   function toggleTimelinePanel() {
     const panel = container.querySelector('#tl-panel');
@@ -228,7 +254,60 @@ function bindControls(container) {
 }
 
 function updateEditUI(container) {
-  updateSidebar();  // Just update sidebar, no edit areas to toggle
+  const ed = isEditor();
+  const quickAddSection = container?.querySelector('#tl-quick-add-section');
+  if (quickAddSection) quickAddSection.style.display = ed ? '' : 'none';
+  updateSidebar();
+}
+
+// ── Quick add character ────────────────────────────
+async function doQuickAdd(container) {
+  if (!isEditor()) { showToast('🔒 请先解锁编辑'); return; }
+  
+  const nameInput = container.querySelector('#tl-quick-name');
+  const ageInput = container.querySelector('#tl-quick-age');
+  const name = nameInput.value.trim();
+  const displayAge = parseInt(ageInput.value);
+  
+  if (!name) { showToast('请输入名字'); return; }
+  if (isNaN(displayAge) || displayAge < 0 || displayAge > 200) { 
+    showToast('请输入有效年龄（0-200）'); 
+    return; 
+  }
+  if (characters.some(c => c.name === name)) { 
+    showToast('已存在同名人物：' + name); 
+    return; 
+  }
+  
+  // Calculate baseAge: displayAge = baseAge + ageOffset => baseAge = displayAge - ageOffset
+  const baseAge = displayAge - ageOffset;
+  
+  console.log('[doQuickAdd] name:', name, 'displayAge:', displayAge, 'ageOffset:', ageOffset, '→ baseAge:', baseAge);
+  
+  // Create character in database (will be auto-added to timeline via realtime subscription)
+  setSyncStatus('syncing');
+  try {
+    const { data, error } = await supaClient.from('characters').insert({
+      name,
+      base_age: baseAge,
+      color: PALETTE[characters.length % PALETTE.length],
+      sort_order: characters.length
+    }).select().single();
+    
+    if (error) throw error;
+    
+    // Clear inputs
+    nameInput.value = '';
+    ageInput.value = '';
+    nameInput.focus();
+    
+    showToast(`已添加：${name}（${displayAge}岁）`);
+    setSyncStatus('ok');
+    
+    // Refresh will happen via realtime subscription
+  } catch(e) { 
+    dbError('添加人物', e); 
+  }
 }
 
 // ── Modal bindings ─────────────────────────────────
@@ -812,4 +891,6 @@ function syncSlider() {
 function updateAgeVal() {
   const el=document.querySelector('#tl-age-val');
   if (el) el.textContent=(ageOffset>=0?'+':'')+ageOffset;
+  const hint=document.querySelector('#tl-quick-offset-hint');
+  if (hint) hint.textContent=(ageOffset>=0?'+':'')+ageOffset;
 }
