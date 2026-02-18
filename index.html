@@ -65,11 +65,14 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 
 /* ── Left sidebar ── */
 #sidebar{
+  position:absolute;left:0;top:0;bottom:0;z-index:100;
   width:var(--sidebar-w);background:var(--panel);border-right:1px solid var(--border);
-  display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;
+  display:flex;flex-direction:column;overflow:hidden;
   transition:transform .28s cubic-bezier(0.4,0,0.2,1);
 }
 #sidebar.collapsed{transform:translateX(-100%);}
+#main-content{margin-left:var(--sidebar-w);transition:margin-left .28s cubic-bezier(0.4,0,0.2,1);}
+#sidebar.collapsed ~ #main-content{margin-left:0;}
 #sidebar-logo{
   padding:12px 14px 10px;display:flex;align-items:flex-start;gap:8px;
   font-size:18px;font-weight:800;color:var(--accent);
@@ -231,17 +234,19 @@ input:focus,textarea:focus{border-color:var(--accent)}
 /* ════════════════════════════════════════
    TIMELINE PAGE styles
 ════════════════════════════════════════ */
-.tl-layout{display:flex;height:100%;overflow:hidden}
+.tl-layout{position:relative;height:100%;overflow:hidden}
 .tl-cw{
-  flex:1;overflow:hidden;touch-action:none;cursor:grab;position:relative;user-select:none;
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  overflow:hidden;touch-action:none;cursor:grab;user-select:none;
   background:radial-gradient(ellipse at 20% 40%,rgba(124,131,247,.06) 0%,transparent 60%),
              radial-gradient(ellipse at 80% 70%,rgba(39,174,96,.05) 0%,transparent 55%),var(--bg);
 }
 .tl-cw.grabbing{cursor:grabbing}
 .tl-cw canvas{display:block}
 .tl-panel{
+  position:absolute;right:0;top:0;bottom:0;z-index:50;
   width:240px;background:var(--panel);border-left:1px solid var(--border);
-  display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;
+  display:flex;flex-direction:column;overflow:hidden;
   transition:transform .28s cubic-bezier(0.4,0,0.2,1);
 }
 .tl-panel.collapsed{transform:translateX(100%);}
@@ -369,8 +374,8 @@ input:focus,textarea:focus{border-color:var(--accent)}
 /* ════════════════════════════════════════
    MAP PAGE
 ════════════════════════════════════════ */
-.map-layout{display:flex;height:100%;overflow:hidden}
-.map-cw{flex:1;position:relative;overflow:hidden;touch-action:none;cursor:grab;background:var(--bg)}
+.map-layout{position:relative;height:100%;overflow:hidden}
+.map-cw{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;touch-action:none;cursor:grab;background:var(--bg)}
 .map-cw canvas{display:block;width:100%;height:100%}
 
 /* Toolbar overlay */
@@ -395,8 +400,9 @@ input:focus,textarea:focus{border-color:var(--accent)}
 
 /* Panel */
 .map-panel{
+  position:absolute;right:0;top:0;bottom:0;z-index:50;
   width:240px;background:var(--panel);border-left:1px solid var(--border);
-  display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;
+  display:flex;flex-direction:column;overflow:hidden;
   transition:transform .28s cubic-bezier(0.4,0,0.2,1);
 }
 .map-panel.collapsed{transform:translateX(100%);}
@@ -431,7 +437,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .chars-layout{display:flex;flex-direction:column;height:100%;overflow:hidden;padding:20px 28px}
 .chars-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 .chars-header h2{font-size:20px;font-weight:700;color:var(--accent);margin:0}
-.chars-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;padding-bottom:20px}
+.chars-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;padding-bottom:20px;align-items:start}
 .chars-grid::-webkit-scrollbar{width:4px}
 .chars-grid::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:3px}
 .chars-empty{grid-column:1/-1;text-align:center;color:var(--muted);font-size:14px;padding:40px 20px}
@@ -440,7 +446,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .char-card-av{width:64px;height:64px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;flex-shrink:0}
 .char-card-name{font-size:15px;font-weight:700;color:#e8eaed;text-align:center}
 .char-card-age{font-size:12px;color:var(--accent);background:rgba(124,131,247,.15);padding:3px 10px;border-radius:12px}
-.char-card-desc{font-size:12px;color:#889;text-align:center;line-height:1.5;max-height:3.6em;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.char-card-desc{font-size:12px;color:#889;text-align:center;line-height:1.5;word-wrap:break-word}
 
 /* ════════════════════════════════════════
    PLACEHOLDER page (未来页面)
@@ -491,7 +497,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
       <div id="sidebar-logo">
         <div style="flex:1">
           🌐 欢迎欢迎~
-          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">pgzjtfslm~</span>
+          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">pgzjtfslm</span>
         </div>
         <button id="sidebar-toggle" class="panel-toggle-btn" title="折叠/展开导航栏">◀</button>
       </div>
