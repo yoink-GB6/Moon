@@ -98,13 +98,14 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 
 /* Floating expand buttons (when panels are collapsed) */
 .expand-btn-float{
-  position:fixed;display:none;align-items:center;justify-content:center;
+  position:fixed;display:flex;align-items:center;justify-content:center;
   width:36px;height:36px;border-radius:50%;
   background:var(--panel);border:1px solid var(--accent);
   color:var(--accent);font-size:16px;cursor:pointer;
   box-shadow:0 4px 16px rgba(0,0,0,.5);z-index:200;
-  transition:all .2s;
+  transition:all .2s;opacity:0;pointer-events:none;  /* Hidden via opacity, JS will toggle */
 }
+.expand-btn-float.show{opacity:1;pointer-events:auto;}
 .expand-btn-float:hover{background:var(--accent);color:#fff;transform:scale(1.1)}
 #sidebar-expand{top:50%;left:8px;transform:translateY(-50%)}
 #tl-expand{top:50%;right:8px;transform:translateY(-50%)}
@@ -348,6 +349,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .tl-toggle.on::after{left:19px}
 #tl-limit-input{width:80px;margin-bottom:0;font-size:14px;padding:7px 10px}
 #tl-file-input{display:none}
+#char-file-input{display:none}
 
 
 /* ════════════════════════════════════════
@@ -479,7 +481,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
   <div id="topbar">
     <button id="menu-btn">☰</button>
     <div id="topbar-title">欢迎欢迎~</div>
-    <div id="sync-dot" title="pgzjtfslm~"></div>
+    <div id="sync-dot" title="同步状态"></div>
     <button id="lock-btn" onclick="showPwModal()">🔒 编辑</button>
   </div>
 
@@ -489,7 +491,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
       <div id="sidebar-logo">
         <div style="flex:1">
           🌐 欢迎欢迎~
-          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">公开协作空间</span>
+          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">pgzjtfslm~</span>
         </div>
         <button id="sidebar-toggle" class="panel-toggle-btn" title="折叠/展开导航栏">◀</button>
       </div>
@@ -683,7 +685,7 @@ function toggleSidebarPanel() {
   const expandBtn = document.getElementById('sidebar-expand');
   const collapsed = sb.classList.toggle('collapsed');
   btn.textContent = collapsed ? '▶' : '◀';
-  if (expandBtn) expandBtn.style.display = collapsed ? 'flex' : 'none';
+  if (expandBtn) expandBtn.classList.toggle('show', collapsed);
 }
 document.getElementById('sidebar-toggle')?.addEventListener('click', toggleSidebarPanel);
 document.getElementById('sidebar-expand')?.addEventListener('click', toggleSidebarPanel);
