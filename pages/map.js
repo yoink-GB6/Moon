@@ -42,6 +42,7 @@ export async function mount(container) {
   bindEditControls(container);
 
   onAuthChange(() => { updatePanelUI(container); draw(); });
+  updatePanelUI(container);  // Initial UI update
 
   await fetchAll();
   updateSidebarList(container);
@@ -61,7 +62,7 @@ function buildHTML() {
     <canvas id="map-canvas"></canvas>
 
     <!-- Floating expand button (shows when panel collapsed) -->
-    <button id="map-expand" class="expand-btn-float" title="展开面板" style="display:none">◀</button>
+    <button id="map-expand" class="expand-btn-float" title="展开面板">◀</button>
 
     <div class="map-toolbar">
       <button class="map-tb-btn" id="map-zoom-in"  title="放大">＋</button>
@@ -352,7 +353,7 @@ function bindPanel(container) {
     const expandBtn = container.querySelector('#map-expand');
     panel.classList.toggle('collapsed',!panelOpen);
     chevron.textContent = panelOpen?'◀':'▶';
-    if (expandBtn) expandBtn.style.display = panelOpen ? 'none' : 'flex';
+    if (expandBtn) expandBtn.classList.toggle('show', !panelOpen);
   }
   container.querySelector('#map-panel-toggle').addEventListener('click', toggleMapPanel);
   container.querySelector('#map-expand')?.addEventListener('click', toggleMapPanel);
