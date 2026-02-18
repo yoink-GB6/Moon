@@ -83,10 +83,9 @@ function buildHTML() {
       <span id="tl-panel-chevron">◀</span>
     </div>
 
-    <!-- Tab bar -->
-    <div class="tl-tabs">
+    <!-- Tab bar removed - only one tab, so hide tabs -->
+    <div style="display:none" class="tl-tabs">
       <button class="tl-tab active" data-tab="list">📋 列表</button>
-      <button class="tl-tab" data-tab="edit">✏️ 编辑</button>
     </div>
 
     <!-- TAB: 列表 -->
@@ -120,31 +119,10 @@ function buildHTML() {
         <br><button class="small-btn" id="tl-reset-zoom" style="margin-top:4px">⊡ 重置缩放</button>
       </div>
     </div>
-
-    <!-- TAB: 编辑（需权限） -->
-    <div id="tl-tab-edit" class="tl-tab-content" style="display:none">
-      <div id="tl-edit-locked" style="padding:20px 14px;color:#667;font-size:13px;line-height:1.9">
-        🔒 请先解锁编辑权限
-      </div>
-      <div id="tl-add-area" class="tl-add-area" style="display:none">
-        <div class="ctrl-label">＋ 添加人物到时间轴</div>
-        <button class="btn bp" id="tl-select-char-btn" style="width:100%">从 Character 表中选择人物</button>
-      </div>
-    </div>
   </div>
 </div>
 
 <!-- Select character modal -->
-<div id="tl-select-modal" class="tl-modal-overlay">
-  <div class="tl-modal" style="max-width:560px" onmousedown="event.stopPropagation()">
-    <h2>从 Character 表中选择人物</h2>
-    <div id="tl-select-list" class="map-char-picker" style="max-height:400px"></div>
-    <div class="mbtns" style="justify-content:flex-end;margin-top:14px">
-      <button class="btn bn" id="tl-select-cancel">取消</button>
-    </div>
-  </div>
-</div>
-
 <!-- Edit modal (scoped inside timeline) -->
 <div id="tl-modal-overlay" class="tl-modal-overlay">
   <div class="tl-modal" id="tl-modal">
@@ -198,17 +176,6 @@ function buildHTML() {
 
 // ── Control bindings ───────────────────────────────
 function bindControls(container) {
-  // Tab switching
-  container.querySelectorAll('.tl-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      container.querySelectorAll('.tl-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      const id = tab.dataset.tab;
-      container.querySelectorAll('.tl-tab-content').forEach(c => c.style.display = 'none');
-      container.querySelector(`#tl-tab-${id}`).style.display = '';
-    });
-  });
-
   // Collapsible offset section
   container.querySelector('#tl-offset-hdr')?.addEventListener('click', () => {
     const body = container.querySelector('#tl-offset-body');
@@ -258,29 +225,10 @@ function bindControls(container) {
   }
   container.querySelector('#tl-panel-toggle')?.addEventListener('click', toggleTimelinePanel);
   container.querySelector('#tl-expand')?.addEventListener('click', toggleTimelinePanel);
-
-  // Select character button
-  container.querySelector('#tl-select-char-btn')?.addEventListener('click', () => {
-    if (!isEditor()) { showToast('🔒 请先解锁编辑'); return; }
-    openSelectModal(container);
-  });
-  container.querySelector('#tl-select-cancel')?.addEventListener('click', () => {
-    container.querySelector('#tl-select-modal').classList.remove('show');
-  });
-  container.querySelector('#tl-select-modal')?.addEventListener('mousedown', e => {
-    if (e.target === container.querySelector('#tl-select-modal')) {
-      container.querySelector('#tl-select-modal').classList.remove('show');
-    }
-  });
 }
 
 function updateEditUI(container) {
-  const ed = isEditor();
-  const addArea = container?.querySelector('#tl-add-area');
-  const locked  = container?.querySelector('#tl-edit-locked');
-  if (addArea) addArea.style.display = ed ? '' : 'none';
-  if (locked)  locked.style.display  = ed ? 'none' : '';
-  updateSidebar();
+  updateSidebar();  // Just update sidebar, no edit areas to toggle
 }
 
 // ── Modal bindings ─────────────────────────────────
@@ -446,77 +394,6 @@ async function deleteChar() {
 // ── Add character ──────────────────────────────────
 
 // ── Select character modal ─────────────────────────
-async function openSelectModal(container) {
-  setSyncStatus('syncing');
-  try {
-    const { data, error } = await supaClient.from('characters').select('*').order('name');
-    if (error) throw error;
-    const allChars = (data||[]).map(c => ({
-      id:c.id, name:c.name, baseAge:c.base_age, color:c.color||'#7c83f7', avatar:c.avatar_url
-    }));
-    
-    const list = container.querySelector('#tl-select-list');
-    if (!allChars.length) {
-      list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:14px">暂无人物<br>请先在「人物」页面创建</div>';
-      container.querySelector('#tl-select-modal').classList.add('show');
-      setSyncStatus('ok');
-      return;
-    }
-
-    // Filter out characters already in timeline
-    const existingIds = characters.map(c => c.id);
-    const available = allChars.filter(c => !existingIds.includes(c.id));
-
-    if (!available.length) {
-      list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:14px">所有人物都已添加到时间轴</div>';
-      container.querySelector('#tl-select-modal').classList.add('show');
-      setSyncStatus('ok');
-      return;
-    }
-
-    list.innerHTML = available.map(c => {
-      const av = c.avatar
-        ? `<div class="char-pick-av"><img src="${escHtml(c.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`
-        : `<div class="char-pick-av" style="background:${c.color}">${escHtml(c.name.charAt(0))}</div>`;
-      return `<div class="char-pick-item" data-id="${c.id}">
-        ${av}
-        <span class="char-pick-name">${escHtml(c.name)}</span>
-      </div>`;
-    }).join('');
-
-    list.querySelectorAll('.char-pick-item').forEach(item => {
-      item.addEventListener('click', async () => {
-        const id = parseInt(item.dataset.id);
-        const char = available.find(c => c.id === id);
-        if (!char) return;
-        container.querySelector('#tl-select-modal').classList.remove('show');
-        await addCharFromTable(char, container);
-      });
-    });
-
-    container.querySelector('#tl-select-modal').classList.add('show');
-    setSyncStatus('ok');
-  } catch(e) { dbError('加载人物列表', e); }
-}
-
-async function addCharFromTable(char, container) {
-  if (!isEditor()) return;
-  // Add to local timeline with baseAge = 0 (user can edit later)
-  const c = {
-    id: char.id,
-    name: char.name,
-    baseAge: char.baseAge ?? 0,
-    color: char.color,
-    avatar: char.avatar,
-    sortOrder: characters.length
-  };
-  characters.push(c);
-  draw();
-  await saveCharacter(c);
-  showToast(`已添加：${c.name}`);
-}
-
-
 // ── Canvas geometry helpers ────────────────────────
 function dispAge(c) {
   const raw = c.baseAge + ageOffset;
