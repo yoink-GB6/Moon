@@ -266,8 +266,8 @@ function renderGrid(container) {
       ${tagsHtml ? `<div class="lib-item-tags">${tagsHtml}</div>` : ''}
       <div class="lib-item-footer">
         ${authorHtml}
-        <div class="lib-item-like">
-          <button class="lib-like-btn" data-id="${item.id}" title="点赞">👍</button>
+        <div class="lib-item-like" data-id="${item.id}" title="点赞">
+          <span class="lib-like-btn">👍</span>
           <span class="lib-like-count">${likes}</span>
         </div>
       </div>
@@ -277,17 +277,55 @@ function renderGrid(container) {
   grid.querySelectorAll('.lib-item').forEach(card => {
     let pressTimer = null;
     let pressStart = 0;
+    let startX = 0;
+    let startY = 0;
+    let hasMoved = false;
     
     const startPress = (e) => {
       pressStart = Date.now();
+      hasMoved = false;
+      
+      // Record initial position
+      if (e.touches) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      } else {
+        startX = e.clientX;
+        startY = e.clientY;
+      }
+      
       pressTimer = setTimeout(() => {
-        // Long press triggered
-        const id = parseInt(card.dataset.id);
-        const item = items.find(x => x.id === id);
-        if (item && !isEditor()) {
-          openPreviewModal(item);
+        // Long press triggered (only if not moved)
+        if (!hasMoved) {
+          const id = parseInt(card.dataset.id);
+          const item = items.find(x => x.id === id);
+          if (item && !isEditor()) {
+            openPreviewModal(item);
+          }
         }
       }, 500);
+    };
+    
+    const checkMovement = (e) => {
+      if (hasMoved) return;
+      
+      let currentX, currentY;
+      if (e.touches) {
+        currentX = e.touches[0].clientX;
+        currentY = e.touches[0].clientY;
+      } else {
+        currentX = e.clientX;
+        currentY = e.clientY;
+      }
+      
+      const deltaX = Math.abs(currentX - startX);
+      const deltaY = Math.abs(currentY - startY);
+      
+      // If moved more than 10px, consider it a swipe/scroll
+      if (deltaX > 10 || deltaY > 10) {
+        hasMoved = true;
+        cancelPress();
+      }
     };
     
     const cancelPress = () => {
@@ -300,6 +338,11 @@ function renderGrid(container) {
     const handleInteraction = (e) => {
       cancelPress();
       
+      // If moved, don't trigger any action
+      if (hasMoved) {
+        return;
+      }
+      
       const pressDuration = Date.now() - pressStart;
       if (pressDuration >= 500) {
         // Was a long press, don't trigger click action
@@ -307,7 +350,7 @@ function renderGrid(container) {
         return;
       }
       
-      // Short click
+      // Short click (and didn't move)
       const id = parseInt(card.dataset.id);
       const item = items.find(x => x.id === id);
       if (!item) return;
@@ -328,26 +371,26 @@ function renderGrid(container) {
     
     // Mouse events (desktop)
     card.addEventListener('mousedown', startPress);
+    card.addEventListener('mousemove', checkMovement);
     card.addEventListener('mouseup', handleInteraction);
     card.addEventListener('mouseleave', cancelPress);
     
     // Touch events (mobile)
-    card.addEventListener('touchstart', (e) => {
-      startPress(e);
-    });
-    card.addEventListener('touchend', (e) => {
-      handleInteraction(e);
-    });
+    card.addEventListener('touchstart', startPress, { passive: true });
+    card.addEventListener('touchmove', checkMovement, { passive: true });
+    card.addEventListener('touchend', handleInteraction);
     card.addEventListener('touchcancel', cancelPress);
   });
   
-  // Bind like buttons (prevent event bubbling to card)
-  grid.querySelectorAll('.lib-like-btn').forEach(btn => {
-    btn.addEventListener('mousedown', (e) => e.stopPropagation());
-    btn.addEventListener('touchstart', (e) => e.stopPropagation());
-    btn.addEventListener('click', async (e) => {
+  // Bind like areas (prevent event bubbling to card)
+  grid.querySelectorAll('.lib-item-like').forEach(likeArea => {
+    likeArea.addEventListener('mousedown', (e) => e.stopPropagation());
+    likeArea.addEventListener('touchstart', (e) => e.stopPropagation());
+    likeArea.addEventListener('mousemove', (e) => e.stopPropagation());
+    likeArea.addEventListener('touchmove', (e) => e.stopPropagation());
+    likeArea.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const id = parseInt(btn.dataset.id);
+      const id = parseInt(likeArea.dataset.id);
       await likeItem(id);
     });
   });
