@@ -147,6 +147,68 @@ function renderTagList(tagListEl) {
     return;
   }
   
+  const editable = isEditor();
+  
+  tagListEl.innerHTML = tags.map(tag => {
+    const selected = selectedTags.includes(tag);
+    const count = items.filter(item => item.tags.includes(tag)).length;
+    
+    // Edit/delete buttons (only visible in edit mode)
+    const actionBtns = editable 
+      ? `<div class="lib-tag-actions">
+          <button class="lib-tag-action-btn lib-tag-edit" data-tag="${escHtml(tag)}" title="重命名">✏️</button>
+          <button class="lib-tag-action-btn lib-tag-delete" data-tag="${escHtml(tag)}" title="删除">🗑️</button>
+         </div>`
+      : '';
+    
+    return `<div class="lib-tag-filter ${selected ? 'selected' : ''}" data-tag="${escHtml(tag)}">
+      <div class="lib-tag-main">
+        <span class="lib-tag-name">${escHtml(tag)}</span>
+        <span class="lib-tag-count">(${count})</span>
+      </div>
+      ${actionBtns}
+    </div>`;
+  }).join('');
+  
+  // Bind click events for tag selection
+  tagListEl.querySelectorAll('.lib-tag-filter').forEach(el => {
+    // Tag selection (click on main area, not buttons)
+    const mainArea = el.querySelector('.lib-tag-main');
+    mainArea.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tag = el.dataset.tag;
+      if (selectedTags.includes(tag)) {
+        selectedTags = selectedTags.filter(t => t !== tag);
+      } else {
+        selectedTags.push(tag);
+      }
+      renderTagList(tagListEl);
+      renderGrid(document.querySelector('.lib-layout'));
+    });
+    
+    // Edit button
+    const editBtn = el.querySelector('.lib-tag-edit');
+    if (editBtn) {
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const oldTag = el.dataset.tag;
+        renameTag(oldTag, tagListEl);
+      });
+    }
+    
+    // Delete button
+    const deleteBtn = el.querySelector('.lib-tag-delete');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tag = el.dataset.tag;
+        deleteTag(tag, tagListEl);
+      });
+    }
+  });
+}
+
+  
   tagListEl.innerHTML = tags.map(tag => {
     const selected = selectedTags.includes(tag);
     const count = items.filter(item => item.tags.includes(tag)).length;
@@ -350,4 +412,77 @@ function subscribeRealtime() {
   realtimeCh = supaClient.channel('library-page')
     .on('postgres_changes', {event:'*', schema:'public', table:'library_items'}, () => fetchAll())
     .subscribe();
+}
+
+// ── Tag management ─────────────────────────────────
+async function renameTag(oldTag, tagListEl) {
+  if (!isEditor()) return;
+  
+  const newTag = prompt(`重命名标签「${oldTag}」:`, oldTag);
+  if (!newTag || newTag.trim() === '') return;
+  const trimmedTag = newTag.trim();
+  
+  if (trimmedTag === oldTag) return;
+  
+  if (tags.includes(trimmedTag)) {
+    showToast('标签名已存在');
+    return;
+  }
+  
+  setSyncStatus('syncing');
+  try {
+    // Update all items that have this tag
+    const itemsToUpdate = items.filter(item => item.tags.includes(oldTag));
+    
+    for (const item of itemsToUpdate) {
+      const updatedTags = item.tags.map(t => t === oldTag ? trimmedTag : t);
+      const { error } = await supaClient
+        .from('library_items')
+        .update({ tags_json: JSON.stringify(updatedTags) })
+        .eq('id', item.id);
+      if (error) throw error;
+    }
+    
+    // Update selected tags if the renamed tag was selected
+    if (selectedTags.includes(oldTag)) {
+      selectedTags = selectedTags.map(t => t === oldTag ? trimmedTag : t);
+    }
+    
+    await fetchAll();
+    setSyncStatus('ok');
+    showToast(`已重命名：${oldTag} → ${trimmedTag}`);
+  } catch(e) { 
+    dbError('重命名标签', e); 
+  }
+}
+
+async function deleteTag(tag, tagListEl) {
+  if (!isEditor()) return;
+  
+  const count = items.filter(item => item.tags.includes(tag)).length;
+  if (!confirmDialog(`确定要删除标签「${tag}」？\n\n将从 ${count} 个指令中移除此标签，但不会删除指令本身。`)) return;
+  
+  setSyncStatus('syncing');
+  try {
+    // Remove tag from all items that have it
+    const itemsToUpdate = items.filter(item => item.tags.includes(tag));
+    
+    for (const item of itemsToUpdate) {
+      const updatedTags = item.tags.filter(t => t !== tag);
+      const { error } = await supaClient
+        .from('library_items')
+        .update({ tags_json: JSON.stringify(updatedTags) })
+        .eq('id', item.id);
+      if (error) throw error;
+    }
+    
+    // Remove from selected tags if it was selected
+    selectedTags = selectedTags.filter(t => t !== tag);
+    
+    await fetchAll();
+    setSyncStatus('ok');
+    showToast(`已删除标签：${tag}`);
+  } catch(e) { 
+    dbError('删除标签', e); 
+  }
 }
