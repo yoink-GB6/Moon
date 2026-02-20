@@ -502,6 +502,9 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .lib-item-like{display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(124,131,247,.08);border:1px solid rgba(124,131,247,.2);border-radius:8px;cursor:pointer;transition:all .2s;user-select:none}
 .lib-item-like:hover{background:rgba(124,131,247,.15);border-color:rgba(124,131,247,.4);transform:translateY(-1px)}
 .lib-item-like:active{transform:translateY(0) scale(0.98)}
+.lib-item-like.liked{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4)}
+.lib-item-like.liked:hover{background:rgba(239,68,68,.25);border-color:rgba(239,68,68,.6)}
+.lib-item-like.liked .lib-like-count{color:#ef4444}
 .lib-like-btn{font-size:18px;line-height:1;pointer-events:none}
 .lib-like-count{font-size:14px;color:var(--accent);font-weight:600;min-width:24px;text-align:center;pointer-events:none}
 
