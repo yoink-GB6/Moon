@@ -488,7 +488,14 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .lib-item-content{font-size:14px;line-height:1.7;color:#cdd;margin-bottom:10px;white-space:pre-wrap;word-break:break-word}
 .lib-item-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .lib-item-tag{font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(124,131,247,.15);color:var(--accent)}
+
+.lib-item-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
 .lib-item-author{font-size:12px;color:#889;font-style:italic}
+.lib-item-like{display:flex;align-items:center;gap:6px}
+.lib-like-btn{width:28px;height:28px;border:none;background:rgba(124,131,247,.15);border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;padding:0}
+.lib-like-btn:hover{background:rgba(124,131,247,.3);transform:scale(1.1)}
+.lib-like-btn:active{transform:scale(0.95)}
+.lib-like-count{font-size:13px;color:var(--accent);font-weight:600;min-width:20px;text-align:center}
 
 .lib-tag-picker{display:flex;flex-wrap:wrap;gap:8px;padding:8px;background:var(--bg);border-radius:6px;min-height:40px}
 .lib-tag-checkbox{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .15s;font-size:13px;background:var(--panel);border:1px solid var(--border)}
