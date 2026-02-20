@@ -209,28 +209,6 @@ function renderTagList(tagListEl) {
 }
 
   
-  tagListEl.innerHTML = tags.map(tag => {
-    const selected = selectedTags.includes(tag);
-    const count = items.filter(item => item.tags.includes(tag)).length;
-    return `<div class="lib-tag-filter ${selected ? 'selected' : ''}" data-tag="${escHtml(tag)}">
-      <span>${escHtml(tag)}</span>
-      <span style="color:var(--muted);font-size:11px">(${count})</span>
-    </div>`;
-  }).join('');
-  
-  tagListEl.querySelectorAll('.lib-tag-filter').forEach(el => {
-    el.addEventListener('click', () => {
-      const tag = el.dataset.tag;
-      if (selectedTags.includes(tag)) {
-        selectedTags = selectedTags.filter(t => t !== tag);
-      } else {
-        selectedTags.push(tag);
-      }
-      renderTagList(tagListEl);
-      renderGrid(document.querySelector('.lib-layout'));
-    });
-  });
-}
 
 function renderGrid(container) {
   const grid = container.querySelector('#lib-grid');
