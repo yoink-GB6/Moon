@@ -82,6 +82,24 @@ function buildHTML() {
       <button class="btn br" id="lib-modal-delete" style="min-width:120px;display:none">🗑 删除</button>
     </div>
   </div>
+</div>
+
+<!-- Read-only preview modal -->
+<div id="lib-preview-modal" class="tl-modal-overlay">
+  <div class="tl-modal" style="max-width:600px" onmousedown="event.stopPropagation()">
+    <h2>📋 查看指令</h2>
+    
+    <div style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:12px;max-height:400px;overflow-y:auto">
+      <div id="lib-preview-content" style="white-space:pre-wrap;word-break:break-word;line-height:1.7;font-size:14px"></div>
+    </div>
+    
+    <div id="lib-preview-meta" style="margin-bottom:12px;font-size:13px;color:#889"></div>
+    
+    <div class="mbtns" style="justify-content:space-between">
+      <button class="btn bn" id="lib-preview-close">关闭</button>
+      <button class="btn bp" id="lib-preview-copy">📋 复制内容</button>
+    </div>
+  </div>
 </div>`;
 }
 
@@ -95,6 +113,13 @@ function bindControls(container) {
   container.querySelector('#lib-modal-delete').addEventListener('click', () => deleteItem(container));
   container.querySelector('#lib-modal').addEventListener('mousedown', e => {
     if (e.target === container.querySelector('#lib-modal')) closeModal(container);
+  });
+  
+  // Preview modal buttons
+  container.querySelector('#lib-preview-close').addEventListener('click', () => closePreviewModal(container));
+  container.querySelector('#lib-preview-copy').addEventListener('click', () => copyFromPreview(container));
+  container.querySelector('#lib-preview-modal').addEventListener('mousedown', e => {
+    if (e.target === container.querySelector('#lib-preview-modal')) closePreviewModal(container);
   });
   
   // Add tag button
@@ -242,7 +267,32 @@ function renderGrid(container) {
   }).join('');
   
   grid.querySelectorAll('.lib-item').forEach(card => {
-    card.addEventListener('click', () => {
+    let pressTimer = null;
+    let isLongPress = false;
+    
+    const startPress = (e) => {
+      isLongPress = false;
+      pressTimer = setTimeout(() => {
+        isLongPress = true;
+        const id = parseInt(card.dataset.id);
+        const item = items.find(x => x.id === id);
+        if (item && !isEditor()) {
+          openPreviewModal(item);  // Long press in read-only mode
+        }
+      }, 500);  // 500ms for long press
+    };
+    
+    const cancelPress = () => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+    };
+    
+    const handleClick = () => {
+      cancelPress();
+      if (isLongPress) return;  // Skip click if it was a long press
+      
       const id = parseInt(card.dataset.id);
       const item = items.find(x => x.id === id);
       if (!item) return;
@@ -250,16 +300,27 @@ function renderGrid(container) {
       console.log('[lib-item click] isEditor:', isEditor(), 'item:', item);
       
       if (isEditor()) {
-        openModal(item, pageContainer);  // Use saved container reference
+        openModal(item, pageContainer);
       } else {
-        // Copy content to clipboard
+        // Quick click: copy to clipboard
         navigator.clipboard.writeText(item.content).then(() => {
           showToast('已复制到剪贴板');
         }).catch(() => {
           showToast('复制失败，请手动复制');
         });
       }
-    });
+    };
+    
+    // Mouse events
+    card.addEventListener('mousedown', startPress);
+    card.addEventListener('mouseup', cancelPress);
+    card.addEventListener('mouseleave', cancelPress);
+    card.addEventListener('click', handleClick);
+    
+    // Touch events for mobile
+    card.addEventListener('touchstart', startPress);
+    card.addEventListener('touchend', cancelPress);
+    card.addEventListener('touchcancel', cancelPress);
   });
 }
 
@@ -281,6 +342,44 @@ function openModal(item, container) {
 function closeModal(container) {
   container.querySelector('#lib-modal').classList.remove('show');
   editItemId = null;
+}
+
+// ── Preview modal (read-only) ──────────────────────
+let previewItem = null;
+
+function openPreviewModal(item) {
+  if (!item) return;
+  previewItem = item;
+  
+  const modal = pageContainer.querySelector('#lib-preview-modal');
+  const contentEl = pageContainer.querySelector('#lib-preview-content');
+  const metaEl = pageContainer.querySelector('#lib-preview-meta');
+  
+  contentEl.textContent = item.content;
+  
+  // Show metadata
+  const parts = [];
+  if (item.author) parts.push(`作者：${item.author}`);
+  if (item.tags.length > 0) parts.push(`标签：${item.tags.join(', ')}`);
+  metaEl.textContent = parts.join(' | ') || '';
+  
+  modal.classList.add('show');
+}
+
+function closePreviewModal(container) {
+  container.querySelector('#lib-preview-modal').classList.remove('show');
+  previewItem = null;
+}
+
+function copyFromPreview(container) {
+  if (!previewItem) return;
+  
+  navigator.clipboard.writeText(previewItem.content).then(() => {
+    showToast('已复制到剪贴板');
+    closePreviewModal(container);
+  }).catch(() => {
+    showToast('复制失败，请手动复制');
+  });
 }
 
 function renderTagPicker(container, selectedItemTags) {
