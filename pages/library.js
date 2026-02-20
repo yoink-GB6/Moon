@@ -1,5 +1,5 @@
 // pages/library.js
-// 文本/图片库页面：支持标签筛选和权限管理
+// 指令集页面：支持标签筛选和权限管理
 
 import { supaClient, setSyncStatus, dbError } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
@@ -8,7 +8,6 @@ import { showToast, escHtml, confirmDialog } from '../core/ui.js';
 let items = [];           // All library items
 let tags = [];            // All available tags
 let selectedTags = [];    // Currently selected tags for filtering
-let tagMatchCount = 0;    // Minimum number of tags to match (0 = show all)
 let editItemId = null;
 let realtimeCh = null;
 
@@ -34,11 +33,8 @@ function buildHTML() {
       <span>🏷️ 标签筛选</span>
     </div>
     <div class="lib-sidebar-body">
-      <div style="margin-bottom:12px">
-        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">
-          匹配标签数：<b id="lib-match-count">0</b>（0 = 显示全部）
-        </label>
-        <input id="lib-match-slider" type="range" min="0" max="10" value="0" style="width:100%"/>
+      <div style="font-size:12px;color:#889;margin-bottom:12px;line-height:1.6">
+        点击标签进行筛选。选中多个标签时，显示<b>同时包含</b>所有选中标签的文本。
       </div>
       <div id="lib-tag-list" class="lib-tag-list"></div>
     </div>
@@ -47,7 +43,7 @@ function buildHTML() {
   <!-- Main content area -->
   <div class="lib-main">
     <div class="lib-header">
-      <h2>📚 文本/图片库</h2>
+      <h2>📋 指令集</h2>
       <button class="btn bp" id="lib-add-btn" style="display:none">＋ 新建</button>
     </div>
     <div class="lib-grid" id="lib-grid"></div>
@@ -57,7 +53,7 @@ function buildHTML() {
 <!-- Edit modal -->
 <div id="lib-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:600px" onmousedown="event.stopPropagation()">
-    <h2 id="lib-modal-title">新建文本</h2>
+    <h2 id="lib-modal-title">新建指令</h2>
     
     <label>内容</label>
     <textarea id="lib-content" rows="8" placeholder="输入文本内容..." style="margin-bottom:12px;font-family:inherit"></textarea>
@@ -100,13 +96,6 @@ function bindControls(container) {
   container.querySelector('#lib-new-tag').addEventListener('keydown', e => {
     if (e.key === 'Enter') addNewTag(container);
   });
-  
-  // Match count slider
-  container.querySelector('#lib-match-slider').addEventListener('input', e => {
-    tagMatchCount = parseInt(e.target.value);
-    container.querySelector('#lib-match-count').textContent = tagMatchCount;
-    renderGrid(container);
-  });
 }
 
 async function fetchAll() {
@@ -131,7 +120,7 @@ async function fetchAll() {
     renderTagList(document.querySelector('#lib-tag-list'));
     renderGrid(document.querySelector('.lib-layout'));
     setSyncStatus('ok');
-  } catch(e) { dbError('加载文本库', e); }
+  } catch(e) { dbError('加载指令集', e); }
 }
 
 function renderTagList(tagListEl) {
@@ -166,17 +155,19 @@ function renderTagList(tagListEl) {
 function renderGrid(container) {
   const grid = container.querySelector('#lib-grid');
   
-  // Filter items based on selected tags and match count
+  // Filter items: show items that contain ALL selected tags (intersection)
   let filtered = items;
-  if (selectedTags.length > 0 && tagMatchCount > 0) {
+  if (selectedTags.length > 0) {
     filtered = items.filter(item => {
-      const matchCount = selectedTags.filter(tag => item.tags.includes(tag)).length;
-      return matchCount >= tagMatchCount;
+      return selectedTags.every(tag => item.tags.includes(tag));
     });
   }
   
   if (!filtered.length) {
-    grid.innerHTML = '<div class="lib-empty">暂无内容</div>';
+    const msg = selectedTags.length > 0 
+      ? '没有同时包含所选标签的文本' 
+      : '暂无内容';
+    grid.innerHTML = `<div class="lib-empty">${msg}</div>`;
     return;
   }
   
@@ -213,11 +204,9 @@ function renderGrid(container) {
 }
 
 function openModal(item, container) {
-  if (!isEditor()) return;
-  
   editItemId = item ? item.id : null;
   
-  container.querySelector('#lib-modal-title').textContent = item ? '编辑文本' : '新建文本';
+  container.querySelector('#lib-modal-title').textContent = item ? '编辑指令' : '新建指令';
   container.querySelector('#lib-content').value = item ? item.content : '';
   container.querySelector('#lib-author').value = item ? item.author : '';
   container.querySelector('#lib-new-tag').value = '';
@@ -307,7 +296,7 @@ async function saveItem(container) {
     }
     await fetchAll();
     setSyncStatus('ok');
-  } catch(e) { dbError('保存文本', e); }
+  } catch(e) { dbError('保存指令', e); }
 }
 
 async function deleteItem(container) {
@@ -328,7 +317,7 @@ async function deleteItem(container) {
     await fetchAll();
     setSyncStatus('ok');
     showToast('已删除');
-  } catch(e) { dbError('删除文本', e); }
+  } catch(e) { dbError('删除指令', e); }
 }
 
 function updateUI(container) {
