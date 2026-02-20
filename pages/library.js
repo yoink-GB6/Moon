@@ -144,7 +144,7 @@ function bindControls(container) {
 async function fetchAll() {
   setSyncStatus('syncing');
   try {
-    const { data, error } = await supaClient.from('library_items').select('*').order('created_at', {ascending: false});
+    const { data, error } = await supaClient.from('library_items').select('*').order('likes', {ascending: false}).order('created_at', {ascending: false});
     if (error) throw error;
     
     items = (data || []).map(r => ({
@@ -152,6 +152,7 @@ async function fetchAll() {
       content: r.content || '',
       author: r.author || '',
       tags: r.tags_json ? JSON.parse(r.tags_json) : [],
+      likes: r.likes || 0,
       createdAt: r.created_at
     }));
     
@@ -258,28 +259,35 @@ function renderGrid(container) {
     const preview = item.content.length > 150 ? item.content.slice(0, 150) + '...' : item.content;
     const tagsHtml = item.tags.map(tag => `<span class="lib-item-tag">${escHtml(tag)}</span>`).join('');
     const authorHtml = item.author ? `<div class="lib-item-author">by ${escHtml(item.author)}</div>` : '';
+    const likes = item.likes || 0;
     
     return `<div class="lib-item" data-id="${item.id}">
       <div class="lib-item-content">${escHtml(preview)}</div>
       ${tagsHtml ? `<div class="lib-item-tags">${tagsHtml}</div>` : ''}
-      ${authorHtml}
+      <div class="lib-item-footer">
+        ${authorHtml}
+        <div class="lib-item-like">
+          <button class="lib-like-btn" data-id="${item.id}" title="点赞">👍</button>
+          <span class="lib-like-count">${likes}</span>
+        </div>
+      </div>
     </div>`;
   }).join('');
   
   grid.querySelectorAll('.lib-item').forEach(card => {
     let pressTimer = null;
-    let isLongPress = false;
+    let pressStart = 0;
     
     const startPress = (e) => {
-      isLongPress = false;
+      pressStart = Date.now();
       pressTimer = setTimeout(() => {
-        isLongPress = true;
+        // Long press triggered
         const id = parseInt(card.dataset.id);
         const item = items.find(x => x.id === id);
         if (item && !isEditor()) {
-          openPreviewModal(item);  // Long press in read-only mode
+          openPreviewModal(item);
         }
-      }, 500);  // 500ms for long press
+      }, 500);
     };
     
     const cancelPress = () => {
@@ -289,15 +297,22 @@ function renderGrid(container) {
       }
     };
     
-    const handleClick = () => {
+    const handleInteraction = (e) => {
       cancelPress();
-      if (isLongPress) return;  // Skip click if it was a long press
       
+      const pressDuration = Date.now() - pressStart;
+      if (pressDuration >= 500) {
+        // Was a long press, don't trigger click action
+        e.preventDefault();
+        return;
+      }
+      
+      // Short click
       const id = parseInt(card.dataset.id);
       const item = items.find(x => x.id === id);
       if (!item) return;
       
-      console.log('[lib-item click] isEditor:', isEditor(), 'item:', item);
+      console.log('[lib-item click] isEditor:', isEditor(), 'pressDuration:', pressDuration);
       
       if (isEditor()) {
         openModal(item, pageContainer);
@@ -311,16 +326,30 @@ function renderGrid(container) {
       }
     };
     
-    // Mouse events
+    // Mouse events (desktop)
     card.addEventListener('mousedown', startPress);
-    card.addEventListener('mouseup', cancelPress);
+    card.addEventListener('mouseup', handleInteraction);
     card.addEventListener('mouseleave', cancelPress);
-    card.addEventListener('click', handleClick);
     
-    // Touch events for mobile
-    card.addEventListener('touchstart', startPress);
-    card.addEventListener('touchend', cancelPress);
+    // Touch events (mobile)
+    card.addEventListener('touchstart', (e) => {
+      startPress(e);
+    });
+    card.addEventListener('touchend', (e) => {
+      handleInteraction(e);
+    });
     card.addEventListener('touchcancel', cancelPress);
+  });
+  
+  // Bind like buttons (prevent event bubbling to card)
+  grid.querySelectorAll('.lib-like-btn').forEach(btn => {
+    btn.addEventListener('mousedown', (e) => e.stopPropagation());
+    btn.addEventListener('touchstart', (e) => e.stopPropagation());
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = parseInt(btn.dataset.id);
+      await likeItem(id);
+    });
   });
 }
 
@@ -561,5 +590,39 @@ async function deleteTag(tag, tagListEl) {
     showToast(`已删除标签：${tag}`);
   } catch(e) { 
     dbError('删除标签', e); 
+  }
+}
+
+// ── Like functionality ─────────────────────────────
+async function likeItem(itemId) {
+  if (!itemId) return;
+  
+  const item = items.find(x => x.id === itemId);
+  if (!item) return;
+  
+  setSyncStatus('syncing');
+  try {
+    const newLikes = (item.likes || 0) + 1;
+    
+    const { error } = await supaClient
+      .from('library_items')
+      .update({ likes: newLikes })
+      .eq('id', itemId);
+    
+    if (error) throw error;
+    
+    // Update local state
+    item.likes = newLikes;
+    
+    // Update UI without full refresh
+    const likeCountEl = document.querySelector(`.lib-like-btn[data-id="${itemId}"]`)?.nextElementSibling;
+    if (likeCountEl) {
+      likeCountEl.textContent = newLikes;
+    }
+    
+    setSyncStatus('ok');
+    showToast('👍 已点赞');
+  } catch(e) { 
+    dbError('点赞', e); 
   }
 }
