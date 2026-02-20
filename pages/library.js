@@ -8,6 +8,7 @@ import { showToast, escHtml, confirmDialog } from '../core/ui.js';
 let items = [];           // All library items
 let tags = [];            // All available tags
 let selectedTags = [];    // Currently selected tags for filtering
+let searchKeyword = '';   // Search keyword for content filtering
 let editItemId = null;
 let realtimeCh = null;
 let pageContainer = null; // Store container reference for use in event handlers
@@ -45,10 +46,22 @@ function buildHTML() {
   <!-- Right sidebar filter panel -->
   <div class="lib-panel">
     <div class="lib-panel-hdr" id="lib-panel-toggle">
-      <span>🏷️ 标签筛选</span>
+      <span>🔍 搜索 & 筛选</span>
       <span id="lib-panel-chevron">◀</span>
     </div>
     <div class="lib-panel-body">
+      <!-- Search box -->
+      <div style="margin-bottom:16px">
+        <input 
+          id="lib-search-input" 
+          type="text" 
+          placeholder="搜索指令内容..." 
+          autocomplete="off"
+          style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px"
+        />
+      </div>
+      
+      <!-- Tag filter hint -->
       <div style="font-size:12px;color:#889;margin-bottom:12px;line-height:1.6">
         点击标签进行筛选。选中多个标签时，显示<b>同时包含</b>所有选中标签的指令。
       </div>
@@ -127,6 +140,12 @@ function bindControls(container) {
   container.querySelector('#lib-add-tag-btn').addEventListener('click', () => addNewTag(container));
   container.querySelector('#lib-new-tag').addEventListener('keydown', e => {
     if (e.key === 'Enter') addNewTag(container);
+  });
+
+  // Search input
+  container.querySelector('#lib-search-input').addEventListener('input', e => {
+    searchKeyword = e.target.value.trim();
+    renderGrid(container.querySelector('.lib-layout'));
   });
 
   // Panel toggle
@@ -240,20 +259,34 @@ function renderTagList(tagListEl) {
 function renderGrid(container) {
   const grid = container.querySelector('#lib-grid');
   
-  // Filter items: show items that contain ALL selected tags (intersection)
+  // Step 1: Filter by search keyword (content only, case-insensitive)
   let filtered = items;
+  if (searchKeyword) {
+    const keyword = searchKeyword.toLowerCase();
+    filtered = filtered.filter(item => {
+      return item.content.toLowerCase().includes(keyword);
+    });
+  }
+  
+  // Step 2: Filter by selected tags (intersection)
   if (selectedTags.length > 0) {
-    filtered = items.filter(item => {
+    filtered = filtered.filter(item => {
       return selectedTags.every(tag => item.tags.includes(tag));
     });
   }
   
   if (!filtered.length) {
-    const msg = selectedTags.length > 0 
-      ? '没有同时包含所选标签的文本' 
-      : '暂无内容';
+    let msg = '暂无内容';
+    if (searchKeyword && selectedTags.length > 0) {
+      msg = `没有包含「${escHtml(searchKeyword)}」且同时有所选标签的指令`;
+    } else if (searchKeyword) {
+      msg = `没有包含「${escHtml(searchKeyword)}」的指令`;
+    } else if (selectedTags.length > 0) {
+      msg = '没有同时包含所选标签的指令';
+    }
     grid.innerHTML = `<div class="lib-empty">${msg}</div>`;
     return;
+  }
   }
   
   grid.innerHTML = filtered.map(item => {
