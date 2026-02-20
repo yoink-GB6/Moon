@@ -3,13 +3,31 @@
 
 // ── Toast ──────────────────────────────────────────
 let _toastTimer;
-export function showToast(msg, duration = 2600) {
-  const el = document.getElementById('toast');
-  if (!el) return;
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+let toastCounter = 0;
+
+export function showToast(msg, duration = 2000) {
+  // Create a new toast element for each message (allows stacking)
+  const toast = document.createElement('div');
+  toast.className = 'toast-item show';
+  toast.textContent = msg;
+  toast.style.bottom = `${20 + (toastCounter * 60)}px`;  // Stack vertically
+  
+  document.body.appendChild(toast);
+  toastCounter++;
+  
+  // Remove after duration
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => {
+      document.body.removeChild(toast);
+      toastCounter--;
+      // Reposition remaining toasts
+      const toasts = document.querySelectorAll('.toast-item');
+      toasts.forEach((t, i) => {
+        t.style.bottom = `${20 + (i * 60)}px`;
+      });
+    }, 300);  // Wait for fade-out animation
+  }, duration);
 }
 
 // Make globally accessible (legacy calls from inline onclick)
