@@ -27,19 +27,6 @@ export function unmount() {
 function buildHTML() {
   return `
 <div class="lib-layout">
-  <!-- Sidebar filter panel -->
-  <div class="lib-sidebar">
-    <div class="lib-sidebar-hdr">
-      <span>🏷️ 标签筛选</span>
-    </div>
-    <div class="lib-sidebar-body">
-      <div style="font-size:12px;color:#889;margin-bottom:12px;line-height:1.6">
-        点击标签进行筛选。选中多个标签时，显示<b>同时包含</b>所有选中标签的文本。
-      </div>
-      <div id="lib-tag-list" class="lib-tag-list"></div>
-    </div>
-  </div>
-
   <!-- Main content area -->
   <div class="lib-main">
     <div class="lib-header">
@@ -47,6 +34,23 @@ function buildHTML() {
       <button class="btn bp" id="lib-add-btn" style="display:none">＋ 新建</button>
     </div>
     <div class="lib-grid" id="lib-grid"></div>
+  </div>
+
+  <!-- Floating expand button (shows when panel collapsed) -->
+  <button id="lib-expand" class="expand-btn-float" title="展开筛选">◀</button>
+
+  <!-- Right sidebar filter panel -->
+  <div class="lib-panel">
+    <div class="lib-panel-hdr" id="lib-panel-toggle">
+      <span>🏷️ 标签筛选</span>
+      <span id="lib-panel-chevron">◀</span>
+    </div>
+    <div class="lib-panel-body">
+      <div style="font-size:12px;color:#889;margin-bottom:12px;line-height:1.6">
+        点击标签进行筛选。选中多个标签时，显示<b>同时包含</b>所有选中标签的指令。
+      </div>
+      <div id="lib-tag-list" class="lib-tag-list"></div>
+    </div>
   </div>
 </div>
 
@@ -56,7 +60,7 @@ function buildHTML() {
     <h2 id="lib-modal-title">新建指令</h2>
     
     <label>内容</label>
-    <textarea id="lib-content" rows="8" placeholder="输入文本内容..." style="margin-bottom:12px;font-family:inherit"></textarea>
+    <textarea id="lib-content" rows="8" placeholder="输入指令内容..." style="margin-bottom:12px;font-family:inherit"></textarea>
     
     <label>作者</label>
     <input id="lib-author" type="text" placeholder="作者名字（可选）" autocomplete="off" style="margin-bottom:12px"/>
@@ -96,6 +100,18 @@ function bindControls(container) {
   container.querySelector('#lib-new-tag').addEventListener('keydown', e => {
     if (e.key === 'Enter') addNewTag(container);
   });
+
+  // Panel toggle
+  function toggleLibPanel() {
+    const panel = container.querySelector('.lib-panel');
+    const chevron = container.querySelector('#lib-panel-chevron');
+    const expandBtn = container.querySelector('#lib-expand');
+    const collapsed = panel.classList.toggle('collapsed');
+    chevron.textContent = collapsed ? '▶' : '◀';
+    if (expandBtn) expandBtn.classList.toggle('show', collapsed);
+  }
+  container.querySelector('#lib-panel-toggle')?.addEventListener('click', toggleLibPanel);
+  container.querySelector('#lib-expand')?.addEventListener('click', toggleLibPanel);
 }
 
 async function fetchAll() {
@@ -308,11 +324,12 @@ async function deleteItem(container) {
   const preview = item.content.slice(0, 30) + (item.content.length > 30 ? '...' : '');
   if (!confirmDialog(`确定要删除「${preview}」？`)) return;
   
+  const deletingId = editItemId;  // Save ID before closeModal clears it
   closeModal(container);
   
   setSyncStatus('syncing');
   try {
-    const { error } = await supaClient.from('library_items').delete().eq('id', editItemId);
+    const { error } = await supaClient.from('library_items').delete().eq('id', deletingId);
     if (error) throw error;
     await fetchAll();
     setSyncStatus('ok');
