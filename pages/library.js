@@ -11,6 +11,7 @@ let selectedTags = [];    // Currently selected tags for filtering
 let editItemId = null;
 let realtimeCh = null;
 let pageContainer = null; // Store container reference for use in event handlers
+let likedItems = new Set(); // Track liked items in current session (resets on page refresh)
 
 export async function mount(container) {
   pageContainer = container;  // Save container reference
@@ -260,14 +261,18 @@ function renderGrid(container) {
     const tagsHtml = item.tags.map(tag => `<span class="lib-item-tag">${escHtml(tag)}</span>`).join('');
     const authorHtml = item.author ? `<div class="lib-item-author">by ${escHtml(item.author)}</div>` : '';
     const likes = item.likes || 0;
+    const isLiked = likedItems.has(item.id);
+    const likedClass = isLiked ? 'liked' : '';
+    const likeIcon = isLiked ? '❤️' : '👍';
+    const likeTitle = isLiked ? '取消点赞' : '点赞';
     
     return `<div class="lib-item" data-id="${item.id}">
       <div class="lib-item-content">${escHtml(preview)}</div>
       ${tagsHtml ? `<div class="lib-item-tags">${tagsHtml}</div>` : ''}
       <div class="lib-item-footer">
         ${authorHtml}
-        <div class="lib-item-like" data-id="${item.id}" title="点赞">
-          <span class="lib-like-btn">👍</span>
+        <div class="lib-item-like ${likedClass}" data-id="${item.id}" title="${likeTitle}">
+          <span class="lib-like-btn">${likeIcon}</span>
           <span class="lib-like-count">${likes}</span>
         </div>
       </div>
@@ -662,14 +667,26 @@ async function deleteTag(tag, tagListEl) {
   }
 }
 
-// ── Like functionality ─────────────────────────────
+// ── Like functionality (session-based, toggle support) ─────
 async function likeItem(itemId) {
   if (!itemId) return;
   
   const item = items.find(x => x.id === itemId);
   if (!item) return;
   
-  const newLikes = (item.likes || 0) + 1;
+  const isCurrentlyLiked = likedItems.has(itemId);
+  const isLiking = !isCurrentlyLiked;  // Toggle
+  
+  let newLikes;
+  if (isLiking) {
+    // Like: +1
+    newLikes = (item.likes || 0) + 1;
+    likedItems.add(itemId);
+  } else {
+    // Unlike: -1
+    newLikes = Math.max((item.likes || 0) - 1, 0);  // Don't go below 0
+    likedItems.delete(itemId);
+  }
   
   // Update local state immediately
   item.likes = newLikes;
@@ -678,13 +695,23 @@ async function likeItem(itemId) {
   const likeArea = document.querySelector(`.lib-item-like[data-id="${itemId}"]`);
   if (likeArea) {
     const countEl = likeArea.querySelector('.lib-like-count');
-    if (countEl) {
-      countEl.textContent = newLikes;
+    const iconEl = likeArea.querySelector('.lib-like-btn');
+    
+    if (countEl) countEl.textContent = newLikes;
+    if (iconEl) iconEl.textContent = isLiking ? '❤️' : '👍';
+    
+    // Update class and title
+    if (isLiking) {
+      likeArea.classList.add('liked');
+      likeArea.title = '取消点赞';
+    } else {
+      likeArea.classList.remove('liked');
+      likeArea.title = '点赞';
     }
   }
   
   // Show toast immediately
-  showToast('👍 已点赞');
+  showToast(isLiking ? '👍 已点赞' : '💔 已取消点赞');
   
   // Save to database in background
   setSyncStatus('syncing');
@@ -699,11 +726,29 @@ async function likeItem(itemId) {
     setSyncStatus('ok');
   } catch(e) { 
     // Rollback on error
-    item.likes = newLikes - 1;
+    if (isLiking) {
+      item.likes = newLikes - 1;
+      likedItems.delete(itemId);
+    } else {
+      item.likes = newLikes + 1;
+      likedItems.add(itemId);
+    }
+    
+    // Revert UI
     if (likeArea) {
       const countEl = likeArea.querySelector('.lib-like-count');
+      const iconEl = likeArea.querySelector('.lib-like-btn');
       if (countEl) countEl.textContent = item.likes;
+      if (iconEl) iconEl.textContent = likedItems.has(itemId) ? '❤️' : '👍';
+      if (likedItems.has(itemId)) {
+        likeArea.classList.add('liked');
+        likeArea.title = '取消点赞';
+      } else {
+        likeArea.classList.remove('liked');
+        likeArea.title = '点赞';
+      }
     }
-    dbError('点赞', e);
+    
+    dbError('点赞操作', e);
   }
 }
