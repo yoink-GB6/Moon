@@ -287,10 +287,8 @@ function renderGrid(container) {
     grid.innerHTML = `<div class="lib-empty">${msg}</div>`;
     return;
   }
-  }
   
   grid.innerHTML = filtered.map(item => {
-    const preview = item.content.length > 150 ? item.content.slice(0, 150) + '...' : item.content;
     const tagsHtml = item.tags.map(tag => `<span class="lib-item-tag">${escHtml(tag)}</span>`).join('');
     const authorHtml = item.author ? `<div class="lib-item-author">by ${escHtml(item.author)}</div>` : '';
     const likes = item.likes || 0;
