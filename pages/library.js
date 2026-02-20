@@ -10,8 +10,10 @@ let tags = [];            // All available tags
 let selectedTags = [];    // Currently selected tags for filtering
 let editItemId = null;
 let realtimeCh = null;
+let pageContainer = null; // Store container reference for use in event handlers
 
 export async function mount(container) {
+  pageContainer = container;  // Save container reference
   container.innerHTML = buildHTML();
   bindControls(container);
   onAuthChange(() => updateUI(container));
@@ -205,8 +207,10 @@ function renderGrid(container) {
       const item = items.find(x => x.id === id);
       if (!item) return;
       
+      console.log('[lib-item click] isEditor:', isEditor(), 'item:', item);
+      
       if (isEditor()) {
-        openModal(item, container);
+        openModal(item, pageContainer);  // Use saved container reference
       } else {
         // Copy content to clipboard
         navigator.clipboard.writeText(item.content).then(() => {
