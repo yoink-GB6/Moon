@@ -340,12 +340,14 @@ function renderGrid(container) {
     };
     
     const handleInteraction = (e) => {
-      cancelPress();
-      
-      // Prevent double-trigger (touchend + click on mobile)
+      // Set flag FIRST to prevent any race condition
       if (hasTriggered) {
+        console.log('[lib-item] BLOCKED double-trigger, eventType:', e.type);
         return;
       }
+      hasTriggered = true;  // Set immediately
+      
+      cancelPress();
       
       // If moved, don't trigger any action
       if (hasMoved) {
@@ -359,15 +361,12 @@ function renderGrid(container) {
         return;
       }
       
-      // Mark as triggered to prevent double-execution
-      hasTriggered = true;
-      
       // Short click (and didn't move)
       const id = parseInt(card.dataset.id);
       const item = items.find(x => x.id === id);
       if (!item) return;
       
-      console.log('[lib-item click] isEditor:', isEditor(), 'pressDuration:', pressDuration);
+      console.log('[lib-item] eventType:', e.type, 'hasTriggered:', hasTriggered, 'pressDuration:', pressDuration);
       
       if (isEditor()) {
         openModal(item, pageContainer);
@@ -388,9 +387,15 @@ function renderGrid(container) {
     card.addEventListener('mouseleave', cancelPress);
     
     // Touch events (mobile)
-    card.addEventListener('touchstart', startPress, { passive: true });
-    card.addEventListener('touchmove', checkMovement, { passive: true });
-    card.addEventListener('touchend', handleInteraction);
+    // Don't use passive:true on touchstart/touchend so we can preventDefault
+    card.addEventListener('touchstart', (e) => {
+      startPress(e);
+    });
+    card.addEventListener('touchmove', checkMovement, { passive: true });  // Can be passive
+    card.addEventListener('touchend', (e) => {
+      e.preventDefault();  // Prevent synthetic click event
+      handleInteraction(e);
+    });
     card.addEventListener('touchcancel', cancelPress);
   });
   
