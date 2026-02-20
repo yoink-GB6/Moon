@@ -321,8 +321,9 @@ function renderGrid(container) {
       const deltaX = Math.abs(currentX - startX);
       const deltaY = Math.abs(currentY - startY);
       
-      // If moved more than 10px, consider it a swipe/scroll
-      if (deltaX > 10 || deltaY > 10) {
+      // Only consider vertical scrolling (deltaY) to detect page scroll
+      // Increased threshold to 20px to allow small finger movement
+      if (deltaY > 20) {
         hasMoved = true;
         cancelPress();
       }
@@ -384,15 +385,24 @@ function renderGrid(container) {
   
   // Bind like areas (prevent event bubbling to card)
   grid.querySelectorAll('.lib-item-like').forEach(likeArea => {
-    likeArea.addEventListener('mousedown', (e) => e.stopPropagation());
-    likeArea.addEventListener('touchstart', (e) => e.stopPropagation());
-    likeArea.addEventListener('mousemove', (e) => e.stopPropagation());
-    likeArea.addEventListener('touchmove', (e) => e.stopPropagation());
-    likeArea.addEventListener('click', async (e) => {
+    const handleLike = async (e) => {
       e.stopPropagation();
+      e.preventDefault();
       const id = parseInt(likeArea.dataset.id);
       await likeItem(id);
+    };
+    
+    // Desktop
+    likeArea.addEventListener('mousedown', (e) => e.stopPropagation());
+    likeArea.addEventListener('mousemove', (e) => e.stopPropagation());
+    likeArea.addEventListener('click', handleLike);
+    
+    // Mobile - use touchend instead of click for better response
+    likeArea.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
     });
+    likeArea.addEventListener('touchmove', (e) => e.stopPropagation());
+    likeArea.addEventListener('touchend', handleLike);
   });
 }
 
@@ -643,10 +653,26 @@ async function likeItem(itemId) {
   const item = items.find(x => x.id === itemId);
   if (!item) return;
   
+  const newLikes = (item.likes || 0) + 1;
+  
+  // Update local state immediately
+  item.likes = newLikes;
+  
+  // Update UI immediately
+  const likeArea = document.querySelector(`.lib-item-like[data-id="${itemId}"]`);
+  if (likeArea) {
+    const countEl = likeArea.querySelector('.lib-like-count');
+    if (countEl) {
+      countEl.textContent = newLikes;
+    }
+  }
+  
+  // Show toast immediately
+  showToast('👍 已点赞');
+  
+  // Save to database in background
   setSyncStatus('syncing');
   try {
-    const newLikes = (item.likes || 0) + 1;
-    
     const { error } = await supaClient
       .from('library_items')
       .update({ likes: newLikes })
@@ -654,18 +680,14 @@ async function likeItem(itemId) {
     
     if (error) throw error;
     
-    // Update local state
-    item.likes = newLikes;
-    
-    // Update UI without full refresh
-    const likeCountEl = document.querySelector(`.lib-like-btn[data-id="${itemId}"]`)?.nextElementSibling;
-    if (likeCountEl) {
-      likeCountEl.textContent = newLikes;
-    }
-    
     setSyncStatus('ok');
-    showToast('👍 已点赞');
   } catch(e) { 
-    dbError('点赞', e); 
+    // Rollback on error
+    item.likes = newLikes - 1;
+    if (likeArea) {
+      const countEl = likeArea.querySelector('.lib-like-count');
+      if (countEl) countEl.textContent = item.likes;
+    }
+    dbError('点赞', e);
   }
 }
