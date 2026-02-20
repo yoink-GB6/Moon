@@ -280,10 +280,12 @@ function renderGrid(container) {
     let startX = 0;
     let startY = 0;
     let hasMoved = false;
+    let hasTriggered = false;  // Prevent double-trigger on mobile
     
     const startPress = (e) => {
       pressStart = Date.now();
       hasMoved = false;
+      hasTriggered = false;  // Reset flag
       
       // Record initial position
       if (e.touches) {
@@ -301,6 +303,7 @@ function renderGrid(container) {
           const item = items.find(x => x.id === id);
           if (item && !isEditor()) {
             openPreviewModal(item);
+            hasTriggered = true;  // Mark as triggered
           }
         }
       }, 500);
@@ -339,6 +342,11 @@ function renderGrid(container) {
     const handleInteraction = (e) => {
       cancelPress();
       
+      // Prevent double-trigger (touchend + click on mobile)
+      if (hasTriggered) {
+        return;
+      }
+      
       // If moved, don't trigger any action
       if (hasMoved) {
         return;
@@ -350,6 +358,9 @@ function renderGrid(container) {
         e.preventDefault();
         return;
       }
+      
+      // Mark as triggered to prevent double-execution
+      hasTriggered = true;
       
       // Short click (and didn't move)
       const id = parseInt(card.dataset.id);
