@@ -206,7 +206,7 @@ function renderTagList(tagListEl) {
       });
     }
   });
-}
+
 
   
   tagListEl.innerHTML = tags.map(tag => {
