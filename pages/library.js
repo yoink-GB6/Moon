@@ -16,12 +16,16 @@ let likedItems = new Set(); // Track liked items in current session (resets on p
 
 // Library-specific edit mode (independent from global edit mode)
 let isLibraryEditable = false;
-const LIBRARY_PASSWORD = 'edit123';  // Simple password for library editing
+const LIBRARY_PASSWORD = 'cbyjtcnklm';  // Simple password for library editing
 
 export async function mount(container) {
   pageContainer = container;  // Save container reference
   container.innerHTML = buildHTML();
   bindControls(container);
+  
+  // Listen to global auth changes
+  onAuthChange(() => updateLibraryUI(container));
+  
   updateLibraryUI(container);  // Initialize library-specific edit UI
   await fetchAll();
   subscribeRealtime();
@@ -862,13 +866,26 @@ function updateLibraryUI(container) {
   const unlockBtn = container.querySelector('#lib-unlock-btn');
   const addBtn = container.querySelector('#lib-add-btn');
   
-  if (isLibraryEditable) {
-    unlockBtn.textContent = '🔓 锁定指令编辑';
-    unlockBtn.className = 'btn bp';
+  // Check if editable through EITHER global OR library-specific mode
+  const isEditable = isLibraryEditor();
+  
+  if (isEditable) {
+    if (isEditor()) {
+      // Global edit mode is active
+      unlockBtn.textContent = '🔓 全局编辑中';
+      unlockBtn.className = 'btn bp';
+      unlockBtn.disabled = true;  // Can't lock from here
+    } else {
+      // Library-specific edit mode
+      unlockBtn.textContent = '🔓 锁定指令编辑';
+      unlockBtn.className = 'btn bp';
+      unlockBtn.disabled = false;
+    }
     addBtn.style.display = '';
   } else {
     unlockBtn.textContent = '🔒 解锁指令编辑';
     unlockBtn.className = 'btn bn';
+    unlockBtn.disabled = false;
     addBtn.style.display = 'none';
   }
   
@@ -876,7 +893,7 @@ function updateLibraryUI(container) {
   renderTagList(container.querySelector('#lib-tag-list'));
 }
 
-// Check library edit permission (used throughout the page)
+// Check library edit permission (global OR library-specific)
 function isLibraryEditor() {
-  return isLibraryEditable;
+  return isEditor() || isLibraryEditable;
 }
