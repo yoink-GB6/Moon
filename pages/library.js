@@ -130,7 +130,7 @@ function buildHTML() {
 <div id="lib-password-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:400px" onmousedown="event.stopPropagation()">
     <h2>🔓 解锁指令编辑</h2>
-    <p style="color:#889;font-size:13px;margin-bottom:16px">陈泊禹今天穿内裤了吗：（y/n）</p>
+    <p style="color:#889;font-size:13px;margin-bottom:16px">陈泊禹今天穿内裤了吗？（y/n）</p>
     
     <input 
       id="lib-password-input" 
