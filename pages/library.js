@@ -39,7 +39,7 @@ function buildHTML() {
     <div class="lib-header">
       <h2>📋 指令集</h2>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn bn" id="lib-unlock-btn">🔒 编辑指令</button>
+        <button class="btn bn" id="lib-unlock-btn">🔒 解锁编辑</button>
         <button class="btn bp" id="lib-add-btn" style="display:none">＋ 新建</button>
       </div>
     </div>
