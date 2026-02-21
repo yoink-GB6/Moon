@@ -17,7 +17,7 @@ let likedItems = new Set(); // Track liked items in current session (resets on p
 
 // Library-specific edit mode (independent from global edit mode)
 let isLibraryEditable = false;
-const LIBRARY_PASSWORD = 'y';  // Simple password for library editing
+const LIBRARY_PASSWORD = 'edit123';  // Simple password for library editing
 
 export async function mount(container) {
   pageContainer = container;  // Save container reference
@@ -73,13 +73,20 @@ function buildHTML() {
       </div>
       
       <!-- Author filter -->
-      <div style="margin-bottom:16px">
-        <select 
-          id="lib-author-select"
-          style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;cursor:pointer"
-        >
-          <option value="">全部作者</option>
-        </select>
+      <div style="margin-bottom:16px;position:relative">
+        <input 
+          id="lib-author-input"
+          type="text"
+          placeholder="输入作者名筛选..."
+          autocomplete="off"
+          style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px"
+        />
+        <div id="lib-author-suggestions" class="lib-author-suggestions"></div>
+        <button 
+          id="lib-author-clear" 
+          style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#889;cursor:pointer;font-size:16px;padding:4px;display:none"
+          title="清除作者筛选"
+        >✕</button>
       </div>
       
       <!-- Tag filter hint -->
@@ -141,7 +148,7 @@ function buildHTML() {
 <div id="lib-password-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:400px" onmousedown="event.stopPropagation()">
     <h2>🔓 解锁指令编辑</h2>
-    <p style="color:#889;font-size:13px;margin-bottom:16px">裴公主今天发骚了吗？(y/n)</p>
+    <p style="color:#889;font-size:13px;margin-bottom:16px">输入密码以解锁指令编辑功能</p>
     
     <input 
       id="lib-password-input" 
@@ -193,11 +200,82 @@ function bindControls(container) {
     renderGrid(container.querySelector('.lib-layout'));
   });
 
-  // Author select
-  container.querySelector('#lib-author-select').addEventListener('change', e => {
-    selectedAuthor = e.target.value;
+  // Author input with autocomplete
+  const authorInput = container.querySelector('#lib-author-input');
+  const authorSuggestions = container.querySelector('#lib-author-suggestions');
+  const authorClearBtn = container.querySelector('#lib-author-clear');
+  
+  let allAuthors = [];  // Store all authors for filtering
+  
+  authorInput.addEventListener('input', e => {
+    const inputValue = e.target.value.trim();
+    
+    if (!inputValue) {
+      // Clear filter if input is empty
+      selectedAuthor = '';
+      authorSuggestions.innerHTML = '';
+      authorSuggestions.style.display = 'none';
+      authorClearBtn.style.display = 'none';
+      renderGrid(container.querySelector('.lib-layout'));
+      return;
+    }
+    
+    // Filter authors by input (case-insensitive substring match)
+    const matches = allAuthors.filter(author => 
+      author.toLowerCase().includes(inputValue.toLowerCase())
+    );
+    
+    if (matches.length > 0) {
+      // Show suggestions
+      authorSuggestions.innerHTML = matches.map(author => {
+        const count = items.filter(item => item.author === author).length;
+        return `<div class="lib-author-suggestion" data-author="${escHtml(author)}">
+          ${escHtml(author)} <span style="color:#889">(${count})</span>
+        </div>`;
+      }).join('');
+      authorSuggestions.style.display = 'block';
+    } else {
+      authorSuggestions.innerHTML = '<div style="padding:8px;color:#889;font-size:12px">无匹配作者</div>';
+      authorSuggestions.style.display = 'block';
+    }
+  });
+  
+  // Click on suggestion
+  container.addEventListener('click', e => {
+    const suggestion = e.target.closest('.lib-author-suggestion');
+    if (suggestion) {
+      const author = suggestion.dataset.author;
+      selectedAuthor = author;
+      authorInput.value = author;
+      authorSuggestions.innerHTML = '';
+      authorSuggestions.style.display = 'none';
+      authorClearBtn.style.display = '';
+      renderGrid(container.querySelector('.lib-layout'));
+    }
+  });
+  
+  // Clear button
+  authorClearBtn.addEventListener('click', () => {
+    selectedAuthor = '';
+    authorInput.value = '';
+    authorSuggestions.innerHTML = '';
+    authorSuggestions.style.display = 'none';
+    authorClearBtn.style.display = 'none';
+    authorInput.focus();
     renderGrid(container.querySelector('.lib-layout'));
   });
+  
+  // Hide suggestions when clicking outside
+  document.addEventListener('click', e => {
+    if (!container.contains(e.target)) {
+      authorSuggestions.style.display = 'none';
+    }
+  });
+  
+  // Store allAuthors reference for use in input handler
+  container._setAuthors = (authors) => {
+    allAuthors = authors;
+  };
 
   // Unlock button
   container.querySelector('#lib-unlock-btn').addEventListener('click', () => {
@@ -265,27 +343,18 @@ async function fetchAll() {
     });
     const authors = Array.from(authorSet).sort();
     
-    renderAuthorSelect(authors);
+    updateAuthorList(authors);
     renderTagList(document.querySelector('#lib-tag-list'));
     renderGrid(document.querySelector('.lib-layout'));
     setSyncStatus('ok');
   } catch(e) { dbError('加载指令集', e); }
 }
 
-function renderAuthorSelect(authors) {
-  const selectEl = document.querySelector('#lib-author-select');
-  if (!selectEl) return;
-  
-  // Keep "全部作者" option and add authors
-  const options = ['<option value="">全部作者</option>'];
-  
-  authors.forEach(author => {
-    const selected = selectedAuthor === author ? 'selected' : '';
-    const count = items.filter(item => item.author === author).length;
-    options.push(`<option value="${escHtml(author)}" ${selected}>${escHtml(author)} (${count})</option>`);
-  });
-  
-  selectEl.innerHTML = options.join('');
+function updateAuthorList(authors) {
+  // Store authors list for autocomplete filtering
+  if (pageContainer && pageContainer._setAuthors) {
+    pageContainer._setAuthors(authors);
+  }
 }
 
 function renderTagList(tagListEl) {
