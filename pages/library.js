@@ -575,12 +575,13 @@ async function saveItem(container) {
     tags_json: JSON.stringify(selectedItemTags)
   };
   
+  const savingId = editItemId;  // Save ID before closeModal clears it
   closeModal(container);
   
   setSyncStatus('syncing');
   try {
-    if (editItemId) {
-      const { error } = await supaClient.from('library_items').update(row).eq('id', editItemId);
+    if (savingId) {
+      const { error } = await supaClient.from('library_items').update(row).eq('id', savingId);
       if (error) throw error;
       showToast('已更新');
     } else {
