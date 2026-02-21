@@ -16,7 +16,7 @@ let likedItems = new Set(); // Track liked items in current session (resets on p
 
 // Library-specific edit mode (independent from global edit mode)
 let isLibraryEditable = false;
-const LIBRARY_PASSWORD = 'cbyjtcnklm';  // Simple password for library editing
+const LIBRARY_PASSWORD = 'edit123';  // Simple password for library editing
 
 export async function mount(container) {
   pageContainer = container;  // Save container reference
@@ -125,8 +125,8 @@ function buildHTML() {
 <!-- Password unlock modal (library-specific) -->
 <div id="lib-password-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:400px" onmousedown="event.stopPropagation()">
-    <h2>🔓 解锁编辑模式</h2>
-    <p style="color:#889;font-size:13px;margin-bottom:16px">输入密码以解锁指令集的编辑功能</p>
+    <h2>🔓 解锁指令编辑</h2>
+    <p style="color:#889;font-size:13px;margin-bottom:16px">输入密码以解锁指令编辑功能</p>
     
     <input 
       id="lib-password-input" 
@@ -184,7 +184,7 @@ function bindControls(container) {
       // Lock
       isLibraryEditable = false;
       updateLibraryUI(container);
-      showToast('🔒 已锁定编辑');
+      showToast('🔒 已锁定指令编辑');
     } else {
       // Show password modal
       openPasswordModal(container);
@@ -850,7 +850,7 @@ function submitPassword(container) {
     isLibraryEditable = true;
     updateLibraryUI(container);
     closePasswordModal(container);
-    showToast('✅ 编辑模式已解锁');
+    showToast('✅ 已解锁指令编辑');
   } else {
     container.querySelector('#lib-password-error').style.display = 'block';
     container.querySelector('#lib-password-input').value = '';
@@ -863,11 +863,11 @@ function updateLibraryUI(container) {
   const addBtn = container.querySelector('#lib-add-btn');
   
   if (isLibraryEditable) {
-    unlockBtn.textContent = '🔓 锁定编辑';
+    unlockBtn.textContent = '🔓 锁定指令编辑';
     unlockBtn.className = 'btn bp';
     addBtn.style.display = '';
   } else {
-    unlockBtn.textContent = '🔒 解锁编辑';
+    unlockBtn.textContent = '🔒 解锁指令编辑';
     unlockBtn.className = 'btn bn';
     addBtn.style.display = 'none';
   }
