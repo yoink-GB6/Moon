@@ -16,7 +16,7 @@ let likedItems = new Set(); // Track liked items in current session (resets on p
 
 // Library-specific edit mode (independent from global edit mode)
 let isLibraryEditable = false;
-const LIBRARY_PASSWORD = 'n';  // Simple password for library editing
+const LIBRARY_PASSWORD = 'y';  // Simple password for library editing
 
 export async function mount(container) {
   pageContainer = container;  // Save container reference
@@ -130,7 +130,7 @@ function buildHTML() {
 <div id="lib-password-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:400px" onmousedown="event.stopPropagation()">
     <h2>🔓 解锁指令编辑</h2>
-    <p style="color:#889;font-size:13px;margin-bottom:16px">陈泊禹今天穿内裤了吗？（y/n）</p>
+    <p style="color:#889;font-size:13px;margin-bottom:16px">裴公主今天发骚了吗？（y/n）</p>
     
     <input 
       id="lib-password-input" 
