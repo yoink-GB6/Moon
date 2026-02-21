@@ -9,6 +9,7 @@ let items = [];           // All library items
 let tags = [];            // All available tags
 let selectedTags = [];    // Currently selected tags for filtering
 let searchKeyword = '';   // Search keyword for content filtering
+let selectedAuthor = '';  // Selected author for exact match filtering
 let editItemId = null;
 let realtimeCh = null;
 let pageContainer = null; // Store container reference for use in event handlers
@@ -16,7 +17,7 @@ let likedItems = new Set(); // Track liked items in current session (resets on p
 
 // Library-specific edit mode (independent from global edit mode)
 let isLibraryEditable = false;
-const LIBRARY_PASSWORD = 'y';  // Simple password for library editing
+const LIBRARY_PASSWORD = 'edit123';  // Simple password for library editing
 
 export async function mount(container) {
   pageContainer = container;  // Save container reference
@@ -69,6 +70,16 @@ function buildHTML() {
           autocomplete="off"
           style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px"
         />
+      </div>
+      
+      <!-- Author filter -->
+      <div style="margin-bottom:16px">
+        <select 
+          id="lib-author-select"
+          style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;cursor:pointer"
+        >
+          <option value="">全部作者</option>
+        </select>
       </div>
       
       <!-- Tag filter hint -->
@@ -130,7 +141,7 @@ function buildHTML() {
 <div id="lib-password-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:400px" onmousedown="event.stopPropagation()">
     <h2>🔓 解锁指令编辑</h2>
-    <p style="color:#889;font-size:13px;margin-bottom:16px">裴公主今天发骚了吗？（y/n）</p>
+    <p style="color:#889;font-size:13px;margin-bottom:16px">输入密码以解锁指令编辑功能</p>
     
     <input 
       id="lib-password-input" 
@@ -179,6 +190,12 @@ function bindControls(container) {
   // Search input
   container.querySelector('#lib-search-input').addEventListener('input', e => {
     searchKeyword = e.target.value.trim();
+    renderGrid(container.querySelector('.lib-layout'));
+  });
+
+  // Author select
+  container.querySelector('#lib-author-select').addEventListener('change', e => {
+    selectedAuthor = e.target.value;
     renderGrid(container.querySelector('.lib-layout'));
   });
 
@@ -239,10 +256,36 @@ async function fetchAll() {
     items.forEach(item => item.tags.forEach(tag => tagSet.add(tag)));
     tags = Array.from(tagSet).sort();
     
+    // Extract all unique authors (non-empty only)
+    const authorSet = new Set();
+    items.forEach(item => {
+      if (item.author && item.author.trim()) {
+        authorSet.add(item.author.trim());
+      }
+    });
+    const authors = Array.from(authorSet).sort();
+    
+    renderAuthorSelect(authors);
     renderTagList(document.querySelector('#lib-tag-list'));
     renderGrid(document.querySelector('.lib-layout'));
     setSyncStatus('ok');
   } catch(e) { dbError('加载指令集', e); }
+}
+
+function renderAuthorSelect(authors) {
+  const selectEl = document.querySelector('#lib-author-select');
+  if (!selectEl) return;
+  
+  // Keep "全部作者" option and add authors
+  const options = ['<option value="">全部作者</option>'];
+  
+  authors.forEach(author => {
+    const selected = selectedAuthor === author ? 'selected' : '';
+    const count = items.filter(item => item.author === author).length;
+    options.push(`<option value="${escHtml(author)}" ${selected}>${escHtml(author)} (${count})</option>`);
+  });
+  
+  selectEl.innerHTML = options.join('');
 }
 
 function renderTagList(tagListEl) {
@@ -326,7 +369,14 @@ function renderGrid(container) {
     });
   }
   
-  // Step 2: Filter by selected tags (intersection)
+  // Step 2: Filter by author (exact match)
+  if (selectedAuthor) {
+    filtered = filtered.filter(item => {
+      return item.author === selectedAuthor;
+    });
+  }
+  
+  // Step 3: Filter by selected tags (intersection)
   if (selectedTags.length > 0) {
     filtered = filtered.filter(item => {
       return selectedTags.every(tag => item.tags.includes(tag));
@@ -335,13 +385,17 @@ function renderGrid(container) {
   
   if (!filtered.length) {
     let msg = '暂无内容';
-    if (searchKeyword && selectedTags.length > 0) {
-      msg = `没有包含「${escHtml(searchKeyword)}」且同时有所选标签的指令`;
-    } else if (searchKeyword) {
-      msg = `没有包含「${escHtml(searchKeyword)}」的指令`;
-    } else if (selectedTags.length > 0) {
-      msg = '没有同时包含所选标签的指令';
+    
+    // Build filter description
+    const filters = [];
+    if (searchKeyword) filters.push(`包含「${escHtml(searchKeyword)}」`);
+    if (selectedAuthor) filters.push(`作者为「${escHtml(selectedAuthor)}」`);
+    if (selectedTags.length > 0) filters.push(`同时有所选标签`);
+    
+    if (filters.length > 0) {
+      msg = `没有${filters.join('且')}的指令`;
     }
+    
     grid.innerHTML = `<div class="lib-empty">${msg}</div>`;
     return;
   }
