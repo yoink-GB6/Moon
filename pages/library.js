@@ -64,15 +64,6 @@ function buildHTML() {
       <span id="lib-panel-chevron">◀</span>
     </div>
     <div class="lib-panel-body">
-      <!-- Sort options -->
-      <div style="margin-bottom:16px">
-        <div style="font-size:12px;color:#889;margin-bottom:8px">排序方式</div>
-        <div style="display:flex;gap:8px">
-          <button class="lib-sort-btn active" data-sort="likes">👍 热度</button>
-          <button class="lib-sort-btn" data-sort="updated">🕒 时间</button>
-        </div>
-      </div>
-      
       <!-- Search box -->
       <div style="margin-bottom:16px">
         <input 
@@ -321,23 +312,6 @@ function bindControls(container) {
   });
 
   // Sort buttons
-  container.querySelectorAll('.lib-sort-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const sortMethod = btn.dataset.sort;
-      if (sortMethod === sortBy) return; // Already selected
-      
-      sortBy = sortMethod;
-      
-      // Update button states
-      container.querySelectorAll('.lib-sort-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      
-      // Re-sort and render
-      sortItems();
-      renderGrid(container.querySelector('.lib-layout'));
-    });
-  });
-
   // Panel toggle
   function toggleLibPanel() {
     const panel = container.querySelector('.lib-panel');
