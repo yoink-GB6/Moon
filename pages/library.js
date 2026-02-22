@@ -750,7 +750,7 @@ async function saveItem(container) {
   
   const row = {
     content,
-    author: author || null,
+    author: author || 'unknown',
     tags_json: JSON.stringify(selectedItemTags)
   };
   
