@@ -10,6 +10,7 @@ let tags = [];            // All available tags
 let selectedTags = [];    // Currently selected tags for filtering
 let searchKeyword = '';   // Search keyword for content filtering
 let selectedAuthor = '';  // Selected author for exact match filtering
+let sortBy = 'likes';         // Sorting method: 'likes' or 'created'
 let editItemId = null;
 let realtimeCh = null;
 let pageContainer = null; // Store container reference for use in event handlers
@@ -27,7 +28,8 @@ export async function mount(container) {
   // Listen to global auth changes
   onAuthChange(() => updateLibraryUI(container));
   
-  updateLibraryUI(container);  // Initialize library-specific edit UI
+  updateSortButton(container);  // Initialize sort button
+  updateLibraryUI(container);   // Initialize library-specific edit UI
   await fetchAll();
   subscribeRealtime();
 }
@@ -44,6 +46,7 @@ function buildHTML() {
     <div class="lib-header">
       <h2>📋 指令集</h2>
       <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn bn" id="lib-sort-btn" title="切换排序方式">👍 点赞排序</button>
         <button class="btn bn" id="lib-unlock-btn">🔒 解锁指令编辑</button>
         <button class="btn bp" id="lib-add-btn" style="display:none">＋ 新建</button>
       </div>
@@ -61,6 +64,15 @@ function buildHTML() {
       <span id="lib-panel-chevron">◀</span>
     </div>
     <div class="lib-panel-body">
+      <!-- Sort options -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;color:#889;margin-bottom:8px">排序方式</div>
+        <div style="display:flex;gap:8px">
+          <button class="lib-sort-btn active" data-sort="likes">👍 热度</button>
+          <button class="lib-sort-btn" data-sort="updated">🕒 时间</button>
+        </div>
+      </div>
+      
       <!-- Search box -->
       <div style="margin-bottom:16px">
         <input 
@@ -277,6 +289,13 @@ function bindControls(container) {
     allAuthors = authors;
   };
 
+  // Sort button
+  container.querySelector('#lib-sort-btn').addEventListener('click', () => {
+    sortBy = sortBy === 'likes' ? 'created' : 'likes';
+    updateSortButton(container);
+    renderGrid(container.querySelector('.lib-layout'));
+  });
+
   // Unlock button
   container.querySelector('#lib-unlock-btn').addEventListener('click', () => {
     if (isLibraryEditable) {
@@ -301,6 +320,24 @@ function bindControls(container) {
     if (e.target === container.querySelector('#lib-password-modal')) closePasswordModal(container);
   });
 
+  // Sort buttons
+  container.querySelectorAll('.lib-sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sortMethod = btn.dataset.sort;
+      if (sortMethod === sortBy) return; // Already selected
+      
+      sortBy = sortMethod;
+      
+      // Update button states
+      container.querySelectorAll('.lib-sort-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // Re-sort and render
+      sortItems();
+      renderGrid(container.querySelector('.lib-layout'));
+    });
+  });
+
   // Panel toggle
   function toggleLibPanel() {
     const panel = container.querySelector('.lib-panel');
@@ -317,7 +354,7 @@ function bindControls(container) {
 async function fetchAll() {
   setSyncStatus('syncing');
   try {
-    const { data, error } = await supaClient.from('library_items').select('*').order('likes', {ascending: false}).order('created_at', {ascending: false});
+    const { data, error } = await supaClient.from('library_items').select('*');
     if (error) throw error;
     
     items = (data || []).map(r => ({
@@ -326,8 +363,12 @@ async function fetchAll() {
       author: r.author || '',
       tags: r.tags_json ? JSON.parse(r.tags_json) : [],
       likes: r.likes || 0,
-      createdAt: r.created_at
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
     }));
+    
+    // Sort items based on current sortBy method
+    sortItems();
     
     // Extract all unique tags
     const tagSet = new Set();
@@ -348,6 +389,23 @@ async function fetchAll() {
     renderGrid(document.querySelector('.lib-layout'));
     setSyncStatus('ok');
   } catch(e) { dbError('加载指令集', e); }
+}
+
+function sortItems() {
+  if (sortBy === 'likes') {
+    // Sort by likes descending, then by created_at descending
+    items.sort((a, b) => {
+      if (b.likes !== a.likes) {
+        return b.likes - a.likes;
+      }
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+  } else if (sortBy === 'created') {
+    // Sort by created_at descending (newest first)
+    items.sort((a, b) => {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+  }
 }
 
 function updateAuthorList(authors) {
@@ -467,6 +525,20 @@ function renderGrid(container) {
     
     grid.innerHTML = `<div class="lib-empty">${msg}</div>`;
     return;
+  }
+  
+  // Step 4: Sort filtered items
+  if (sortBy === 'likes') {
+    filtered.sort((a, b) => {
+      if (b.likes !== a.likes) {
+        return b.likes - a.likes;
+      }
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+  } else if (sortBy === 'created') {
+    filtered.sort((a, b) => {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
   }
   
   grid.innerHTML = filtered.map(item => {
@@ -982,6 +1054,19 @@ function submitPassword(container) {
     container.querySelector('#lib-password-error').style.display = 'block';
     container.querySelector('#lib-password-input').value = '';
     container.querySelector('#lib-password-input').focus();
+  }
+}
+
+function updateSortButton(container) {
+  const sortBtn = container.querySelector('#lib-sort-btn');
+  if (!sortBtn) return;
+  
+  if (sortBy === 'likes') {
+    sortBtn.textContent = '👍 点赞排序';
+    sortBtn.title = '当前：按点赞数排序，点击切换为时间排序';
+  } else {
+    sortBtn.textContent = '🕐 时间排序';
+    sortBtn.title = '当前：按创建时间排序，点击切换为点赞排序';
   }
 }
 
