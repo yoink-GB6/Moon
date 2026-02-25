@@ -139,7 +139,7 @@ function buildHTML() {
 
     <label style="margin-top:12px;display:flex;align-items:center;gap:8px;cursor:pointer">
       <input type="checkbox" id="lib-private-checkbox" style="cursor:pointer"/>
-      <span>🔒 设为隐私指令（仅输入个人密码后可见）</span>
+      <span>🔒 设为隐私指令（仅输入密码后可见）</span>
     </label>
     
     <div id="lib-privacy-key-group" style="margin-top:8px;display:none">
@@ -147,7 +147,7 @@ function buildHTML() {
       <input 
         id="lib-privacy-key" 
         type="text" 
-        placeholder="设置个人密码" 
+        placeholder="设置解锁密码（支持不同密码）" 
         autocomplete="off"
         style="margin-bottom:8px"
       />
@@ -898,6 +898,8 @@ async function saveItem(container) {
   const selectedItemTags = Array.from(container.querySelectorAll('#lib-tag-picker input[type="checkbox"]:checked'))
     .map(cb => cb.value);
   
+  const savingId = editItemId;  // Save ID before any async operations
+  
   // Privacy settings
   const isPrivate = container.querySelector('#lib-private-checkbox').checked;
   let privacyKey = container.querySelector('#lib-privacy-key').value.trim();
@@ -924,7 +926,6 @@ async function saveItem(container) {
     return;
   }
   
-  const savingId = editItemId;
   closeModal(container);
   
   setSyncStatus('syncing');
@@ -950,7 +951,9 @@ async function saveItem(container) {
         row = {
           content,
           author: author || 'unknown',
-          tags_json: JSON.stringify(selectedItemTags)
+          tags_json: JSON.stringify(selectedItemTags),
+          privacy_level: 'public',
+          privacy_key: null
         };
       }
     } else {
@@ -958,14 +961,10 @@ async function saveItem(container) {
       row = {
         content,
         author: author || 'unknown',
-        tags_json: JSON.stringify(selectedItemTags)
+        tags_json: JSON.stringify(selectedItemTags),
+        privacy_level: 'public',
+        privacy_key: null
       };
-      
-      // Only add privacy fields if they exist in database
-      if (items.length > 0 && 'privacyLevel' in items[0]) {
-        row.privacy_level = 'public';
-        row.privacy_key = null;
-      }
     }
     
     if (savingId) {
