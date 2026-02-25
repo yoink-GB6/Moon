@@ -382,19 +382,30 @@ async function fetchAll() {
   setSyncStatus('syncing');
   try {
     const { data, error } = await supaClient.from('library_items').select('*');
-    if (error) throw error;
+    if (error) {
+      console.error('Database query error:', error);
+      throw error;
+    }
     
-    items = (data || []).map(r => ({
-      id: r.id,
-      content: r.content || '',
-      author: r.author || '',
-      tags: r.tags_json ? JSON.parse(r.tags_json) : [],
-      likes: r.likes || 0,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
-      privacyLevel: r.privacy_level || 'public',
-      privacyKey: r.privacy_key || null
-    }));
+    console.log('Fetched items:', data?.length || 0);
+    
+    items = (data || []).map(r => {
+      // Backward compatible: handle missing privacy fields
+      const privacyLevel = r.privacy_level !== undefined ? r.privacy_level : 'public';
+      const privacyKey = r.privacy_key !== undefined ? r.privacy_key : null;
+      
+      return {
+        id: r.id,
+        content: r.content || '',
+        author: r.author || '',
+        tags: r.tags_json ? JSON.parse(r.tags_json) : [],
+        likes: r.likes || 0,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+        privacyLevel: privacyLevel,
+        privacyKey: privacyKey
+      };
+    });
     
     // Sort items based on current sortBy method
     sortItems();
@@ -518,7 +529,8 @@ function renderGrid(container) {
   
   // Step 0: Filter by privacy (only show public + unlocked private items)
   let filtered = items.filter(item => {
-    if (item.privacyLevel === 'public') return true;
+    // Treat undefined/null as public (for backward compatibility)
+    if (!item.privacyLevel || item.privacyLevel === 'public') return true;
     if (item.privacyLevel === 'private') {
       // Check if any unlocked key matches this item
       return item.decryptedContent !== undefined;
@@ -919,25 +931,39 @@ async function saveItem(container) {
     
     if (isPrivate) {
       // Encrypt content and hash password for private items
-      const encryptedContent = await encryptContent(content, privacyKey);
-      const hashedKey = await hashPassword(privacyKey);
-      
-      row = {
-        content: encryptedContent,
-        author: author || 'unknown',
-        tags_json: JSON.stringify(selectedItemTags),
-        privacy_level: 'private',
-        privacy_key: hashedKey
-      };
+      try {
+        const encryptedContent = await encryptContent(content, privacyKey);
+        const hashedKey = await hashPassword(privacyKey);
+        
+        row = {
+          content: encryptedContent,
+          author: author || 'unknown',
+          tags_json: JSON.stringify(selectedItemTags),
+          privacy_level: 'private',
+          privacy_key: hashedKey
+        };
+      } catch (encryptErr) {
+        console.error('Encryption failed, falling back to public:', encryptErr);
+        showToast('加密失败，已保存为公开指令');
+        row = {
+          content,
+          author: author || 'unknown',
+          tags_json: JSON.stringify(selectedItemTags)
+        };
+      }
     } else {
       // Public items: store as-is
       row = {
         content,
         author: author || 'unknown',
-        tags_json: JSON.stringify(selectedItemTags),
-        privacy_level: 'public',
-        privacy_key: null
+        tags_json: JSON.stringify(selectedItemTags)
       };
+      
+      // Only add privacy fields if they exist in database
+      if (items.length > 0 && 'privacyLevel' in items[0]) {
+        row.privacy_level = 'public';
+        row.privacy_key = null;
+      }
     }
     
     if (savingId) {
