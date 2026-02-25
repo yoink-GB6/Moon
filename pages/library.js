@@ -11,10 +11,13 @@ let selectedTags = [];    // Currently selected tags for filtering
 let searchKeyword = '';   // Search keyword for content filtering
 let selectedAuthor = '';  // Selected author for exact match filtering
 let sortBy = 'likes';         // Sorting method: 'likes' or 'created'
+let isPrivacyUnlocked = false;  // Privacy mode unlock state
+const PRIVACY_PASSWORD = 'private123';  // Privacy password
 let editItemId = null;
 let realtimeCh = null;
 let pageContainer = null; // Store container reference for use in event handlers
 let likedItems = new Set(); // Track liked items in current session (resets on page refresh)
+let unlockedKeys = new Set(); // Track unlocked privacy keys (resets on page refresh)
 
 // Library-specific edit mode (independent from global edit mode)
 let isLibraryEditable = false;
@@ -28,8 +31,9 @@ export async function mount(container) {
   // Listen to global auth changes
   onAuthChange(() => updateLibraryUI(container));
   
-  updateSortButton(container);  // Initialize sort button
-  updateLibraryUI(container);   // Initialize library-specific edit UI
+  updateSortButton(container);   // Initialize sort button
+  updatePrivacyButton(container); // Initialize privacy button
+  updateLibraryUI(container);    // Initialize library-specific edit UI
   await fetchAll();
   subscribeRealtime();
 }
@@ -47,6 +51,7 @@ function buildHTML() {
       <h2>📋 指令集</h2>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn bn" id="lib-sort-btn" title="切换排序方式">👍 点赞排序</button>
+        <button class="btn bn" id="lib-privacy-btn" title="解锁隐私指令">🔒 隐私模式</button>
         <button class="btn bn" id="lib-unlock-btn">🔒 解锁指令编辑</button>
         <button class="btn bp" id="lib-add-btn" style="display:none">＋ 新建</button>
       </div>
@@ -64,6 +69,22 @@ function buildHTML() {
       <span id="lib-panel-chevron">◀</span>
     </div>
     <div class="lib-panel-body">
+      <!-- Privacy unlock -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;color:#889;margin-bottom:8px">🔒 隐私内容解锁</div>
+        <div style="display:flex;gap:8px">
+          <input 
+            id="lib-privacy-input"
+            type="password"
+            placeholder="输入密码解锁..."
+            autocomplete="off"
+            style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px"
+          />
+          <button class="btn bp" id="lib-privacy-unlock" style="padding:8px 16px">解锁</button>
+        </div>
+        <div id="lib-unlocked-keys" style="margin-top:8px;font-size:12px;color:#889"></div>
+      </div>
+      
       <!-- Search box -->
       <div style="margin-bottom:16px">
         <input 
@@ -117,6 +138,25 @@ function buildHTML() {
     <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:12px">
       <input id="lib-new-tag" type="text" placeholder="新增标签" autocomplete="off" style="flex:1"/>
       <button class="btn bn" id="lib-add-tag-btn">添加</button>
+    </div>
+
+    <label style="margin-top:12px;display:flex;align-items:center;gap:8px;cursor:pointer">
+      <input type="checkbox" id="lib-private-checkbox" style="cursor:pointer"/>
+      <span>🔒 设为隐私指令（仅输入密码后可见）</span>
+    </label>
+    
+    <div id="lib-privacy-key-group" style="margin-top:8px;display:none">
+      <label>隐私密码</label>
+      <input 
+        id="lib-privacy-key" 
+        type="text" 
+        placeholder="设置解锁密码（支持不同密码）" 
+        autocomplete="off"
+        style="margin-bottom:8px"
+      />
+      <div style="font-size:12px;color:#889">
+        提示：可以为不同的隐私指令设置不同的密码，只有知道密码的人才能看到
+      </div>
     </div>
 
     <div class="mbtns" style="justify-content:flex-end;margin-top:12px">
@@ -195,6 +235,24 @@ function bindControls(container) {
   container.querySelector('#lib-add-tag-btn').addEventListener('click', () => addNewTag(container));
   container.querySelector('#lib-new-tag').addEventListener('keydown', e => {
     if (e.key === 'Enter') addNewTag(container);
+  });
+  
+  // Privacy checkbox toggle
+  container.querySelector('#lib-private-checkbox').addEventListener('change', e => {
+    const keyGroup = container.querySelector('#lib-privacy-key-group');
+    keyGroup.style.display = e.target.checked ? '' : 'none';
+    if (e.target.checked) {
+      setTimeout(() => container.querySelector('#lib-privacy-key').focus(), 100);
+    }
+  });
+
+  // Privacy unlock
+  const privacyInput = container.querySelector('#lib-privacy-input');
+  const privacyUnlockBtn = container.querySelector('#lib-privacy-unlock');
+  
+  privacyUnlockBtn.addEventListener('click', () => unlockPrivateContent(container));
+  privacyInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') unlockPrivateContent(container);
   });
 
   // Search input
@@ -287,6 +345,31 @@ function bindControls(container) {
     renderGrid(container.querySelector('.lib-layout'));
   });
 
+  // Privacy unlock button
+  container.querySelector('#lib-privacy-btn').addEventListener('click', () => {
+    if (isPrivacyUnlocked) {
+      // Lock privacy mode
+      isPrivacyUnlocked = false;
+      updatePrivacyButton(container);
+      renderGrid(container.querySelector('.lib-layout'));
+      showToast('🔒 已锁定隐私模式');
+    } else {
+      // Show privacy password modal
+      openPrivacyPasswordModal(container);
+    }
+  });
+
+  // Privacy password modal
+  container.querySelector('#lib-privacy-password-cancel').addEventListener('click', () => closePrivacyPasswordModal(container));
+  container.querySelector('#lib-privacy-password-submit').addEventListener('click', () => submitPrivacyPassword(container));
+  container.querySelector('#lib-privacy-password-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitPrivacyPassword(container);
+    if (e.key === 'Escape') closePrivacyPasswordModal(container);
+  });
+  container.querySelector('#lib-privacy-password-modal').addEventListener('mousedown', e => {
+    if (e.target === container.querySelector('#lib-privacy-password-modal')) closePrivacyPasswordModal(container);
+  });
+
   // Unlock button
   container.querySelector('#lib-unlock-btn').addEventListener('click', () => {
     if (isLibraryEditable) {
@@ -338,7 +421,9 @@ async function fetchAll() {
       tags: r.tags_json ? JSON.parse(r.tags_json) : [],
       likes: r.likes || 0,
       createdAt: r.created_at,
-      updatedAt: r.updated_at
+      updatedAt: r.updated_at,
+      privacyLevel: r.privacy_level || 'public',
+      privacyKey: r.privacy_key || null
     }));
     
     // Sort items based on current sortBy method
@@ -461,8 +546,16 @@ function renderTagList(tagListEl) {
 function renderGrid(container) {
   const grid = container.querySelector('#lib-grid');
   
+  // Step 0: Filter by privacy (only show public + unlocked private items)
+  let filtered = items.filter(item => {
+    if (item.privacyLevel === 'public') return true;
+    if (item.privacyLevel === 'private' && item.privacyKey) {
+      return unlockedKeys.has(item.privacyKey);
+    }
+    return false;
+  });
+  
   // Step 1: Filter by search keyword (content only, case-insensitive)
-  let filtered = items;
   if (searchKeyword) {
     const keyword = searchKeyword.toLowerCase();
     filtered = filtered.filter(item => {
@@ -694,6 +787,12 @@ function openModal(item, container) {
   container.querySelector('#lib-author').value = item ? item.author : '';
   container.querySelector('#lib-new-tag').value = '';
   
+  // Privacy settings
+  const isPrivate = item ? item.privacyLevel === 'private' : false;
+  container.querySelector('#lib-private-checkbox').checked = isPrivate;
+  container.querySelector('#lib-privacy-key').value = item && item.privacyKey ? item.privacyKey : '';
+  container.querySelector('#lib-privacy-key-group').style.display = isPrivate ? '' : 'none';
+  
   renderTagPicker(container, item ? item.tags : []);
   
   container.querySelector('#lib-modal-delete').style.display = item ? '' : 'none';
@@ -794,10 +893,23 @@ async function saveItem(container) {
   const selectedItemTags = Array.from(container.querySelectorAll('#lib-tag-picker input[type="checkbox"]:checked'))
     .map(cb => cb.value);
   
+  // Privacy settings
+  const isPrivate = container.querySelector('#lib-private-checkbox').checked;
+  const privacyKey = container.querySelector('#lib-privacy-key').value.trim();
+  
+  if (isPrivate && !privacyKey) {
+    showToast('隐私指令必须设置密码');
+    container.querySelector('#lib-modal').classList.add('show');
+    setTimeout(() => container.querySelector('#lib-privacy-key').focus(), 100);
+    return;
+  }
+  
   const row = {
     content,
     author: author || 'unknown',
-    tags_json: JSON.stringify(selectedItemTags)
+    tags_json: JSON.stringify(selectedItemTags),
+    privacy_level: isPrivate ? 'private' : 'public',
+    privacy_key: isPrivate ? privacyKey : null
   };
   
   const savingId = editItemId;  // Save ID before closeModal clears it
@@ -1031,6 +1143,48 @@ function submitPassword(container) {
   }
 }
 
+// ── Privacy mode functions ────────────────────────
+function openPrivacyPasswordModal(container) {
+  container.querySelector('#lib-privacy-password-input').value = '';
+  container.querySelector('#lib-privacy-password-error').style.display = 'none';
+  container.querySelector('#lib-privacy-password-modal').classList.add('show');
+  setTimeout(() => container.querySelector('#lib-privacy-password-input').focus(), 60);
+}
+
+function closePrivacyPasswordModal(container) {
+  container.querySelector('#lib-privacy-password-modal').classList.remove('show');
+}
+
+function submitPrivacyPassword(container) {
+  const input = container.querySelector('#lib-privacy-password-input').value;
+  if (input === PRIVACY_PASSWORD) {
+    isPrivacyUnlocked = true;
+    updatePrivacyButton(container);
+    closePrivacyPasswordModal(container);
+    renderGrid(container.querySelector('.lib-layout'));
+    showToast('✅ 已解锁隐私模式');
+  } else {
+    container.querySelector('#lib-privacy-password-error').style.display = 'block';
+    container.querySelector('#lib-privacy-password-input').value = '';
+    container.querySelector('#lib-privacy-password-input').focus();
+  }
+}
+
+function updatePrivacyButton(container) {
+  const privacyBtn = container.querySelector('#lib-privacy-btn');
+  if (!privacyBtn) return;
+  
+  if (isPrivacyUnlocked) {
+    privacyBtn.textContent = '🔓 锁定隐私';
+    privacyBtn.className = 'btn bp';
+    privacyBtn.title = '当前：已解锁隐私模式，点击锁定';
+  } else {
+    privacyBtn.textContent = '🔒 隐私模式';
+    privacyBtn.className = 'btn bn';
+    privacyBtn.title = '解锁隐私指令';
+  }
+}
+
 function updateSortButton(container) {
   const sortBtn = container.querySelector('#lib-sort-btn');
   if (!sortBtn) return;
@@ -1079,3 +1233,71 @@ function updateLibraryUI(container) {
 function isLibraryEditor() {
   return isEditor() || isLibraryEditable;
 }
+
+// ── Privacy mode functions ────────────────────────
+function unlockPrivateContent(container) {
+  const input = container.querySelector('#lib-privacy-input');
+  const key = input.value.trim();
+  
+  if (!key) {
+    showToast('请输入密码');
+    return;
+  }
+  
+  // Check if this key unlocks any private items
+  const matchingItems = items.filter(item => 
+    item.privacyLevel === 'private' && item.privacyKey === key
+  );
+  
+  if (matchingItems.length === 0) {
+    showToast('❌ 密码错误或没有匹配的隐私内容');
+    input.value = '';
+    return;
+  }
+  
+  // Add key to unlocked set
+  unlockedKeys.add(key);
+  input.value = '';
+  
+  // Update UI
+  updateUnlockedKeysDisplay(container);
+  renderGrid(container.querySelector('.lib-layout'));
+  
+  showToast(`✅ 已解锁 ${matchingItems.length} 条隐私内容`);
+}
+
+function updateUnlockedKeysDisplay(container) {
+  const display = container.querySelector('#lib-unlocked-keys');
+  if (!display) return;
+  
+  if (unlockedKeys.size === 0) {
+    display.textContent = '';
+    return;
+  }
+  
+  // Count unlocked items per key
+  const keyCounts = {};
+  unlockedKeys.forEach(key => {
+    const count = items.filter(item => 
+      item.privacyLevel === 'private' && item.privacyKey === key
+    ).length;
+    if (count > 0) {
+      keyCounts[key] = count;
+    }
+  });
+  
+  const totalUnlocked = Object.values(keyCounts).reduce((a, b) => a + b, 0);
+  const keyCount = Object.keys(keyCounts).length;
+  
+  display.innerHTML = `<span style="color:#22c55e">✓ 已解锁 ${keyCount} 组密码（${totalUnlocked} 条内容）</span> <button onclick="clearAllKeys()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0 4px">清除全部</button>`;
+}
+
+window.clearAllKeys = function() {
+  unlockedKeys.clear();
+  const container = pageContainer;
+  if (container) {
+    updateUnlockedKeysDisplay(container);
+    renderGrid(container.querySelector('.lib-layout'));
+    showToast('已清除所有解锁密码');
+  }
+};
