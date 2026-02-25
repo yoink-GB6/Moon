@@ -1001,8 +1001,10 @@ async function deleteItem(container) {
   const item = items.find(x => x.id === editItemId);
   if (!item) return;
   
-  const preview = item.content.slice(0, 30) + (item.content.length > 30 ? '...' : '');
-  if (!confirmDialog(`确定要删除「${preview}」？`)) return;
+  // Use decrypted content for preview if available
+  const displayContent = item.decryptedContent || item.content;
+  const preview = displayContent.slice(0, 30) + (displayContent.length > 30 ? '...' : '');
+  if (!confirmDialog(`确定要删除这条指令吗？\n\n预览：${preview}`)) return;
   
   const deletingId = editItemId;  // Save ID before closeModal clears it
   closeModal(container);
