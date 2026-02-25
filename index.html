@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>hello~</title>
+<title>欢迎欢迎~</title>
 
 <!-- ★ 填入你的 Supabase 配置 ★ -->
 <script>
@@ -509,6 +509,9 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .lib-author-suggestion{padding:8px 12px;cursor:pointer;font-size:13px;transition:background .15s}
 .lib-author-suggestion:hover{background:rgba(124,131,247,.15)}
 .lib-author-suggestion:active{background:rgba(124,131,247,.25)}
+.lib-sort-btn{flex:1;padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.lib-sort-btn:hover{background:rgba(124,131,247,.1);border-color:rgba(124,131,247,.3)}
+.lib-sort-btn.active{background:rgba(124,131,247,.2);border-color:var(--accent);color:var(--accent);font-weight:600}
 .lib-like-btn{font-size:18px;line-height:1;pointer-events:none}
 .lib-like-count{font-size:14px;color:var(--accent);font-weight:600;min-width:24px;text-align:center;pointer-events:none}
 
@@ -567,7 +570,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
       <div id="sidebar-logo">
         <div style="flex:1">
           🌐 欢迎欢迎~
-          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">嗯呐嗯呐</span>
+          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">嗯呢嗯呢~</span>
         </div>
         <button id="sidebar-toggle" class="panel-toggle-btn" title="折叠/展开导航栏">◀</button>
       </div>
@@ -576,11 +579,6 @@ input:focus,textarea:focus{border-color:var(--accent)}
       </nav>
       <div id="sidebar-footer">
         只读模式，点击右上角解锁编辑
-        <div style="margin-top:8px">
-          <button onclick="showHourlyPassword()" style="padding:4px 8px;font-size:11px;background:rgba(124,131,247,.15);border:1px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer">
-            查看当前密码
-          </button>
-        </div>
       </div>
     </div>
 
@@ -756,9 +754,6 @@ window.submitPw = function() {
     document.getElementById('pw-input').value = '';
     document.getElementById('pw-input').focus();
   }
-};
-window.showHourlyPassword = function() {
-  import('./core/auth.js').then(auth => auth.showCurrentPassword());
 };
 document.getElementById('pw-input').addEventListener('keydown', e => {
   if (e.key==='Enter') window.submitPw();
