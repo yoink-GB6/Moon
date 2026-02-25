@@ -11,8 +11,6 @@ let selectedTags = [];    // Currently selected tags for filtering
 let searchKeyword = '';   // Search keyword for content filtering
 let selectedAuthor = '';  // Selected author for exact match filtering
 let sortBy = 'likes';         // Sorting method: 'likes' or 'created'
-let isPrivacyUnlocked = false;  // Privacy mode unlock state
-const PRIVACY_PASSWORD = 'private123';  // Privacy password
 let editItemId = null;
 let realtimeCh = null;
 let pageContainer = null; // Store container reference for use in event handlers
@@ -21,7 +19,7 @@ let unlockedKeys = new Set(); // Track unlocked privacy keys (resets on page ref
 
 // Library-specific edit mode (independent from global edit mode)
 let isLibraryEditable = false;
-const LIBRARY_PASSWORD = 'y';  // Simple password for library editing
+const LIBRARY_PASSWORD = 'edit123';  // Simple password for library editing
 
 export async function mount(container) {
   pageContainer = container;  // Save container reference
@@ -32,9 +30,7 @@ export async function mount(container) {
   onAuthChange(() => updateLibraryUI(container));
   
   updateSortButton(container);   // Initialize sort button
-  updatePrivacyButton(container); // Initialize privacy button
   updateLibraryUI(container);    // Initialize library-specific edit UI
-  await fetchAll();
   subscribeRealtime();
 }
 
@@ -51,7 +47,6 @@ function buildHTML() {
       <h2>📋 指令集</h2>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn bn" id="lib-sort-btn" title="切换排序方式">👍 点赞排序</button>
-        <button class="btn bn" id="lib-privacy-btn" title="解锁隐私指令">🔒 隐私模式</button>
         <button class="btn bn" id="lib-unlock-btn">🔒 解锁指令编辑</button>
         <button class="btn bp" id="lib-add-btn" style="display:none">＋ 新建</button>
       </div>
@@ -191,7 +186,7 @@ function buildHTML() {
 <div id="lib-password-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:400px" onmousedown="event.stopPropagation()">
     <h2>🔓 解锁指令编辑</h2>
-    <p style="color:#889;font-size:13px;margin-bottom:16px">裴公主今天发骚了吗？(y/n)</p>
+    <p style="color:#889;font-size:13px;margin-bottom:16px">输入密码以解锁指令编辑功能</p>
     
     <input 
       id="lib-password-input" 
@@ -343,31 +338,6 @@ function bindControls(container) {
     sortBy = sortBy === 'likes' ? 'created' : 'likes';
     updateSortButton(container);
     renderGrid(container.querySelector('.lib-layout'));
-  });
-
-  // Privacy unlock button
-  container.querySelector('#lib-privacy-btn').addEventListener('click', () => {
-    if (isPrivacyUnlocked) {
-      // Lock privacy mode
-      isPrivacyUnlocked = false;
-      updatePrivacyButton(container);
-      renderGrid(container.querySelector('.lib-layout'));
-      showToast('🔒 已锁定隐私模式');
-    } else {
-      // Show privacy password modal
-      openPrivacyPasswordModal(container);
-    }
-  });
-
-  // Privacy password modal
-  container.querySelector('#lib-privacy-password-cancel').addEventListener('click', () => closePrivacyPasswordModal(container));
-  container.querySelector('#lib-privacy-password-submit').addEventListener('click', () => submitPrivacyPassword(container));
-  container.querySelector('#lib-privacy-password-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') submitPrivacyPassword(container);
-    if (e.key === 'Escape') closePrivacyPasswordModal(container);
-  });
-  container.querySelector('#lib-privacy-password-modal').addEventListener('mousedown', e => {
-    if (e.target === container.querySelector('#lib-privacy-password-modal')) closePrivacyPasswordModal(container);
   });
 
   // Unlock button
@@ -549,8 +519,9 @@ function renderGrid(container) {
   // Step 0: Filter by privacy (only show public + unlocked private items)
   let filtered = items.filter(item => {
     if (item.privacyLevel === 'public') return true;
-    if (item.privacyLevel === 'private' && item.privacyKey) {
-      return unlockedKeys.has(item.privacyKey);
+    if (item.privacyLevel === 'private') {
+      // Check if any unlocked key matches this item
+      return item.decryptedContent !== undefined;
     }
     return false;
   });
@@ -609,7 +580,9 @@ function renderGrid(container) {
   }
   
   grid.innerHTML = filtered.map(item => {
-    const preview = item.content.length > 150 ? item.content.slice(0, 150) + '...' : item.content;
+    // Use decrypted content if available (for private items)
+    const displayContent = item.decryptedContent || item.content;
+    const preview = displayContent.length > 150 ? displayContent.slice(0, 150) + '...' : displayContent;
     const tagsHtml = item.tags.map(tag => `<span class="lib-item-tag">${escHtml(tag)}</span>`).join('');
     const authorHtml = item.author ? `<div class="lib-item-author">by ${escHtml(item.author)}</div>` : '';
     const likes = item.likes || 0;
@@ -728,8 +701,9 @@ function renderGrid(container) {
       if (isLibraryEditor()) {
         openModal(item, pageContainer);
       } else {
-        // Quick click: copy to clipboard
-        navigator.clipboard.writeText(item.content).then(() => {
+        // Quick click: copy to clipboard (use decrypted content if available)
+        const contentToCopy = item.decryptedContent || item.content;
+        navigator.clipboard.writeText(contentToCopy).then(() => {
           showToast('已复制到剪贴板');
         }).catch(() => {
           showToast('复制失败，请手动复制');
@@ -783,14 +757,31 @@ function openModal(item, container) {
   editItemId = item ? item.id : null;
   
   container.querySelector('#lib-modal-title').textContent = item ? '编辑指令' : '新建指令';
-  container.querySelector('#lib-content').value = item ? item.content : '';
+  
+  // Use decrypted content if available
+  const displayContent = item ? (item.decryptedContent || item.content) : '';
+  container.querySelector('#lib-content').value = displayContent;
   container.querySelector('#lib-author').value = item ? item.author : '';
   container.querySelector('#lib-new-tag').value = '';
   
   // Privacy settings
   const isPrivate = item ? item.privacyLevel === 'private' : false;
   container.querySelector('#lib-private-checkbox').checked = isPrivate;
-  container.querySelector('#lib-privacy-key').value = item && item.privacyKey ? item.privacyKey : '';
+  
+  // For private items, get the original password from unlockedKeys
+  let privacyKeyValue = '';
+  if (item && isPrivate) {
+    // Find the password that unlocked this item
+    for (const key of unlockedKeys) {
+      const hashedKey = item.privacyKey;
+      // We can't reverse hash, so we leave it blank for security
+      // User needs to re-enter password if they want to change it
+      privacyKeyValue = ''; // Don't show password
+      break;
+    }
+  }
+  
+  container.querySelector('#lib-privacy-key').value = privacyKeyValue;
   container.querySelector('#lib-privacy-key-group').style.display = isPrivate ? '' : 'none';
   
   renderTagPicker(container, item ? item.tags : []);
@@ -895,7 +886,22 @@ async function saveItem(container) {
   
   // Privacy settings
   const isPrivate = container.querySelector('#lib-private-checkbox').checked;
-  const privacyKey = container.querySelector('#lib-privacy-key').value.trim();
+  let privacyKey = container.querySelector('#lib-privacy-key').value.trim();
+  
+  // If editing an existing private item without entering password, use the unlocked password
+  if (savingId && isPrivate && !privacyKey) {
+    const existingItem = items.find(x => x.id === savingId);
+    if (existingItem && existingItem.privacyLevel === 'private') {
+      // Find the password that unlocked this item
+      for (const key of unlockedKeys) {
+        const hashedKey = await hashPassword(key);
+        if (hashedKey === existingItem.privacyKey) {
+          privacyKey = key;
+          break;
+        }
+      }
+    }
+  }
   
   if (isPrivate && !privacyKey) {
     showToast('隐私指令必须设置密码');
@@ -904,19 +910,36 @@ async function saveItem(container) {
     return;
   }
   
-  const row = {
-    content,
-    author: author || 'unknown',
-    tags_json: JSON.stringify(selectedItemTags),
-    privacy_level: isPrivate ? 'private' : 'public',
-    privacy_key: isPrivate ? privacyKey : null
-  };
-  
-  const savingId = editItemId;  // Save ID before closeModal clears it
+  const savingId = editItemId;
   closeModal(container);
   
   setSyncStatus('syncing');
   try {
+    let row;
+    
+    if (isPrivate) {
+      // Encrypt content and hash password for private items
+      const encryptedContent = await encryptContent(content, privacyKey);
+      const hashedKey = await hashPassword(privacyKey);
+      
+      row = {
+        content: encryptedContent,
+        author: author || 'unknown',
+        tags_json: JSON.stringify(selectedItemTags),
+        privacy_level: 'private',
+        privacy_key: hashedKey
+      };
+    } else {
+      // Public items: store as-is
+      row = {
+        content,
+        author: author || 'unknown',
+        tags_json: JSON.stringify(selectedItemTags),
+        privacy_level: 'public',
+        privacy_key: null
+      };
+    }
+    
     if (savingId) {
       const { error } = await supaClient.from('library_items').update(row).eq('id', savingId);
       if (error) throw error;
@@ -926,9 +949,12 @@ async function saveItem(container) {
       if (error) throw error;
       showToast('已创建');
     }
+    
     await fetchAll();
     setSyncStatus('ok');
-  } catch(e) { dbError('保存指令', e); }
+  } catch(e) { 
+    dbError('保存指令', e); 
+  }
 }
 
 async function deleteItem(container) {
@@ -1143,46 +1169,86 @@ function submitPassword(container) {
   }
 }
 
-// ── Privacy mode functions ────────────────────────
-function openPrivacyPasswordModal(container) {
-  container.querySelector('#lib-privacy-password-input').value = '';
-  container.querySelector('#lib-privacy-password-error').style.display = 'none';
-  container.querySelector('#lib-privacy-password-modal').classList.add('show');
-  setTimeout(() => container.querySelector('#lib-privacy-password-input').focus(), 60);
-}
-
-function closePrivacyPasswordModal(container) {
-  container.querySelector('#lib-privacy-password-modal').classList.remove('show');
-}
-
-function submitPrivacyPassword(container) {
-  const input = container.querySelector('#lib-privacy-password-input').value;
-  if (input === PRIVACY_PASSWORD) {
-    isPrivacyUnlocked = true;
-    updatePrivacyButton(container);
-    closePrivacyPasswordModal(container);
-    renderGrid(container.querySelector('.lib-layout'));
-    showToast('✅ 已解锁隐私模式');
-  } else {
-    container.querySelector('#lib-privacy-password-error').style.display = 'block';
-    container.querySelector('#lib-privacy-password-input').value = '';
-    container.querySelector('#lib-privacy-password-input').focus();
-  }
-}
-
-function updatePrivacyButton(container) {
-  const privacyBtn = container.querySelector('#lib-privacy-btn');
-  if (!privacyBtn) return;
+// ── Crypto utilities ────────────────────────────────
+async function deriveKey(password, salt) {
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits', 'deriveKey']
+  );
   
-  if (isPrivacyUnlocked) {
-    privacyBtn.textContent = '🔓 锁定隐私';
-    privacyBtn.className = 'btn bp';
-    privacyBtn.title = '当前：已解锁隐私模式，点击锁定';
-  } else {
-    privacyBtn.textContent = '🔒 隐私模式';
-    privacyBtn.className = 'btn bn';
-    privacyBtn.title = '解锁隐私指令';
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: encoder.encode(salt),
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptContent(content, password) {
+  try {
+    const encoder = new TextEncoder();
+    const salt = 'library-privacy-salt';
+    const key = await deriveKey(password, salt);
+    
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    
+    const encrypted = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      encoder.encode(content)
+    );
+    
+    const combined = new Uint8Array(iv.length + encrypted.byteLength);
+    combined.set(iv, 0);
+    combined.set(new Uint8Array(encrypted), iv.length);
+    
+    return btoa(String.fromCharCode(...combined));
+  } catch (e) {
+    console.error('Encryption failed:', e);
+    throw new Error('加密失败');
   }
+}
+
+async function decryptContent(encryptedBase64, password) {
+  try {
+    const decoder = new TextDecoder();
+    const salt = 'library-privacy-salt';
+    const key = await deriveKey(password, salt);
+    
+    const combined = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
+    
+    const iv = combined.slice(0, 12);
+    const encrypted = combined.slice(12);
+    
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      encrypted
+    );
+    
+    return decoder.decode(decrypted);
+  } catch (e) {
+    console.error('Decryption failed:', e);
+    return null;
+  }
+}
+
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hash));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 function updateSortButton(container) {
@@ -1235,7 +1301,7 @@ function isLibraryEditor() {
 }
 
 // ── Privacy mode functions ────────────────────────
-function unlockPrivateContent(container) {
+async function unlockPrivateContent(container) {
   const input = container.querySelector('#lib-privacy-input');
   const key = input.value.trim();
   
@@ -1244,9 +1310,12 @@ function unlockPrivateContent(container) {
     return;
   }
   
+  // Hash the input password
+  const hashedKey = await hashPassword(key);
+  
   // Check if this key unlocks any private items
   const matchingItems = items.filter(item => 
-    item.privacyLevel === 'private' && item.privacyKey === key
+    item.privacyLevel === 'private' && item.privacyKey === hashedKey
   );
   
   if (matchingItems.length === 0) {
@@ -1255,9 +1324,19 @@ function unlockPrivateContent(container) {
     return;
   }
   
-  // Add key to unlocked set
+  // Store the plain password for decryption (in memory only)
   unlockedKeys.add(key);
   input.value = '';
+  
+  // Decrypt content for unlocked items
+  for (const item of matchingItems) {
+    if (item.content && !item.decryptedContent) {
+      const decrypted = await decryptContent(item.content, key);
+      if (decrypted) {
+        item.decryptedContent = decrypted;
+      }
+    }
+  }
   
   // Update UI
   updateUnlockedKeysDisplay(container);
