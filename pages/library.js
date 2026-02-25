@@ -38,6 +38,14 @@ export async function mount(container) {
 
 export function unmount() {
   realtimeCh && supaClient.removeChannel(realtimeCh);
+  
+  // Security: Clear decrypted content cache on unmount
+  items.forEach(item => {
+    if (item.privacyLevel === 'private') {
+      delete item.decryptedContent;
+    }
+  });
+  unlockedKeys.clear();
 }
 
 function buildHTML() {
@@ -1400,10 +1408,18 @@ function updateUnlockedKeysDisplay(container) {
 
 window.clearAllKeys = function() {
   unlockedKeys.clear();
+  
+  // Clear decrypted content cache
+  items.forEach(item => {
+    if (item.privacyLevel === 'private') {
+      delete item.decryptedContent;
+    }
+  });
+  
   const container = pageContainer;
   if (container) {
     updateUnlockedKeysDisplay(container);
     renderGrid(container.querySelector('.lib-layout'));
-    showToast('已清除所有解锁密码');
+    showToast('🔒 已清除所有解锁密码');
   }
 };
