@@ -466,6 +466,9 @@ function updateAuthorList(authors) {
 }
 
 function renderTagList(tagListEl) {
+  // Clean up selected tags that no longer exist
+  selectedTags = selectedTags.filter(tag => tags.includes(tag));
+  
   if (!tags.length) {
     tagListEl.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">暂无标签</div>';
     return;
@@ -1389,21 +1392,7 @@ function updateUnlockedKeysDisplay(container) {
     return;
   }
   
-  // Count unlocked items per key
-  const keyCounts = {};
-  unlockedKeys.forEach(key => {
-    const count = items.filter(item => 
-      item.privacyLevel === 'private' && item.privacyKey === key
-    ).length;
-    if (count > 0) {
-      keyCounts[key] = count;
-    }
-  });
-  
-  const totalUnlocked = Object.values(keyCounts).reduce((a, b) => a + b, 0);
-  const keyCount = Object.keys(keyCounts).length;
-  
-  display.innerHTML = `<span style="color:#22c55e">✓ 已解锁 ${keyCount} 组密码（${totalUnlocked} 条内容）</span> <button onclick="clearAllKeys()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0 4px">清除全部</button>`;
+  display.innerHTML = `<span style="color:#22c55e">✓ 解锁成功</span> <button onclick="clearAllKeys()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0 4px">清除全部</button>`;
 }
 
 window.clearAllKeys = function() {
@@ -1418,8 +1407,9 @@ window.clearAllKeys = function() {
   
   const container = pageContainer;
   if (container) {
+    const layout = container.querySelector('.lib-layout');
     updateUnlockedKeysDisplay(container);
-    renderGrid(container.querySelector('.lib-layout'));
+    renderGrid(layout);
     showToast('🔒 已清除所有解锁密码');
   }
 };
