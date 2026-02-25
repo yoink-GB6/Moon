@@ -29,8 +29,10 @@ export async function mount(container) {
   // Listen to global auth changes
   onAuthChange(() => updateLibraryUI(container));
   
-  updateSortButton(container);   // Initialize sort button
-  updateLibraryUI(container);    // Initialize library-specific edit UI
+  updateSortButton(container);      // Initialize sort button
+  updateLibraryUI(container);       // Initialize library-specific edit UI
+  updateUnlockedKeysDisplay(container);  // Initialize privacy status
+  await fetchAll();
   subscribeRealtime();
 }
 
