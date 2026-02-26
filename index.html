@@ -764,7 +764,10 @@ window.submitPw = function() {
   }
 };
 document.getElementById('pw-input').addEventListener('keydown', e => {
-  if (e.key==='Enter') window.submitPw();
+  if (e.key==='Enter') {
+    e.preventDefault();
+    window.submitPw();
+  }
   if (e.key==='Escape') window.closePwModal();
 });
 document.getElementById('pw-modal').addEventListener('click', e => {
