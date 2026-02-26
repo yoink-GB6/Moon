@@ -766,9 +766,13 @@ window.submitPw = function() {
 document.getElementById('pw-input').addEventListener('keydown', e => {
   if (e.key==='Enter') {
     e.preventDefault();
+    e.stopPropagation();
     window.submitPw();
   }
-  if (e.key==='Escape') window.closePwModal();
+  if (e.key==='Escape') {
+    e.stopPropagation();
+    window.closePwModal();
+  }
 });
 document.getElementById('pw-modal').addEventListener('click', e => {
   if (e.target===document.getElementById('pw-modal')) window.closePwModal();
