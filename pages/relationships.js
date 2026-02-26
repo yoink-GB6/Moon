@@ -777,11 +777,8 @@ async function switchToBoard(id, forceLoad = false) {
   if (!stAfter._selectionInitialized) {
     stAfter._selectionInitialized = true;
     const posIds = new Set(Object.keys(positions).map(Number));
-    if (posIds.size === 0) {
-      characters.forEach(c => stAfter.selectedIds.add(c.id));
-    } else {
-      posIds.forEach(pid => stAfter.selectedIds.add(pid));
-    }
+    // 只选中有 position 记录的人；新空画布默认不选任何人
+    posIds.forEach(pid => stAfter.selectedIds.add(pid));
   }
 
   renderTabs();
