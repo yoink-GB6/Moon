@@ -1,3 +1,5 @@
+
+
 import { supaClient, setSyncStatus } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { showToast, confirmDialog, escHtml } from '../core/ui.js';
@@ -411,6 +413,15 @@ function buildHTML() {
 .rel-char-item:hover .rel-char-edit-btn { opacity: 1; }
 .rel-char-edit-btn:hover { color: var(--accent); border-color: var(--accent); }
 
+.rel-char-remove-btn {
+  opacity: 0; transition: opacity .15s;
+  font-size: 11px; padding: 3px 6px; border-radius: 5px;
+  border: 1px solid var(--ibr); background: transparent; color: var(--muted);
+  cursor: pointer; flex-shrink: 0; line-height: 1;
+}
+.rel-char-item:hover .rel-char-remove-btn { opacity: 1; }
+.rel-char-remove-btn:hover { color: var(--red, #f87171); border-color: var(--red, #f87171); }
+
 /* Divider between on-board and off-board characters */
 .rel-char-divider {
   font-size: 11px;
@@ -642,7 +653,7 @@ function handleMouseUp(e) {
   if (isClick && !isDragging) {
     const { x, y } = getCanvasCoords(e);
     const char = findCharAt(x, y);
-    if (char) showToast(`${char.name}${char.description ? ': ' + char.description.slice(0,40) : ''}`, 2500);
+    if (char) showToast(char.name, 1800);
   }
 
   if (isDragging && draggedChar && isEditor()) {
@@ -1074,16 +1085,20 @@ function renderCharacterList() {
   const onBoard  = characters.filter(c =>  positions[c.id] !== undefined);
   const offBoard = characters.filter(c =>  positions[c.id] === undefined);
 
-  function charHtml(char) {
+  function charHtml(char, isOnBoard) {
     const avContent = char.avatar_url
       ? `<img src="${char.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'" />`
       : char.name.charAt(0).toUpperCase();
     const avBg = char.avatar_url ? 'transparent' : (char.color || '#7c83f7');
+    const editBtn  = editor ? `<button class="rel-char-edit-btn" data-edit-id="${char.id}" title="编辑关系">✏️</button>` : '';
+    const removeBtn = (editor && isOnBoard)
+      ? `<button class="rel-char-remove-btn" data-remove-id="${char.id}" title="从画布移除">✕</button>`
+      : '';
     return `
       <div class="rel-char-item ${sel.has(char.id) ? 'selected' : ''}" data-id="${char.id}">
         <div class="rel-char-avatar" style="background:${avBg}">${avContent}</div>
         <span class="rel-char-name">${escHtml(char.name)}</span>
-        ${editor ? `<button class="rel-char-edit-btn" data-edit-id="${char.id}" title="编辑关系">✏️</button>` : ''}
+        ${editBtn}${removeBtn}
       </div>`;
   }
 
@@ -1092,15 +1107,16 @@ function renderCharacterList() {
     : '';
 
   listEl.innerHTML = [
-    ...onBoard.map(charHtml),
+    ...onBoard.map(c => charHtml(c, true)),
     divider,
-    ...offBoard.map(charHtml),
+    ...offBoard.map(c => charHtml(c, false)),
   ].join('');
 
   listEl.querySelectorAll('.rel-char-item').forEach(el => {
     const id = parseInt(el.dataset.id);
     el.addEventListener('click', e => {
       if (e.target.closest('.rel-char-edit-btn')) return;
+      if (e.target.closest('.rel-char-remove-btn')) return;
       toggleSelection(id);
     });
   });
@@ -1112,6 +1128,51 @@ function renderCharacterList() {
       if (char) openRelModal(char);
     });
   });
+  listEl.querySelectorAll('.rel-char-remove-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (!isEditor()) { showToast('🔒 请先解锁编辑'); return; }
+      const char = characters.find(c => c.id === parseInt(btn.dataset.removeId));
+      if (char) removeCharFromBoard(char);
+    });
+  });
+}
+
+async function removeCharFromBoard(char) {
+  if (!activeBoardId) return;
+  const name = char.name;
+  if (!confirmDialog(`从当前画布移除「${name}」？
+这会删除此人在本画布的位置，以及本画布中涉及此人的所有关系。`)) return;
+
+  const id = char.id;
+  setSyncStatus('syncing');
+  try {
+    // 删除本画布中涉及此人的所有关系
+    await supaClient.from('character_relationships').delete()
+      .eq('board_id', activeBoardId)
+      .or(`from_character_id.eq.${id},to_character_id.eq.${id}`);
+
+    // 删除本画布中此人的位置
+    await supaClient.from('character_positions').delete()
+      .eq('board_id', activeBoardId)
+      .eq('character_id', id);
+
+    // 本地同步
+    delete positions[id];
+    getSelectedIds().delete(id);
+    relationships = relationships.filter(
+      r => r.fromCharacterId !== id && r.toCharacterId !== id
+    );
+
+    setSyncStatus('ok');
+    renderCharacterList();
+    draw();
+    showToast(`已从画布移除：${name}`);
+  } catch(e) {
+    console.error('removeCharFromBoard failed:', e);
+    setSyncStatus('err');
+    showToast('移除失败：' + e.message);
+  }
 }
 
 function toggleSelection(charId) {
