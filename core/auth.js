@@ -9,7 +9,12 @@ export function isEditor() { return _isEditor; }
 // 注册监听器，权限变化时通知各页面更新 UI
 export function onAuthChange(fn) { _listeners.push(fn); }
 
-function _notify() { _listeners.forEach(fn => fn(_isEditor)); }
+function _notify() {
+  _listeners.forEach(fn => {
+    try { fn(_isEditor); }
+    catch (e) { console.error('[auth] onAuthChange 回调出错（已忽略）:', e); }
+  });
+}
 
 // 生成当前小时的密码（基于时间戳 + 密钥）
 function generateHourlyPassword() {
