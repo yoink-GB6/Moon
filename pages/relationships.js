@@ -23,6 +23,13 @@ let canvasOffsetX = 0;
 let canvasOffsetY = 0;
 let scale = 1;
 
+// 画布拖拽状态
+let isPanning = false;
+let panStartX = 0;
+let panStartY = 0;
+let panOffsetX = 0;
+let panOffsetY = 0;
+
 // Realtime
 let realtimeCh = null;
 
@@ -39,14 +46,6 @@ const LABEL_BG = 'rgba(255, 255, 255, 0.9)';
 function buildHTML() {
   return `
 <div class="rel-page">
-  <div class="rel-header">
-    <h2>👥 人物关系图谱</h2>
-    <div style="display:flex;gap:8px">
-      <button class="btn bn" id="rel-fit-btn" title="适应画布">📐 适应画布</button>
-      <button class="btn bn" id="rel-reset-btn" title="重置位置">🔄 重置</button>
-    </div>
-  </div>
-  
   <div class="rel-layout">
     <!-- Canvas -->
     <div class="rel-canvas-container">
@@ -73,8 +72,8 @@ function buildHTML() {
         </div>
         <div id="rel-edit-form" style="display:none">
           <label>关系标签</label>
-          <input id="rel-from-label" placeholder="A 称呼 B 为" />
-          <input id="rel-to-label" placeholder="B 称呼 A 为" />
+          <input id="rel-from-label" placeholder="A 对 B 是" />
+          <input id="rel-to-label" placeholder="B 对 A 是" />
           <div style="display:flex;gap:8px;margin-top:8px">
             <button class="btn bp" id="rel-save-btn" style="flex:1">保存</button>
             <button class="btn br" id="rel-delete-btn" style="flex:1">删除</button>
@@ -90,14 +89,6 @@ function buildHTML() {
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.rel-header {
-  padding: 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .rel-layout {
@@ -250,8 +241,17 @@ function buildHTML() {
 function resizeCanvas() {
   if (!canvas) return;
   const container = canvas.parentElement;
+  const oldWidth = canvas.width;
+  const oldHeight = canvas.height;
   canvas.width = container.clientWidth;
   canvas.height = container.clientHeight;
+  
+  // 首次初始化时，将画布中心设置为坐标(0,0)
+  if (oldWidth === 0 && oldHeight === 0) {
+    canvasOffsetX = canvas.width / 2;
+    canvasOffsetY = canvas.height / 2;
+  }
+  
   draw();
 }
 
@@ -498,25 +498,41 @@ function handleCanvasMouseDown(e) {
   const char = findCharacterAt(x, y);
   
   if (char && isEditor()) {
-    // 编辑模式：拖动人物
+    // 编辑模式：拖动人物节点
     draggedChar = char;
     const pos = positions[char.id];
     dragOffsetX = x - pos.x;
     dragOffsetY = y - pos.y;
     isDragging = true;
     canvas.classList.add('dragging');
+  } else {
+    // 拖动画布
+    isPanning = true;
+    panStartX = e.clientX;
+    panStartY = e.clientY;
+    panOffsetX = canvasOffsetX;
+    panOffsetY = canvasOffsetY;
+    canvas.style.cursor = 'grabbing';
   }
 }
 
 function handleCanvasMouseMove(e) {
-  if (!isDragging || !draggedChar) return;
-  
-  const { x, y } = getCanvasCoords(e);
-  positions[draggedChar.id] = {
-    x: x - dragOffsetX,
-    y: y - dragOffsetY
-  };
-  draw();
+  if (isDragging && draggedChar) {
+    // 拖动人物节点
+    const { x, y } = getCanvasCoords(e);
+    positions[draggedChar.id] = {
+      x: x - dragOffsetX,
+      y: y - dragOffsetY
+    };
+    draw();
+  } else if (isPanning) {
+    // 拖动画布
+    const dx = e.clientX - panStartX;
+    const dy = e.clientY - panStartY;
+    canvasOffsetX = panOffsetX + dx;
+    canvasOffsetY = panOffsetY + dy;
+    draw();
+  }
 }
 
 function handleCanvasMouseUp(e) {
@@ -527,7 +543,29 @@ function handleCanvasMouseUp(e) {
   
   isDragging = false;
   draggedChar = null;
+  isPanning = false;
   canvas.classList.remove('dragging');
+  canvas.style.cursor = 'grab';
+}
+
+function handleCanvasWheel(e) {
+  e.preventDefault();
+  
+  // 获取鼠标在画布上的位置
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+  
+  // 缩放因子
+  const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+  const newScale = Math.min(3, Math.max(0.3, scale * zoomFactor));
+  
+  // 计算缩放后的偏移（保持鼠标位置不变）
+  canvasOffsetX = mouseX - (mouseX - canvasOffsetX) * (newScale / scale);
+  canvasOffsetY = mouseY - (mouseY - canvasOffsetY) * (newScale / scale);
+  
+  scale = newScale;
+  draw();
 }
 
 // ── 数据操作 ──────────────────────────────────────
@@ -764,8 +802,8 @@ function updateEditForm() {
   const toInput = pageContainer.querySelector('#rel-to-label');
   
   // 设置 placeholder 和 value（基于选择顺序，不是数据库顺序）
-  fromInput.placeholder = `${char1.name} 称 ${char2.name} 为`;
-  toInput.placeholder = `${char2.name} 称 ${char1.name} 为`;
+  fromInput.placeholder = `${char1.name} 对 ${char2.name} 是`;
+  toInput.placeholder = `${char2.name} 对 ${char1.name} 是`;
   
   if (rel) {
     // 如果选择顺序与数据库顺序一致
@@ -785,60 +823,6 @@ function updateEditForm() {
 
 // ── 控制按钮 ──────────────────────────────────────
 
-function fitCanvas() {
-  if (!characters.length || selectedIds.size === 0) return;
-  
-  const selectedChars = characters.filter(c => selectedIds.has(c.id));
-  if (!selectedChars.length) return;
-  
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  
-  selectedChars.forEach(char => {
-    const pos = positions[char.id];
-    if (pos) {
-      minX = Math.min(minX, pos.x);
-      minY = Math.min(minY, pos.y);
-      maxX = Math.max(maxX, pos.x);
-      maxY = Math.max(maxY, pos.y);
-    }
-  });
-  
-  const padding = 100;
-  const contentWidth = maxX - minX + padding * 2;
-  const contentHeight = maxY - minY + padding * 2;
-  
-  const scaleX = canvas.width / contentWidth;
-  const scaleY = canvas.height / contentHeight;
-  scale = Math.min(scaleX, scaleY, 1);
-  
-  const centerX = (minX + maxX) / 2;
-  const centerY = (minY + maxY) / 2;
-  
-  canvasOffsetX = canvas.width / 2 - centerX * scale;
-  canvasOffsetY = canvas.height / 2 - centerY * scale;
-  
-  draw();
-}
-
-function resetLayout() {
-  if (!confirmDialog('确定要重置所有人物位置吗？')) return;
-  
-  positions = {};
-  autoLayoutIfNeeded();
-  
-  // 保存所有位置
-  if (isEditor()) {
-    characters.forEach(char => {
-      if (positions[char.id]) {
-        savePosition(char.id, positions[char.id]);
-      }
-    });
-  }
-  
-  draw();
-  showToast('已重置布局');
-}
-
 // ── 事件绑定 ──────────────────────────────────────
 
 function bindControls() {
@@ -847,6 +831,7 @@ function bindControls() {
   canvas.addEventListener('mousemove', handleCanvasMouseMove);
   canvas.addEventListener('mouseup', handleCanvasMouseUp);
   canvas.addEventListener('mouseleave', handleCanvasMouseUp);
+  canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
   
   // 按钮
   pageContainer.querySelector('#rel-select-all').addEventListener('click', () => {
@@ -861,9 +846,6 @@ function bindControls() {
     updateEditForm();
     draw();
   });
-  
-  pageContainer.querySelector('#rel-fit-btn').addEventListener('click', fitCanvas);
-  pageContainer.querySelector('#rel-reset-btn').addEventListener('click', resetLayout);
   
   // 编辑表单
   pageContainer.querySelector('#rel-save-btn').addEventListener('click', () => {
