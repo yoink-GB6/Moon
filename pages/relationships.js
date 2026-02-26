@@ -210,7 +210,7 @@ function buildHTML() {
 .rel-edit-tools {
   padding: 16px;
   border-top: 1px solid var(--border);
-  background: var(--bg-secondary, #f8fafc);
+  background: var(--bg);
 }
 
 .rel-edit-tools h4 {
@@ -754,7 +754,7 @@ function updateEditForm() {
   
   if (!char1 || !char2) return;
   
-  // 查找现有关系
+  // 查找现有关系（数据库中 from < to）
   const [from, to] = id1 < id2 ? [id1, id2] : [id2, id1];
   const rel = relationships.find(r => 
     r.fromCharacterId === from && r.toCharacterId === to
@@ -763,16 +763,23 @@ function updateEditForm() {
   const fromInput = pageContainer.querySelector('#rel-from-label');
   const toInput = pageContainer.querySelector('#rel-to-label');
   
-  if (id1 < id2) {
-    fromInput.placeholder = `${char1.name} 称 ${char2.name} 为`;
-    toInput.placeholder = `${char2.name} 称 ${char1.name} 为`;
-    fromInput.value = rel?.fromLabel || '';
-    toInput.value = rel?.toLabel || '';
+  // 设置 placeholder 和 value（基于选择顺序，不是数据库顺序）
+  fromInput.placeholder = `${char1.name} 称 ${char2.name} 为`;
+  toInput.placeholder = `${char2.name} 称 ${char1.name} 为`;
+  
+  if (rel) {
+    // 如果选择顺序与数据库顺序一致
+    if (id1 < id2) {
+      fromInput.value = rel.fromLabel || '';
+      toInput.value = rel.toLabel || '';
+    } else {
+      // 选择顺序相反，需要交换
+      fromInput.value = rel.toLabel || '';
+      toInput.value = rel.fromLabel || '';
+    }
   } else {
-    fromInput.placeholder = `${char1.name} 称 ${char2.name} 为`;
-    toInput.placeholder = `${char2.name} 称 ${char1.name} 为`;
-    fromInput.value = rel?.toLabel || '';
-    toInput.value = rel?.fromLabel || '';
+    fromInput.value = '';
+    toInput.value = '';
   }
 }
 
