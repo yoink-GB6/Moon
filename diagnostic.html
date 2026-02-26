@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>部署诊断 - Relationships.js</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f8fafc;
+    }
+    .test-card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .test-name {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .status.loading {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .status.success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .status.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .detail {
+      font-size: 14px;
+      color: #64748b;
+      margin-top: 8px;
+      word-break: break-all;
+    }
+    button {
+      background: #7c83f7;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    button:hover {
+      background: #5865f2;
+    }
+    code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Relationships.js 部署诊断</h1>
+  <p>这个页面会帮助你诊断为什么 relationships.js 无法加载。</p>
+  
+  <div class="test-card">
+    <div class="test-name">测试 1: 直接访问文件</div>
+    <div id="test1-status" class="status loading">检测中...</div>
+    <div id="test1-detail" class="detail"></div>
+  </div>
+  
+  <div class="test-card">
+    <div class="test-name">测试 2: 动态导入</div>
+    <div id="test2-status" class="status loading">等待测试...</div>
+    <div id="test2-detail" class="detail"></div>
+    <button id="test2-btn" style="margin-top:12px">运行测试</button>
+  </div>
+  
+  <div class="test-card">
+    <div class="test-name">测试 3: 检查 GitHub 仓库</div>
+    <div id="test3-status" class="status loading">检测中...</div>
+    <div id="test3-detail" class="detail"></div>
+  </div>
+  
+  <div class="test-card">
+    <div class="test-name">解决方案</div>
+    <div id="solution" style="font-size:14px;line-height:1.6"></div>
+  </div>
+
+  <script type="module">
+    const BASE_URL = 'https://yoink-gb6.github.io/Moon';
+    const FILE_PATH = '/pages/relationships.js';
+    
+    // 测试 1: 直接访问
+    async function test1() {
+      const url = BASE_URL + FILE_PATH;
+      const statusEl = document.getElementById('test1-status');
+      const detailEl = document.getElementById('test1-detail');
+      
+      try {
+        const response = await fetch(url, { cache: 'no-store' });
+        
+        if (response.ok) {
+          const text = await response.text();
+          const size = (text.length / 1024).toFixed(1);
+          
+          statusEl.textContent = '✅ 文件可访问';
+          statusEl.className = 'status success';
+          detailEl.textContent = `文件大小: ${size} KB - 文件已成功部署到 GitHub Pages`;
+          
+          return true;
+        } else {
+          statusEl.textContent = `❌ HTTP ${response.status}`;
+          statusEl.className = 'status error';
+          detailEl.textContent = `访问 ${url} 失败。文件可能未部署或路径错误。`;
+          
+          return false;
+        }
+      } catch (error) {
+        statusEl.textContent = '❌ 网络错误';
+        statusEl.className = 'status error';
+        detailEl.textContent = `错误: ${error.message}`;
+        
+        return false;
+      }
+    }
+    
+    // 测试 2: 动态导入
+    document.getElementById('test2-btn').addEventListener('click', async () => {
+      const statusEl = document.getElementById('test2-status');
+      const detailEl = document.getElementById('test2-detail');
+      
+      statusEl.textContent = '⏳ 测试中...';
+      statusEl.className = 'status loading';
+      
+      try {
+        const module = await import('./pages/relationships.js');
+        
+        statusEl.textContent = '✅ 导入成功';
+        statusEl.className = 'status success';
+        detailEl.textContent = `模块已成功导入。导出内容: ${Object.keys(module).join(', ')}`;
+        
+      } catch (error) {
+        statusEl.textContent = '❌ 导入失败';
+        statusEl.className = 'status error';
+        detailEl.textContent = `错误: ${error.message}`;
+      }
+    });
+    
+    // 测试 3: GitHub 仓库
+    async function test3() {
+      const url = 'https://api.github.com/repos/yoink-gb6/Moon/contents/pages/relationships.js';
+      const statusEl = document.getElementById('test3-status');
+      const detailEl = document.getElementById('test3-detail');
+      
+      try {
+        const response = await fetch(url);
+        
+        if (response.ok) {
+          const data = await response.json();
+          const size = (data.size / 1024).toFixed(1);
+          
+          statusEl.textContent = '✅ 文件存在于仓库';
+          statusEl.className = 'status success';
+          detailEl.textContent = `文件大小: ${size} KB - 最后更新: ${new Date(data.sha).toLocaleString()}`;
+          
+          return true;
+        } else {
+          statusEl.textContent = '❌ 文件不在仓库中';
+          statusEl.className = 'status error';
+          detailEl.textContent = '文件尚未提交到 GitHub 仓库。请确认已执行 git push。';
+          
+          return false;
+        }
+      } catch (error) {
+        statusEl.textContent = '⚠️ 无法检查';
+        statusEl.className = 'status error';
+        detailEl.textContent = `错误: ${error.message}`;
+        
+        return false;
+      }
+    }
+    
+    // 生成解决方案
+    async function generateSolution() {
+      const solutionEl = document.getElementById('solution');
+      
+      const test1Result = await test1();
+      const test3Result = await test3();
+      
+      if (test1Result) {
+        solutionEl.innerHTML = `
+          <h4 style="margin:0 0 8px 0">✅ 文件已成功部署</h4>
+          <p>文件可以正常访问。如果页面仍然报错，请尝试：</p>
+          <ol style="margin:8px 0;padding-left:20px">
+            <li>强制刷新浏览器：<code>Ctrl+Shift+R</code> (Windows) 或 <code>Cmd+Shift+R</code> (Mac)</li>
+            <li>清除浏览器缓存</li>
+            <li>在隐私/无痕模式下打开页面</li>
+          </ol>
+        `;
+      } else if (!test3Result) {
+        solutionEl.innerHTML = `
+          <h4 style="margin:0 0 8px 0">❌ 文件未上传到 GitHub</h4>
+          <p>请执行以下命令：</p>
+          <pre style="background:#f1f5f9;padding:12px;border-radius:4px;overflow-x:auto"><code>git add pages/relationships.js
+git add index.html
+git commit -m "Add relationships page"
+git push</code></pre>
+          <p style="margin-top:12px">然后等待 1-3 分钟让 GitHub Pages 重新构建。</p>
+        `;
+      } else {
+        solutionEl.innerHTML = `
+          <h4 style="margin:0 0 8px 0">⏳ GitHub Pages 正在构建</h4>
+          <p>文件已在 GitHub 仓库中，但尚未部署到 GitHub Pages。这通常需要 1-5 分钟。</p>
+          <p style="margin-top:12px">请：</p>
+          <ol style="margin:8px 0;padding-left:20px">
+            <li>等待 3-5 分钟</li>
+            <li>刷新此页面重新测试</li>
+            <li>检查 GitHub Actions 是否完成（访问仓库的 Actions 标签页）</li>
+          </ol>
+        `;
+      }
+    }
+    
+    // 运行诊断
+    generateSolution();
+  </script>
+</body>
+</html>
