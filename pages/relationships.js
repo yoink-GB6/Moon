@@ -1,5 +1,7 @@
 // relationships.js - 人物关系图谱页面
-import { supaClient, isEditor, onAuthChange, showToast, setSyncStatus, confirmDialog } from '../core/common.js';
+import { supaClient, setSyncStatus } from '../core/supabase-client.js';
+import { isEditor, onAuthChange } from '../core/auth.js';
+import { showToast, confirmDialog } from '../core/ui.js';
 
 let pageContainer = null;
 let canvas = null;
