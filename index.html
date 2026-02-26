@@ -559,7 +559,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
   <!-- Topbar -->
   <div id="topbar">
     <button id="menu-btn">☰</button>
-    <div id="topbar-title">oiiai</div>
+    <div id="topbar-title">欢迎欢迎~</div>
     <div id="sync-dot" title="同步状态"></div>
     <button id="lock-btn" onclick="showPwModal()">🔒 编辑</button>
   </div>
@@ -570,7 +570,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
       <div id="sidebar-logo">
         <div style="flex:1">
           🌐 欢迎欢迎~
-          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">嗯呢嗯呢~</span>
+          <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">嗯呢嗯呢</span>
         </div>
         <button id="sidebar-toggle" class="panel-toggle-btn" title="折叠/展开导航栏">◀</button>
       </div>
@@ -645,6 +645,12 @@ const ROUTES = [
     label: '🗺 地图',
     icon: '🗺',
     loader: () => import('./pages/map.js'),
+  },
+  {
+    id: 'relationships',
+    label: '🕸 关系图谱',
+    icon: '🕸',
+    loader: () => import('./pages/relationships.js'),
   },
   // 未来在这里添加更多页面：
   // { id: 'gallery', label: '🖼 图库', icon: '🖼', loader: () => import('./pages/gallery.js'), placeholder: true },
