@@ -72,8 +72,8 @@ function buildHTML() {
         </div>
         <div id="rel-edit-form" style="display:none">
           <label>关系标签</label>
-          <input id="rel-from-label" placeholder="A 对 B 是" />
-          <input id="rel-to-label" placeholder="B 对 A 是" />
+          <input id="rel-from-label" placeholder="A 是" />
+          <input id="rel-to-label" placeholder="B 是" />
           <div style="display:flex;gap:8px;margin-top:8px">
             <button class="btn bp" id="rel-save-btn" style="flex:1">保存</button>
             <button class="btn br" id="rel-delete-btn" style="flex:1">删除</button>
