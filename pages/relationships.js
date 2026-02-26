@@ -52,31 +52,38 @@ function buildHTML() {
       <canvas id="rel-canvas"></canvas>
     </div>
     
+    <!-- 浮动展开按钮 -->
+    <button id="rel-expand-btn" class="rel-expand-float" title="展开人物列表">◀</button>
+    
     <!-- 右侧栏 -->
     <div class="rel-sidebar">
-      <div class="rel-sidebar-header">
+      <div class="rel-sidebar-header" id="rel-sidebar-toggle">
         <h3>人物列表</h3>
-        <div style="display:flex;gap:4px;margin-top:8px">
+        <span id="rel-sidebar-chevron">◀</span>
+      </div>
+      
+      <div class="rel-sidebar-body">
+        <div style="display:flex;gap:4px;margin:0 16px 12px 16px;">
           <button class="btn bn" id="rel-select-all" style="flex:1;font-size:12px">显示全部</button>
           <button class="btn bn" id="rel-clear-all" style="flex:1;font-size:12px">清空选择</button>
         </div>
-      </div>
-      
-      <div id="rel-char-list" class="rel-char-list"></div>
-      
-      <!-- 编辑模式下的工具 -->
-      <div id="rel-edit-tools" class="rel-edit-tools" style="display:none">
-        <h4>编辑关系</h4>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">
-          选择两个人物后可编辑关系
-        </div>
-        <div id="rel-edit-form" style="display:none">
-          <label>关系标签</label>
-          <input id="rel-from-label" placeholder="A 是" />
-          <input id="rel-to-label" placeholder="B 是" />
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <button class="btn bp" id="rel-save-btn" style="flex:1">保存</button>
-            <button class="btn br" id="rel-delete-btn" style="flex:1">删除</button>
+        
+        <div id="rel-char-list" class="rel-char-list"></div>
+        
+        <!-- 编辑模式下的工具 -->
+        <div id="rel-edit-tools" class="rel-edit-tools" style="display:none">
+          <h4>编辑关系</h4>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">
+            选择两个人物后可编辑关系
+          </div>
+          <div id="rel-edit-form" style="display:none">
+            <label>关系标签</label>
+            <input id="rel-from-label" placeholder="A 对 B 是" />
+            <input id="rel-to-label" placeholder="B 对 A 是" />
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn bp" id="rel-save-btn" style="flex:1">保存</button>
+              <button class="btn br" id="rel-delete-btn" style="flex:1">删除</button>
+            </div>
           </div>
         </div>
       </div>
@@ -120,17 +127,73 @@ function buildHTML() {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: width 0.3s ease;
+}
+
+.rel-sidebar.collapsed {
+  width: 0;
+  border-left: none;
 }
 
 .rel-sidebar-header {
   padding: 16px;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.rel-sidebar-header:hover {
+  background: rgba(124, 131, 247, 0.05);
 }
 
 .rel-sidebar-header h3 {
-  margin: 0 0 8px 0;
+  margin: 0;
   font-size: 14px;
   font-weight: 600;
+}
+
+#rel-sidebar-chevron {
+  font-size: 12px;
+  color: var(--muted);
+  transition: transform 0.3s ease;
+}
+
+.rel-sidebar.collapsed #rel-sidebar-chevron {
+  transform: rotate(180deg);
+}
+
+.rel-sidebar-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rel-expand-float {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 12px 8px;
+  border-radius: 6px 0 0 6px;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.rel-expand-float.show {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .rel-char-list {
@@ -142,25 +205,23 @@ function buildHTML() {
 .rel-char-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
+  gap: 12px;
+  padding: 10px 12px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  opacity: 0.6;
 }
 
 .rel-char-item:hover {
-  background: rgba(124, 131, 247, 0.1);
+  opacity: 0.8;
+  background: rgba(124, 131, 247, 0.08);
 }
 
 .rel-char-item.selected {
-  background: rgba(124, 131, 247, 0.15);
-}
-
-.rel-char-checkbox {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
+  opacity: 1;
+  background: rgba(124, 131, 247, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(124, 131, 247, 0.3);
 }
 
 .rel-char-avatar {
@@ -416,13 +477,6 @@ function drawCharacters() {
     }
     
     ctx.restore();
-    
-    // 绘制名字
-    ctx.fillStyle = '#1e293b';
-    ctx.font = 'bold 14px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(char.name, pos.x, pos.y + NODE_RADIUS + 8);
   });
 }
 
@@ -514,6 +568,10 @@ function handleCanvasMouseDown(e) {
     panOffsetY = canvasOffsetY;
     canvas.style.cursor = 'grabbing';
   }
+  
+  // 记录点击位置以检测是否是点击（非拖动）
+  isPanning.clickX = e.clientX;
+  isPanning.clickY = e.clientY;
 }
 
 function handleCanvasMouseMove(e) {
@@ -536,6 +594,21 @@ function handleCanvasMouseMove(e) {
 }
 
 function handleCanvasMouseUp(e) {
+  // 检测是否是点击（移动距离很小）
+  const clickThreshold = 5;
+  const dx = e.clientX - (isPanning.clickX || e.clientX);
+  const dy = e.clientY - (isPanning.clickY || e.clientY);
+  const isClick = Math.sqrt(dx * dx + dy * dy) < clickThreshold;
+  
+  if (isClick && !isDragging) {
+    // 点击事件：显示人物信息
+    const { x, y } = getCanvasCoords(e);
+    const char = findCharacterAt(x, y);
+    if (char) {
+      showCharacterInfo(char, e);
+    }
+  }
+  
   if (isDragging && draggedChar && isEditor()) {
     // 保存位置到数据库
     savePosition(draggedChar.id, positions[draggedChar.id]);
@@ -566,6 +639,18 @@ function handleCanvasWheel(e) {
   
   scale = newScale;
   draw();
+}
+
+function showCharacterInfo(char, e) {
+  const info = `
+<div style="min-width:200px">
+  <div style="font-weight:600;font-size:14px;margin-bottom:8px">${char.name}</div>
+  ${char.age ? `<div style="font-size:12px;color:var(--muted);margin-bottom:4px">年龄: ${char.age}</div>` : ''}
+  ${char.description ? `<div style="font-size:12px;line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">${char.description}</div>` : ''}
+</div>
+  `.trim();
+  
+  showToast(info, 3000);
 }
 
 // ── 数据操作 ──────────────────────────────────────
@@ -738,7 +823,6 @@ function renderCharacterList() {
     
     return `
       <div class="rel-char-item ${selectedIds.has(char.id) ? 'selected' : ''}" data-id="${char.id}">
-        <input type="checkbox" class="rel-char-checkbox" ${selectedIds.has(char.id) ? 'checked' : ''} />
         ${avatarHtml}
         <div class="rel-char-info">
           <div class="rel-char-name">${char.name}</div>
@@ -750,14 +834,7 @@ function renderCharacterList() {
   // 绑定事件
   listEl.querySelectorAll('.rel-char-item').forEach(el => {
     const id = parseInt(el.dataset.id);
-    const checkbox = el.querySelector('.rel-char-checkbox');
-    
-    el.addEventListener('click', (e) => {
-      if (e.target === checkbox) return;
-      toggleCharacterSelection(id);
-    });
-    
-    checkbox.addEventListener('change', () => {
+    el.addEventListener('click', () => {
       toggleCharacterSelection(id);
     });
   });
@@ -832,6 +909,19 @@ function bindControls() {
   canvas.addEventListener('mouseup', handleCanvasMouseUp);
   canvas.addEventListener('mouseleave', handleCanvasMouseUp);
   canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
+  
+  // 侧边栏折叠
+  function toggleSidebar() {
+    const sidebar = pageContainer.querySelector('.rel-sidebar');
+    const expandBtn = pageContainer.querySelector('#rel-expand-btn');
+    const chevron = pageContainer.querySelector('#rel-sidebar-chevron');
+    const collapsed = sidebar.classList.toggle('collapsed');
+    if (chevron) chevron.textContent = collapsed ? '▶' : '◀';
+    if (expandBtn) expandBtn.classList.toggle('show', collapsed);
+  }
+  
+  pageContainer.querySelector('#rel-sidebar-toggle')?.addEventListener('click', toggleSidebar);
+  pageContainer.querySelector('#rel-expand-btn')?.addEventListener('click', toggleSidebar);
   
   // 按钮
   pageContainer.querySelector('#rel-select-all').addEventListener('click', () => {
