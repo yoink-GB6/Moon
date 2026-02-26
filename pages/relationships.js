@@ -186,6 +186,14 @@ function buildHTML() {
   flex-shrink: 0;
 }
 
+.rel-char-avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .rel-char-info {
   flex: 1;
   min-width: 0;
@@ -683,15 +691,23 @@ function renderCharacterList() {
     return;
   }
   
-  listEl.innerHTML = characters.map(char => `
-    <div class="rel-char-item ${selectedIds.has(char.id) ? 'selected' : ''}" data-id="${char.id}">
-      <input type="checkbox" class="rel-char-checkbox" ${selectedIds.has(char.id) ? 'checked' : ''} />
-      <div class="rel-char-avatar">${char.name.charAt(0)}</div>
-      <div class="rel-char-info">
-        <div class="rel-char-name">${char.name}</div>
+  listEl.innerHTML = characters.map(char => {
+    // 头像 HTML
+    const avatarHtml = char.avatar_url 
+      ? `<img src="${char.avatar_url}" class="rel-char-avatar-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+         <div class="rel-char-avatar" style="display:none">${char.name.charAt(0)}</div>`
+      : `<div class="rel-char-avatar">${char.name.charAt(0)}</div>`;
+    
+    return `
+      <div class="rel-char-item ${selectedIds.has(char.id) ? 'selected' : ''}" data-id="${char.id}">
+        <input type="checkbox" class="rel-char-checkbox" ${selectedIds.has(char.id) ? 'checked' : ''} />
+        ${avatarHtml}
+        <div class="rel-char-info">
+          <div class="rel-char-name">${char.name}</div>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
   
   // 绑定事件
   listEl.querySelectorAll('.rel-char-item').forEach(el => {
