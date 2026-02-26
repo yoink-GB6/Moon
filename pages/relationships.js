@@ -1,3 +1,46 @@
+// relationships.js - 人物关系图谱页面（多画布版本）
+//
+// ⚠️  首次使用前请在 Supabase SQL Editor 执行以下建表语句：
+// ─────────────────────────────────────────────────────────
+//
+//  -- 关系图谱画布表
+//  CREATE TABLE IF NOT EXISTS relationship_boards (
+//    id          BIGSERIAL PRIMARY KEY,
+//    name        TEXT NOT NULL DEFAULT '新画布',
+//    created_at  TIMESTAMPTZ DEFAULT NOW(),
+//    updated_at  TIMESTAMPTZ DEFAULT NOW()
+//  );
+//  ALTER TABLE relationship_boards ENABLE ROW LEVEL SECURITY;
+//  CREATE POLICY "Enable all" ON relationship_boards FOR ALL USING (true);
+//
+//  -- 为 character_relationships 加 board_id 列（旧数据归入 board 1）
+//  ALTER TABLE character_relationships
+//    ADD COLUMN IF NOT EXISTS board_id BIGINT REFERENCES relationship_boards(id) ON DELETE CASCADE;
+//
+//  -- 为 character_positions 加 board_id 列（旧数据归入 board 1）
+//  ALTER TABLE character_positions
+//    ADD COLUMN IF NOT EXISTS board_id BIGINT REFERENCES relationship_boards(id) ON DELETE CASCADE;
+//
+//  -- 修改 character_positions 主键，允许同一个人物在不同画布有不同位置
+//  ALTER TABLE character_positions DROP CONSTRAINT IF EXISTS character_positions_pkey;
+//  ALTER TABLE character_positions ADD PRIMARY KEY (character_id, board_id);
+//
+//  -- 插入一个默认画布（会被旧数据自动绑定）
+//  INSERT INTO relationship_boards (id, name) VALUES (1, '主关系图') ON CONFLICT DO NOTHING;
+//
+//  -- 将旧数据（board_id IS NULL）归入默认画布
+//  UPDATE character_relationships SET board_id = 1 WHERE board_id IS NULL;
+//  UPDATE character_positions      SET board_id = 1 WHERE board_id IS NULL;
+//
+//  -- 创建 updated_at 自动触发器（如果还没有）
+//  CREATE OR REPLACE FUNCTION update_updated_at_column()
+//  RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$ LANGUAGE plpgsql;
+//
+//  CREATE TRIGGER update_relationship_boards_updated_at
+//    BEFORE UPDATE ON relationship_boards
+//    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+//
+// ─────────────────────────────────────────────────────────
 
 import { supaClient, setSyncStatus } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
@@ -412,6 +455,18 @@ function buildHTML() {
 .rel-char-item:hover .rel-char-edit-btn { opacity: 1; }
 .rel-char-edit-btn:hover { color: var(--accent); border-color: var(--accent); }
 
+/* Divider between on-board and off-board characters */
+.rel-char-divider {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  padding: 6px 0 4px;
+  letter-spacing: .3px;
+  user-select: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 12px 2px;
+}
+
 /* ── Relationship modal char picker ── */
 .rel-modal-char-picker {
   display: flex; flex-wrap: wrap; gap: 7px;
@@ -750,6 +805,18 @@ async function switchToBoard(id, forceLoad = false) {
     fetchBoardPositions(id),
   ]);
 
+  // 默认选中：有 position 记录的人（即曾出现在此画布）；新空画布则选中全部
+  const stAfter = getBoardState(id);
+  if (!stAfter._selectionInitialized) {
+    stAfter._selectionInitialized = true;
+    const posIds = new Set(Object.keys(positions).map(Number));
+    if (posIds.size === 0) {
+      characters.forEach(c => stAfter.selectedIds.add(c.id));
+    } else {
+      posIds.forEach(pid => stAfter.selectedIds.add(pid));
+    }
+  }
+
   renderTabs();
   renderCharacterList();
   autoLayoutIfNeeded();
@@ -813,16 +880,15 @@ async function fetchCharacters() {
 }
 
 function autoLayoutIfNeeded() {
+  // 只对「已选中但还没有位置」的人物做自动布局（不动未在此画布的人）
   const sel = getSelectedIds();
-  const needsLayout = characters.some(c => sel.has(c.id) && !positions[c.id]);
-  // also layout chars that haven't been placed yet
-  const allNeed = characters.filter(c => !positions[c.id]);
-  if (!allNeed.length) return;
+  const needLayout = characters.filter(c => sel.has(c.id) && !positions[c.id]);
+  if (!needLayout.length) return;
 
   const cx = canvas.width / 2, cy = canvas.height / 2;
   const r  = Math.min(canvas.width, canvas.height) / 3;
-  allNeed.forEach((char, i) => {
-    const angle = (i / allNeed.length) * Math.PI * 2;
+  needLayout.forEach((char, i) => {
+    const angle = (i / needLayout.length) * Math.PI * 2;
     positions[char.id] = {
       x: cx + Math.cos(angle) * r,
       y: cy + Math.sin(angle) * r,
@@ -1048,7 +1114,11 @@ function renderCharacterList() {
   const editor = isEditor();
   const sel    = getSelectedIds();
 
-  listEl.innerHTML = characters.map(char => {
+  // 排序：当前画布有 position 记录的人在前（保持 characters 原始顺序），其余在后
+  const onBoard  = characters.filter(c =>  positions[c.id] !== undefined);
+  const offBoard = characters.filter(c =>  positions[c.id] === undefined);
+
+  function charHtml(char) {
     const avContent = char.avatar_url
       ? `<img src="${char.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'" />`
       : char.name.charAt(0).toUpperCase();
@@ -1059,7 +1129,17 @@ function renderCharacterList() {
         <span class="rel-char-name">${escHtml(char.name)}</span>
         ${editor ? `<button class="rel-char-edit-btn" data-edit-id="${char.id}" title="编辑关系">✏️</button>` : ''}
       </div>`;
-  }).join('');
+  }
+
+  const divider = offBoard.length && onBoard.length
+    ? `<div class="rel-char-divider">— 未在本画布 —</div>`
+    : '';
+
+  listEl.innerHTML = [
+    ...onBoard.map(charHtml),
+    divider,
+    ...offBoard.map(charHtml),
+  ].join('');
 
   listEl.querySelectorAll('.rel-char-item').forEach(el => {
     const id = parseInt(el.dataset.id);
@@ -1080,7 +1160,19 @@ function renderCharacterList() {
 
 function toggleSelection(charId) {
   const sel = getSelectedIds();
-  sel.has(charId) ? sel.delete(charId) : sel.add(charId);
+  if (sel.has(charId)) {
+    sel.delete(charId);
+  } else {
+    sel.add(charId);
+    // 如果这个人还没有位置，给他分配一个初始位置（放在现有节点旁边）
+    if (!positions[charId]) {
+      autoLayoutIfNeeded();
+      // 仍然没有位置（理论上不会，但防御一下）→ 放中心
+      if (!positions[charId]) {
+        positions[charId] = { x: canvas.width / 2, y: canvas.height / 2 };
+      }
+    }
+  }
   renderCharacterList();
   draw();
 }
