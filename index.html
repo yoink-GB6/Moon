@@ -749,11 +749,13 @@ window.showPwModal = function() {
 };
 window.closePwModal = function() {
   document.getElementById('pw-modal').classList.remove('show');
+  document.getElementById('pw-error').style.display = 'none';
+  document.getElementById('pw-input').value = '';
 };
 window.submitPw = function() {
   const pw = document.getElementById('pw-input').value;
   if (tryUnlock(pw)) {
-    closePwModal();
+    window.closePwModal();
     showToast('✅ 已解锁编辑模式');
   } else {
     document.getElementById('pw-error').style.display = 'block';
