@@ -8,11 +8,11 @@ let canvas = null;
 let ctx = null;
 
 // 数据
-let characters = [];      // 所有人物
-let relationships = [];   // 所有关系
-let positions = {};       // 人物位置 {characterId: {x, y}}
-let selectedIds = new Set();  // 选中的人物 ID
-let avatarImages = {};    // 缓存头像图片 {characterId: Image}
+let characters = [];
+let relationships = [];
+let positions = {};
+let selectedIds = new Set();
+let avatarImages = {};
 
 // 画布状态
 let isDragging = false;
@@ -30,12 +30,18 @@ let panStartY = 0;
 let panOffsetX = 0;
 let panOffsetY = 0;
 
+// 关系编辑弹窗状态
+let relModalCharA = null;
+let relModalCharB = null;
+
+// Panel
+let panelOpen = true;
+
 // Realtime
 let realtimeCh = null;
 
 // 常量
 const NODE_RADIUS = 40;
-const NODE_COLOR = '#7c83f7';
 const NODE_SELECTED_COLOR = '#5865f2';
 const LINE_COLOR = '#cbd5e1';
 const LINE_SELECTED_COLOR = '#7c83f7';
@@ -47,45 +53,59 @@ function buildHTML() {
   return `
 <div class="rel-page">
   <div class="rel-layout">
-    <!-- Canvas -->
-    <div class="rel-canvas-container">
+    <!-- Canvas container -->
+    <div id="rel-cw" class="rel-cw">
       <canvas id="rel-canvas"></canvas>
-    </div>
-    
-    <!-- 浮动展开按钮 -->
-    <button id="rel-expand-btn" class="rel-expand-float" title="展开人物列表">◀</button>
-    
-    <!-- 右侧栏 -->
-    <div class="rel-sidebar">
-      <div class="rel-sidebar-header" id="rel-sidebar-toggle">
-        <h3>人物列表</h3>
-        <span id="rel-sidebar-chevron">◀</span>
+
+      <!-- Floating expand button (shows when panel collapsed) -->
+      <button id="rel-expand" class="expand-btn-float" title="展开人物列表">◀</button>
+
+      <!-- Zoom toolbar (top-left, map-style) -->
+      <div class="rel-toolbar">
+        <button class="rel-tb-btn" id="rel-zoom-in"  title="放大">＋</button>
+        <button class="rel-tb-btn" id="rel-zoom-out" title="缩小">－</button>
+        <button class="rel-tb-btn" id="rel-zoom-fit" title="重置视角">⊡</button>
       </div>
-      
-      <div class="rel-sidebar-body">
-        <div style="display:flex;gap:4px;margin:0 16px 12px 16px;">
+    </div>
+
+    <!-- 右侧面板 (map-panel 同款) -->
+    <div id="rel-panel" class="rel-panel">
+      <div class="rel-panel-hdr" id="rel-panel-toggle">
+        <span>🕸 人物列表</span><span id="rel-panel-chevron">◀</span>
+      </div>
+
+      <div class="rel-panel-body">
+        <div style="display:flex;gap:4px;padding:8px 10px 4px 10px;">
           <button class="btn bn" id="rel-select-all" style="flex:1;font-size:12px">显示全部</button>
           <button class="btn bn" id="rel-clear-all" style="flex:1;font-size:12px">清空选择</button>
         </div>
-        
+
         <div id="rel-char-list" class="rel-char-list"></div>
-        
-        <!-- 编辑模式下的工具 -->
-        <div id="rel-edit-tools" class="rel-edit-tools" style="display:none">
-          <h4>编辑关系</h4>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">
-            选择两个人物后可编辑关系
-          </div>
-          <div id="rel-edit-form" style="display:none">
-            <label>关系标签</label>
-            <input id="rel-from-label" placeholder="A 对 B 是" />
-            <input id="rel-to-label" placeholder="B 对 A 是" />
-            <div style="display:flex;gap:8px;margin-top:8px">
-              <button class="btn bp" id="rel-save-btn" style="flex:1">保存</button>
-              <button class="btn br" id="rel-delete-btn" style="flex:1">删除</button>
-            </div>
-          </div>
-        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 关系编辑弹窗 -->
+<div id="rel-edit-modal" class="tl-modal-overlay">
+  <div class="tl-modal" style="max-width:420px" onmousedown="event.stopPropagation()">
+    <h2 id="rel-modal-title">编辑关系</h2>
+
+    <label style="margin-bottom:6px;display:block;font-size:12px;color:var(--muted)">选择另一位人物</label>
+    <div id="rel-modal-char-picker" class="rel-modal-char-picker"></div>
+
+    <div id="rel-modal-labels" style="display:none;margin-top:14px">
+      <label id="rel-modal-label-a" style="display:block;font-size:12px;font-weight:500;margin-bottom:4px"></label>
+      <input id="rel-modal-from-input" type="text" placeholder="关系描述…" style="margin-bottom:10px"/>
+      <label id="rel-modal-label-b" style="display:block;font-size:12px;font-weight:500;margin-bottom:4px"></label>
+      <input id="rel-modal-to-input" type="text" placeholder="关系描述…"/>
+    </div>
+
+    <div class="mbtns" style="justify-content:space-between;margin-top:16px">
+      <button class="btn br" id="rel-modal-delete" style="display:none">🗑 删除关系</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn bn" id="rel-modal-cancel">取消</button>
+        <button class="btn bp" id="rel-modal-save" disabled>保存</button>
       </div>
     </div>
   </div>
@@ -100,14 +120,13 @@ function buildHTML() {
 
 .rel-layout {
   flex: 1;
-  display: flex;
+  position: relative;
   overflow: hidden;
 }
 
-.rel-canvas-container {
-  flex: 1;
-  position: relative;
-  background: var(--bg, #ffffff);
+.rel-cw {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
 }
 
@@ -120,178 +139,219 @@ function buildHTML() {
   cursor: grabbing;
 }
 
-.rel-sidebar {
-  width: 300px;
+/* Floating expand button positioning */
+#rel-expand { top: 50%; right: 8px; transform: translateY(-50%); }
+
+/* ── Zoom toolbar ── */
+.rel-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 20;
+}
+
+.rel-tb-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--ibr);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+
+.rel-tb-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.rel-tb-btn:active { transform: scale(.92); }
+
+/* ── Right panel (map-panel style) ── */
+.rel-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 50;
+  width: 240px;
+  background: var(--panel);
   border-left: 1px solid var(--border);
-  background: var(--bg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: width 0.3s ease;
+  transition: transform .28s cubic-bezier(0.4,0,0.2,1);
 }
 
-.rel-sidebar.collapsed {
-  width: 0;
-  border-left: none;
+.rel-panel.collapsed {
+  transform: translateX(100%);
 }
 
-.rel-sidebar-header {
-  padding: 16px;
+.rel-panel-hdr {
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
   border-bottom: 1px solid var(--border);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   cursor: pointer;
   user-select: none;
+  flex-shrink: 0;
 }
 
-.rel-sidebar-header:hover {
-  background: rgba(124, 131, 247, 0.05);
-}
+.rel-panel-hdr:hover { background: #22263a; }
 
-.rel-sidebar-header h3 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-#rel-sidebar-chevron {
-  font-size: 12px;
+#rel-panel-chevron {
+  font-size: 11px;
   color: var(--muted);
-  transition: transform 0.3s ease;
 }
 
-.rel-sidebar.collapsed #rel-sidebar-chevron {
-  transform: rotate(180deg);
-}
-
-.rel-sidebar-body {
+.rel-panel-body {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.rel-expand-float {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--accent);
-  color: white;
-  border: none;
-  padding: 12px 8px;
-  border-radius: 6px 0 0 6px;
-  cursor: pointer;
-  font-size: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-  z-index: 10;
-}
-
-.rel-expand-float.show {
-  opacity: 1;
-  pointer-events: auto;
-}
-
+/* ── Character list ── */
 .rel-char-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 4px 0;
 }
+
+.rel-char-list::-webkit-scrollbar { width: 3px; }
+.rel-char-list::-webkit-scrollbar-thumb { background: var(--ibr); border-radius: 3px; }
 
 .rel-char-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 6px;
+  gap: 10px;
+  padding: 7px 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background .1s;
   opacity: 0.6;
 }
 
-.rel-char-item:hover {
-  opacity: 0.8;
-  background: rgba(124, 131, 247, 0.08);
-}
-
-.rel-char-item.selected {
-  opacity: 1;
-  background: rgba(124, 131, 247, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(124, 131, 247, 0.3);
-}
+.rel-char-item:hover { background: #22263a; opacity: 0.85; }
+.rel-char-item.selected { opacity: 1; background: rgba(124, 131, 247, 0.1); }
 
 .rel-char-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--accent);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
-.rel-char-avatar-img {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+.rel-char-avatar img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  flex-shrink: 0;
-}
-
-.rel-char-info {
-  flex: 1;
-  min-width: 0;
 }
 
 .rel-char-name {
+  flex: 1;
   font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
+  color: #cdd;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.rel-edit-tools {
-  padding: 16px;
-  border-top: 1px solid var(--border);
+.rel-char-edit-btn {
+  opacity: 0;
+  transition: opacity .15s;
+  font-size: 11px;
+  padding: 3px 7px;
+  border-radius: 5px;
+  border: 1px solid var(--ibr);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rel-char-item:hover .rel-char-edit-btn { opacity: 1; }
+.rel-char-edit-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ── Relationship modal char picker ── */
+.rel-modal-char-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 6px 0;
+  max-height: 160px;
+  overflow-y: auto;
+  margin-bottom: 4px;
+}
+
+.rel-modal-char-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all .15s;
+  width: 58px;
   background: var(--bg);
 }
 
-.rel-edit-tools h4 {
-  margin: 0 0 8px 0;
+.rel-modal-char-btn:hover { background: #22263a; border-color: var(--border); }
+.rel-modal-char-btn.selected { border-color: var(--accent); background: rgba(124, 131, 247, 0.1); }
+
+.rel-modal-char-av {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
 }
 
-.rel-edit-tools label {
-  display: block;
-  font-size: 12px;
-  font-weight: 500;
-  margin: 8px 0 4px 0;
-}
+.rel-modal-char-av img { width: 100%; height: 100%; object-fit: cover; }
 
-.rel-edit-tools input {
+.rel-modal-char-name {
+  font-size: 11px;
+  color: #cdd;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   width: 100%;
-  padding: 6px 8px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--bg);
-  color: var(--text);
-  font-size: 12px;
 }
 
 @media (max-width: 768px) {
-  .rel-sidebar {
-    width: 250px;
-  }
+  .rel-panel { width: 220px; }
 }
 </style>
   `;
@@ -306,216 +366,146 @@ function resizeCanvas() {
   const oldHeight = canvas.height;
   canvas.width = container.clientWidth;
   canvas.height = container.clientHeight;
-  
-  // 首次初始化时，将画布中心设置为坐标(0,0)
+
   if (oldWidth === 0 && oldHeight === 0) {
     canvasOffsetX = canvas.width / 2;
     canvasOffsetY = canvas.height / 2;
   }
-  
+
   draw();
 }
 
 function draw() {
   if (!ctx || !canvas) return;
-  
-  // 清空画布
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  // 绘制网格（在变换之前）
   drawGrid();
-  
+
   ctx.save();
   ctx.translate(canvasOffsetX, canvasOffsetY);
   ctx.scale(scale, scale);
-  
-  // 绘制关系线
+
   drawRelationships();
-  
-  // 绘制人物节点
   drawCharacters();
-  
+
   ctx.restore();
 }
 
 function drawGrid() {
-  const step = 50; // 网格间距
+  const step = 50;
   const offsetX = canvasOffsetX % step;
   const offsetY = canvasOffsetY % step;
-  
+
   ctx.save();
   ctx.strokeStyle = 'rgba(124, 131, 247, 0.07)';
   ctx.lineWidth = 1;
-  
-  // 垂直线
+
   for (let x = offsetX; x < canvas.width; x += step) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, canvas.height);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
   }
-  
-  // 水平线
   for (let y = offsetY; y < canvas.height; y += step) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(canvas.width, y);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
   }
-  
   ctx.restore();
 }
 
 function drawRelationships() {
   const selectedArray = Array.from(selectedIds);
-  
+
   relationships.forEach(rel => {
     const char1 = characters.find(c => c.id === rel.fromCharacterId);
     const char2 = characters.find(c => c.id === rel.toCharacterId);
-    
     if (!char1 || !char2) return;
-    
-    // 只有两个人物都被选中时才显示关系
+
     const bothSelected = selectedIds.has(char1.id) && selectedIds.has(char2.id);
     if (!bothSelected) return;
-    
+
     const pos1 = positions[char1.id] || { x: 100, y: 100 };
     const pos2 = positions[char2.id] || { x: 300, y: 100 };
-    
-    // 检查是否是当前选中的关系（正好两个人选中）
-    const isActive = selectedArray.length === 2 && 
-                     selectedArray.includes(char1.id) && 
+
+    const isActive = selectedArray.length === 2 &&
+                     selectedArray.includes(char1.id) &&
                      selectedArray.includes(char2.id);
-    
-    // 绘制连线
+
     ctx.strokeStyle = isActive ? LINE_SELECTED_COLOR : LINE_COLOR;
     ctx.lineWidth = isActive ? 3 : 2;
     ctx.beginPath();
     ctx.moveTo(pos1.x, pos1.y);
     ctx.lineTo(pos2.x, pos2.y);
     ctx.stroke();
-    
-    // 绘制标签（在连线两端，始终水平）
+
     if (rel.fromLabel || rel.toLabel) {
-      // 计算连线的角度和长度
       const dx = pos2.x - pos1.x;
       const dy = pos2.y - pos1.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      const angle = Math.atan2(dy, dx);
-      
-      // 单位向量
-      const ux = dx / dist;
-      const uy = dy / dist;
-      
-      // 标签距离节点的偏移量（节点半径 + 间隙）
+      const ux = dx / dist, uy = dy / dist;
       const labelOffset = NODE_RADIUS + 10;
-      
-      // char1 侧的标签（fromLabel）
-      if (rel.fromLabel) {
-        const labelX = pos1.x + ux * labelOffset;
-        const labelY = pos1.y + uy * labelOffset;
-        drawLabelAtPosition(rel.fromLabel, labelX, labelY, isActive);
-      }
-      
-      // char2 侧的标签（toLabel）
-      if (rel.toLabel) {
-        const labelX = pos2.x - ux * labelOffset;
-        const labelY = pos2.y - uy * labelOffset;
-        drawLabelAtPosition(rel.toLabel, labelX, labelY, isActive);
-      }
+
+      if (rel.fromLabel) drawLabelAtPosition(rel.fromLabel, pos1.x + ux * labelOffset, pos1.y + uy * labelOffset, isActive);
+      if (rel.toLabel)   drawLabelAtPosition(rel.toLabel,   pos2.x - ux * labelOffset, pos2.y - uy * labelOffset, isActive);
     }
   });
 }
 
 function drawLabelAtPosition(text, x, y, isActive) {
   ctx.save();
-  
   ctx.font = '12px system-ui, sans-serif';
   const metrics = ctx.measureText(text);
   const padding = 6;
   const width = metrics.width + padding * 2;
   const height = 20;
-  
-  // 背景
+
   ctx.fillStyle = isActive ? 'rgba(124, 131, 247, 0.95)' : LABEL_BG;
   ctx.fillRect(x - width / 2, y - height / 2, width, height);
-  
-  // 边框
   ctx.strokeStyle = isActive ? '#5865f2' : LINE_COLOR;
   ctx.lineWidth = 1;
   ctx.strokeRect(x - width / 2, y - height / 2, width, height);
-  
-  // 文字（始终水平）
   ctx.fillStyle = isActive ? '#ffffff' : '#334155';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, x, y);
-  
   ctx.restore();
 }
 
 function drawCharacters() {
   characters.forEach(char => {
     if (!selectedIds.has(char.id)) return;
-    
     const pos = positions[char.id] || { x: 100, y: 100 };
-    const isSelected = selectedIds.has(char.id);
-    
-    // 绘制节点圆圈背景
+
     ctx.save();
-    ctx.fillStyle = isSelected ? NODE_SELECTED_COLOR : NODE_COLOR;
+    ctx.fillStyle = NODE_SELECTED_COLOR;
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, NODE_RADIUS, 0, Math.PI * 2);
     ctx.fill();
-    
-    // 绘制头像或首字母
+
     const avatarImg = avatarImages[char.id];
     if (avatarImg && avatarImg.complete) {
       drawAvatar(avatarImg, pos.x, pos.y);
     } else {
       drawInitial(char, pos);
     }
-    
     ctx.restore();
   });
 }
 
 function drawAvatar(img, x, y) {
   ctx.save();
-  
-  // 创建圆形裁剪路径
   ctx.beginPath();
   ctx.arc(x, y, NODE_RADIUS - 2, 0, Math.PI * 2);
   ctx.clip();
-  
-  // 计算图片绘制尺寸（保持比例，填满圆形）
+
   const size = NODE_RADIUS * 2;
   const imgRatio = img.width / img.height;
   let drawWidth, drawHeight, offsetX, offsetY;
-  
+
   if (imgRatio > 1) {
-    // 宽图：以高度为准
-    drawHeight = size;
-    drawWidth = size * imgRatio;
-    offsetX = -(drawWidth - size) / 2;
-    offsetY = 0;
+    drawHeight = size; drawWidth = size * imgRatio;
+    offsetX = -(drawWidth - size) / 2; offsetY = 0;
   } else {
-    // 高图：以宽度为准
-    drawWidth = size;
-    drawHeight = size / imgRatio;
-    offsetX = 0;
-    offsetY = -(drawHeight - size) / 2;
+    drawWidth = size; drawHeight = size / imgRatio;
+    offsetX = 0; offsetY = -(drawHeight - size) / 2;
   }
-  
-  // 绘制图片
-  ctx.drawImage(
-    img,
-    x - NODE_RADIUS + offsetX,
-    y - NODE_RADIUS + offsetY,
-    drawWidth,
-    drawHeight
-  );
-  
+
+  ctx.drawImage(img, x - NODE_RADIUS + offsetX, y - NODE_RADIUS + offsetY, drawWidth, drawHeight);
   ctx.restore();
 }
 
@@ -531,9 +521,10 @@ function drawInitial(char, pos) {
 
 function getCanvasCoords(e) {
   const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left - canvasOffsetX) / scale;
-  const y = (e.clientY - rect.top - canvasOffsetY) / scale;
-  return { x, y };
+  return {
+    x: (e.clientX - rect.left - canvasOffsetX) / scale,
+    y: (e.clientY - rect.top  - canvasOffsetY) / scale,
+  };
 }
 
 function findCharacterAt(x, y) {
@@ -541,18 +532,15 @@ function findCharacterAt(x, y) {
     if (!selectedIds.has(char.id)) return false;
     const pos = positions[char.id];
     if (!pos) return false;
-    const dx = x - pos.x;
-    const dy = y - pos.y;
-    return Math.sqrt(dx * dx + dy * dy) <= NODE_RADIUS;
+    return Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2) <= NODE_RADIUS;
   });
 }
 
 function handleCanvasMouseDown(e) {
   const { x, y } = getCanvasCoords(e);
   const char = findCharacterAt(x, y);
-  
+
   if (char && isEditor()) {
-    // 编辑模式：拖动人物节点
     draggedChar = char;
     const pos = positions[char.id];
     dragOffsetX = x - pos.x;
@@ -560,7 +548,6 @@ function handleCanvasMouseDown(e) {
     isDragging = true;
     canvas.classList.add('dragging');
   } else {
-    // 拖动画布
     isPanning = true;
     panStartX = e.clientX;
     panStartY = e.clientY;
@@ -568,52 +555,38 @@ function handleCanvasMouseDown(e) {
     panOffsetY = canvasOffsetY;
     canvas.style.cursor = 'grabbing';
   }
-  
-  // 记录点击位置以检测是否是点击（非拖动）
+
   isPanning.clickX = e.clientX;
   isPanning.clickY = e.clientY;
 }
 
 function handleCanvasMouseMove(e) {
   if (isDragging && draggedChar) {
-    // 拖动人物节点
     const { x, y } = getCanvasCoords(e);
-    positions[draggedChar.id] = {
-      x: x - dragOffsetX,
-      y: y - dragOffsetY
-    };
+    positions[draggedChar.id] = { x: x - dragOffsetX, y: y - dragOffsetY };
     draw();
   } else if (isPanning) {
-    // 拖动画布
-    const dx = e.clientX - panStartX;
-    const dy = e.clientY - panStartY;
-    canvasOffsetX = panOffsetX + dx;
-    canvasOffsetY = panOffsetY + dy;
+    canvasOffsetX = panOffsetX + (e.clientX - panStartX);
+    canvasOffsetY = panOffsetY + (e.clientY - panStartY);
     draw();
   }
 }
 
 function handleCanvasMouseUp(e) {
-  // 检测是否是点击（移动距离很小）
-  const clickThreshold = 5;
   const dx = e.clientX - (isPanning.clickX || e.clientX);
   const dy = e.clientY - (isPanning.clickY || e.clientY);
-  const isClick = Math.sqrt(dx * dx + dy * dy) < clickThreshold;
-  
+  const isClick = Math.sqrt(dx * dx + dy * dy) < 5;
+
   if (isClick && !isDragging) {
-    // 点击事件：显示人物信息
     const { x, y } = getCanvasCoords(e);
     const char = findCharacterAt(x, y);
-    if (char) {
-      showCharacterInfo(char, e);
-    }
+    if (char) showToast(`${char.name}${char.description ? ': ' + char.description.slice(0, 40) : ''}`, 2500);
   }
-  
+
   if (isDragging && draggedChar && isEditor()) {
-    // 保存位置到数据库
     savePosition(draggedChar.id, positions[draggedChar.id]);
   }
-  
+
   isDragging = false;
   draggedChar = null;
   isPanning = false;
@@ -623,34 +596,15 @@ function handleCanvasMouseUp(e) {
 
 function handleCanvasWheel(e) {
   e.preventDefault();
-  
-  // 获取鼠标在画布上的位置
   const rect = canvas.getBoundingClientRect();
   const mouseX = e.clientX - rect.left;
   const mouseY = e.clientY - rect.top;
-  
-  // 缩放因子
   const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
   const newScale = Math.min(3, Math.max(0.3, scale * zoomFactor));
-  
-  // 计算缩放后的偏移（保持鼠标位置不变）
   canvasOffsetX = mouseX - (mouseX - canvasOffsetX) * (newScale / scale);
   canvasOffsetY = mouseY - (mouseY - canvasOffsetY) * (newScale / scale);
-  
   scale = newScale;
   draw();
-}
-
-function showCharacterInfo(char, e) {
-  const info = `
-<div style="min-width:200px">
-  <div style="font-weight:600;font-size:14px;margin-bottom:8px">${char.name}</div>
-  ${char.age ? `<div style="font-size:12px;color:var(--muted);margin-bottom:4px">年龄: ${char.age}</div>` : ''}
-  ${char.description ? `<div style="font-size:12px;line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">${char.description}</div>` : ''}
-</div>
-  `.trim();
-  
-  showToast(info, 3000);
 }
 
 // ── 数据操作 ──────────────────────────────────────
@@ -659,30 +613,21 @@ async function fetchCharacters() {
   try {
     const { data, error } = await supaClient.from('characters').select('*').order('created_at');
     if (error) throw error;
-    
+
     characters = data || [];
-    
-    // 预加载头像
+
     characters.forEach(char => {
       if (char.avatar_url && !avatarImages[char.id]) {
         const img = new Image();
         img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          avatarImages[char.id] = img;
-          draw(); // 重绘以显示新加载的头像
-        };
-        img.onerror = () => {
-          console.warn(`Failed to load avatar for ${char.name}`);
-          avatarImages[char.id] = null;
-        };
+        img.onload  = () => { avatarImages[char.id] = img; draw(); };
+        img.onerror = () => { avatarImages[char.id] = null; };
         img.src = char.avatar_url;
       }
     });
-    
-    // 初始化位置（如果没有保存的位置，使用自动布局）
+
     await fetchPositions();
     autoLayoutIfNeeded();
-    
     renderCharacterList();
     draw();
   } catch (e) {
@@ -695,11 +640,8 @@ async function fetchPositions() {
   try {
     const { data, error } = await supaClient.from('character_positions').select('*');
     if (error) throw error;
-    
     positions = {};
-    (data || []).forEach(pos => {
-      positions[pos.character_id] = { x: pos.x, y: pos.y };
-    });
+    (data || []).forEach(pos => { positions[pos.character_id] = { x: pos.x, y: pos.y }; });
   } catch (e) {
     console.error('Failed to fetch positions:', e);
   }
@@ -709,7 +651,6 @@ async function fetchRelationships() {
   try {
     const { data, error } = await supaClient.from('character_relationships').select('*');
     if (error) throw error;
-    
     relationships = (data || []).map(r => ({
       id: r.id,
       fromCharacterId: r.from_character_id,
@@ -717,7 +658,6 @@ async function fetchRelationships() {
       fromLabel: r.from_label || '',
       toLabel: r.to_label || ''
     }));
-    
     draw();
   } catch (e) {
     console.error('Failed to fetch relationships:', e);
@@ -728,12 +668,11 @@ async function fetchRelationships() {
 function autoLayoutIfNeeded() {
   const needsLayout = characters.some(char => !positions[char.id]);
   if (!needsLayout) return;
-  
-  // 圆形布局
+
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
   const radius = Math.min(canvas.width, canvas.height) / 3;
-  
+
   characters.forEach((char, idx) => {
     if (!positions[char.id]) {
       const angle = (idx / characters.length) * Math.PI * 2;
@@ -747,36 +686,26 @@ function autoLayoutIfNeeded() {
 
 async function savePosition(characterId, pos) {
   try {
-    const { error } = await supaClient
-      .from('character_positions')
-      .upsert({
-        character_id: characterId,
-        x: pos.x,
-        y: pos.y
-      });
-    
+    const { error } = await supaClient.from('character_positions').upsert({
+      character_id: characterId, x: pos.x, y: pos.y
+    });
     if (error) throw error;
   } catch (e) {
     console.error('Failed to save position:', e);
   }
 }
 
-async function saveRelationship(char1Id, char2Id, fromLabel, toLabel) {
+async function saveRelationship(charAId, charBId, labelFromA, labelFromB) {
+  // DB stores from_id < to_id always
+  const [from, to]       = charAId < charBId ? [charAId, charBId] : [charBId, charAId];
+  const [label1, label2] = charAId < charBId ? [labelFromA, labelFromB] : [labelFromB, labelFromA];
+
   try {
-    const [from, to] = char1Id < char2Id ? [char1Id, char2Id] : [char2Id, char1Id];
-    const [label1, label2] = char1Id < char2Id ? [fromLabel, toLabel] : [toLabel, fromLabel];
-    
-    const { error } = await supaClient
-      .from('character_relationships')
-      .upsert({
-        from_character_id: from,
-        to_character_id: to,
-        from_label: label1,
-        to_label: label2
-      });
-    
+    const { error } = await supaClient.from('character_relationships').upsert({
+      from_character_id: from, to_character_id: to,
+      from_label: label1, to_label: label2
+    });
     if (error) throw error;
-    
     await fetchRelationships();
     showToast('关系已保存');
   } catch (e) {
@@ -785,18 +714,12 @@ async function saveRelationship(char1Id, char2Id, fromLabel, toLabel) {
   }
 }
 
-async function deleteRelationship(char1Id, char2Id) {
+async function deleteRelationship(charAId, charBId) {
+  const [from, to] = charAId < charBId ? [charAId, charBId] : [charBId, charAId];
   try {
-    const [from, to] = char1Id < char2Id ? [char1Id, char2Id] : [char2Id, char1Id];
-    
-    const { error } = await supaClient
-      .from('character_relationships')
-      .delete()
-      .eq('from_character_id', from)
-      .eq('to_character_id', to);
-    
+    const { error } = await supaClient.from('character_relationships').delete()
+      .eq('from_character_id', from).eq('to_character_id', to);
     if (error) throw error;
-    
     await fetchRelationships();
     showToast('关系已删除');
   } catch (e) {
@@ -805,37 +728,139 @@ async function deleteRelationship(char1Id, char2Id) {
   }
 }
 
+// ── 关系编辑弹窗 ──────────────────────────────────
+
+function openRelModal(charA) {
+  relModalCharA = charA;
+  relModalCharB = null;
+
+  pageContainer.querySelector('#rel-modal-title').textContent = `编辑 ${charA.name} 的关系`;
+  pageContainer.querySelector('#rel-modal-labels').style.display = 'none';
+  pageContainer.querySelector('#rel-modal-save').disabled = true;
+  pageContainer.querySelector('#rel-modal-delete').style.display = 'none';
+  pageContainer.querySelector('#rel-modal-from-input').value = '';
+  pageContainer.querySelector('#rel-modal-to-input').value = '';
+
+  renderModalCharPicker();
+
+  pageContainer.querySelector('#rel-edit-modal').classList.add('show');
+}
+
+function renderModalCharPicker() {
+  const picker = pageContainer.querySelector('#rel-modal-char-picker');
+  const others = characters.filter(c => c.id !== relModalCharA.id);
+
+  if (!others.length) {
+    picker.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px">暂无其他人物</div>';
+    return;
+  }
+
+  picker.innerHTML = others.map(c => {
+    const avHtml = c.avatar_url
+      ? `<img src="${c.avatar_url}" style="width:100%;height:100%;object-fit:cover" />`
+      : c.name.charAt(0).toUpperCase();
+    const avBg = c.avatar_url ? 'transparent' : (c.color || '#7c83f7');
+    const isSelected = relModalCharB?.id === c.id;
+    return `
+      <button class="rel-modal-char-btn${isSelected ? ' selected' : ''}" data-id="${c.id}">
+        <div class="rel-modal-char-av" style="background:${avBg}">${avHtml}</div>
+        <div class="rel-modal-char-name">${c.name}</div>
+      </button>`;
+  }).join('');
+
+  picker.querySelectorAll('.rel-modal-char-btn').forEach(btn => {
+    btn.addEventListener('click', () => selectModalCharB(parseInt(btn.dataset.id)));
+  });
+}
+
+function selectModalCharB(charBId) {
+  relModalCharB = characters.find(c => c.id === charBId);
+  if (!relModalCharB) return;
+
+  // Update visual selection
+  pageContainer.querySelectorAll('.rel-modal-char-btn').forEach(btn => {
+    btn.classList.toggle('selected', parseInt(btn.dataset.id) === charBId);
+  });
+
+  // Show labels
+  pageContainer.querySelector('#rel-modal-labels').style.display = 'block';
+  pageContainer.querySelector('#rel-modal-label-a').textContent = `${relModalCharA.name} 对 ${relModalCharB.name} 是`;
+  pageContainer.querySelector('#rel-modal-label-b').textContent = `${relModalCharB.name} 对 ${relModalCharA.name} 是`;
+
+  // Load existing relationship
+  const [from, to] = relModalCharA.id < relModalCharB.id
+    ? [relModalCharA.id, relModalCharB.id]
+    : [relModalCharB.id, relModalCharA.id];
+
+  const rel = relationships.find(r => r.fromCharacterId === from && r.toCharacterId === to);
+  const fromInput = pageContainer.querySelector('#rel-modal-from-input');
+  const toInput   = pageContainer.querySelector('#rel-modal-to-input');
+
+  if (rel) {
+    // If charA has smaller ID, it's "from" in DB; otherwise it's "to"
+    if (relModalCharA.id < relModalCharB.id) {
+      fromInput.value = rel.fromLabel || '';
+      toInput.value   = rel.toLabel   || '';
+    } else {
+      // charA is stored as "to" in DB, so swap for display
+      fromInput.value = rel.toLabel   || '';
+      toInput.value   = rel.fromLabel || '';
+    }
+    pageContainer.querySelector('#rel-modal-delete').style.display = '';
+  } else {
+    fromInput.value = '';
+    toInput.value   = '';
+    pageContainer.querySelector('#rel-modal-delete').style.display = 'none';
+  }
+
+  pageContainer.querySelector('#rel-modal-save').disabled = false;
+}
+
+function closeRelModal() {
+  pageContainer.querySelector('#rel-edit-modal').classList.remove('show');
+  relModalCharA = null;
+  relModalCharB = null;
+}
+
 // ── UI 渲染 ───────────────────────────────────────
 
 function renderCharacterList() {
   const listEl = pageContainer.querySelector('#rel-char-list');
   if (!characters.length) {
-    listEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted)">暂无人物</div>';
+    listEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">暂无人物</div>';
     return;
   }
-  
+
+  const editor = isEditor();
+
   listEl.innerHTML = characters.map(char => {
-    // 头像 HTML
-    const avatarHtml = char.avatar_url 
-      ? `<img src="${char.avatar_url}" class="rel-char-avatar-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-         <div class="rel-char-avatar" style="display:none">${char.name.charAt(0)}</div>`
-      : `<div class="rel-char-avatar">${char.name.charAt(0)}</div>`;
-    
+    const avContent = char.avatar_url
+      ? `<img src="${char.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'" />`
+      : char.name.charAt(0).toUpperCase();
+    const avBg = char.avatar_url ? 'transparent' : (char.color || '#7c83f7');
+
     return `
       <div class="rel-char-item ${selectedIds.has(char.id) ? 'selected' : ''}" data-id="${char.id}">
-        ${avatarHtml}
-        <div class="rel-char-info">
-          <div class="rel-char-name">${char.name}</div>
-        </div>
-      </div>
-    `;
+        <div class="rel-char-avatar" style="background:${avBg}">${avContent}</div>
+        <span class="rel-char-name">${char.name}</span>
+        ${editor ? `<button class="rel-char-edit-btn" data-edit-id="${char.id}" title="编辑关系">✏️</button>` : ''}
+      </div>`;
   }).join('');
-  
-  // 绑定事件
+
   listEl.querySelectorAll('.rel-char-item').forEach(el => {
     const id = parseInt(el.dataset.id);
-    el.addEventListener('click', () => {
+    el.addEventListener('click', e => {
+      if (e.target.closest('.rel-char-edit-btn')) return;
       toggleCharacterSelection(id);
+    });
+  });
+
+  listEl.querySelectorAll('.rel-char-edit-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (!isEditor()) { showToast('🔒 请先解锁编辑'); return; }
+      const char = characters.find(c => c.id === parseInt(btn.dataset.editId));
+      if (char) openRelModal(char);
     });
   });
 }
@@ -846,127 +871,100 @@ function toggleCharacterSelection(charId) {
   } else {
     selectedIds.add(charId);
   }
-  
   renderCharacterList();
-  updateEditForm();
   draw();
 }
 
-function updateEditForm() {
-  const editForm = pageContainer.querySelector('#rel-edit-form');
-  const selectedArray = Array.from(selectedIds);
-  
-  if (!isEditor() || selectedArray.length !== 2) {
-    editForm.style.display = 'none';
-    return;
-  }
-  
-  editForm.style.display = 'block';
-  
-  const [id1, id2] = selectedArray;
-  const char1 = characters.find(c => c.id === id1);
-  const char2 = characters.find(c => c.id === id2);
-  
-  if (!char1 || !char2) return;
-  
-  // 查找现有关系（数据库中 from < to）
-  const [from, to] = id1 < id2 ? [id1, id2] : [id2, id1];
-  const rel = relationships.find(r => 
-    r.fromCharacterId === from && r.toCharacterId === to
-  );
-  
-  const fromInput = pageContainer.querySelector('#rel-from-label');
-  const toInput = pageContainer.querySelector('#rel-to-label');
-  
-  // 设置 placeholder 和 value（基于选择顺序，不是数据库顺序）
-  fromInput.placeholder = `${char1.name} 对 ${char2.name} 是`;
-  toInput.placeholder = `${char2.name} 对 ${char1.name} 是`;
-  
-  if (rel) {
-    // 如果选择顺序与数据库顺序一致
-    if (id1 < id2) {
-      fromInput.value = rel.fromLabel || '';
-      toInput.value = rel.toLabel || '';
-    } else {
-      // 选择顺序相反，需要交换
-      fromInput.value = rel.toLabel || '';
-      toInput.value = rel.fromLabel || '';
-    }
-  } else {
-    fromInput.value = '';
-    toInput.value = '';
-  }
-}
-
-// ── 控制按钮 ──────────────────────────────────────
-
-// ── 事件绑定 ──────────────────────────────────────
+// ── 控制绑定 ──────────────────────────────────────
 
 function bindControls() {
-  // Canvas 事件
+  // Canvas events
   canvas.addEventListener('mousedown', handleCanvasMouseDown);
   canvas.addEventListener('mousemove', handleCanvasMouseMove);
   canvas.addEventListener('mouseup', handleCanvasMouseUp);
   canvas.addEventListener('mouseleave', handleCanvasMouseUp);
   canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
-  
-  // 侧边栏折叠
-  function toggleSidebar() {
-    const sidebar = pageContainer.querySelector('.rel-sidebar');
-    const expandBtn = pageContainer.querySelector('#rel-expand-btn');
-    const chevron = pageContainer.querySelector('#rel-sidebar-chevron');
-    const collapsed = sidebar.classList.toggle('collapsed');
-    if (chevron) chevron.textContent = collapsed ? '▶' : '◀';
-    if (expandBtn) expandBtn.classList.toggle('show', collapsed);
+
+  // Panel toggle (map-panel style: slide out with transform)
+  function togglePanel() {
+    panelOpen = !panelOpen;
+    const panel    = pageContainer.querySelector('#rel-panel');
+    const chevron  = pageContainer.querySelector('#rel-panel-chevron');
+    const expandBtn = pageContainer.querySelector('#rel-expand');
+    panel.classList.toggle('collapsed', !panelOpen);
+    if (chevron)    chevron.textContent = panelOpen ? '◀' : '▶';
+    if (expandBtn)  expandBtn.classList.toggle('show', !panelOpen);
   }
-  
-  pageContainer.querySelector('#rel-sidebar-toggle')?.addEventListener('click', toggleSidebar);
-  pageContainer.querySelector('#rel-expand-btn')?.addEventListener('click', toggleSidebar);
-  
-  // 按钮
+
+  pageContainer.querySelector('#rel-panel-toggle')?.addEventListener('click', togglePanel);
+  pageContainer.querySelector('#rel-expand')?.addEventListener('click', togglePanel);
+
+  // Zoom toolbar
+  pageContainer.querySelector('#rel-zoom-in').addEventListener('click', () => {
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+    const nz = Math.min(3, scale * 1.3);
+    canvasOffsetX = cx - (cx - canvasOffsetX) * (nz / scale);
+    canvasOffsetY = cy - (cy - canvasOffsetY) * (nz / scale);
+    scale = nz; draw();
+  });
+  pageContainer.querySelector('#rel-zoom-out').addEventListener('click', () => {
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+    const nz = Math.max(0.3, scale / 1.3);
+    canvasOffsetX = cx - (cx - canvasOffsetX) * (nz / scale);
+    canvasOffsetY = cy - (cy - canvasOffsetY) * (nz / scale);
+    scale = nz; draw();
+  });
+  pageContainer.querySelector('#rel-zoom-fit').addEventListener('click', () => {
+    scale = 1;
+    canvasOffsetX = canvas.width / 2;
+    canvasOffsetY = canvas.height / 2;
+    draw();
+    showToast('视角已重置');
+  });
+
+  // Select/clear
   pageContainer.querySelector('#rel-select-all').addEventListener('click', () => {
     characters.forEach(c => selectedIds.add(c.id));
     renderCharacterList();
     draw();
   });
-  
   pageContainer.querySelector('#rel-clear-all').addEventListener('click', () => {
     selectedIds.clear();
     renderCharacterList();
-    updateEditForm();
     draw();
   });
-  
-  // 编辑表单
-  pageContainer.querySelector('#rel-save-btn').addEventListener('click', () => {
-    const selectedArray = Array.from(selectedIds);
-    if (selectedArray.length !== 2) return;
-    
-    const [id1, id2] = selectedArray;
-    const fromLabel = pageContainer.querySelector('#rel-from-label').value.trim();
-    const toLabel = pageContainer.querySelector('#rel-to-label').value.trim();
-    
-    saveRelationship(id1, id2, fromLabel, toLabel);
+
+  // Modal buttons
+  pageContainer.querySelector('#rel-modal-cancel').addEventListener('click', closeRelModal);
+  pageContainer.querySelector('#rel-edit-modal').addEventListener('mousedown', e => {
+    if (e.target === pageContainer.querySelector('#rel-edit-modal')) closeRelModal();
   });
-  
-  pageContainer.querySelector('#rel-delete-btn').addEventListener('click', () => {
-    const selectedArray = Array.from(selectedIds);
-    if (selectedArray.length !== 2) return;
-    
-    if (!confirmDialog('确定要删除这个关系吗？')) return;
-    
-    const [id1, id2] = selectedArray;
-    deleteRelationship(id1, id2);
+
+  pageContainer.querySelector('#rel-modal-save').addEventListener('click', async () => {
+    if (!relModalCharA || !relModalCharB) return;
+    const labelA = pageContainer.querySelector('#rel-modal-from-input').value.trim();
+    const labelB = pageContainer.querySelector('#rel-modal-to-input').value.trim();
+    const aId = relModalCharA.id, bId = relModalCharB.id;
+    closeRelModal();
+    await saveRelationship(aId, bId, labelA, labelB);
   });
-  
-  // 监听权限变化
+
+  pageContainer.querySelector('#rel-modal-delete').addEventListener('click', async () => {
+    if (!relModalCharA || !relModalCharB) return;
+    if (!confirmDialog(`确定要删除「${relModalCharA.name}」和「${relModalCharB.name}」之间的关系吗？`)) return;
+    const aId = relModalCharA.id, bId = relModalCharB.id;
+    closeRelModal();
+    await deleteRelationship(aId, bId);
+  });
+
+  // Auth changes: re-render list + close modal if needed
   onAuthChange(() => {
-    const editTools = pageContainer.querySelector('#rel-edit-tools');
-    editTools.style.display = isEditor() ? 'block' : 'none';
-    updateEditForm();
+    renderCharacterList();
+    if (!isEditor() && pageContainer.querySelector('#rel-edit-modal')?.classList.contains('show')) {
+      closeRelModal();
+    }
   });
-  
-  // 窗口大小变化
+
   window.addEventListener('resize', resizeCanvas);
 }
 
@@ -985,24 +983,17 @@ function subscribeRealtime() {
 export async function mount(container) {
   pageContainer = container;
   container.innerHTML = buildHTML();
-  
+
   canvas = container.querySelector('#rel-canvas');
   ctx = canvas.getContext('2d');
-  
+
   bindControls();
   resizeCanvas();
-  
-  // 初始显示编辑工具（根据权限）
-  const editTools = container.querySelector('#rel-edit-tools');
-  editTools.style.display = isEditor() ? 'block' : 'none';
-  
+
   setSyncStatus('syncing');
-  await Promise.all([
-    fetchCharacters(),
-    fetchRelationships()
-  ]);
+  await Promise.all([fetchCharacters(), fetchRelationships()]);
   setSyncStatus('ok');
-  
+
   subscribeRealtime();
 }
 
