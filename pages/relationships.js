@@ -12,6 +12,7 @@ let characters = [];      // 所有人物
 let relationships = [];   // 所有关系
 let positions = {};       // 人物位置 {characterId: {x, y}}
 let selectedIds = new Set();  // 选中的人物 ID
+let avatarImages = {};    // 缓存头像图片 {characterId: Image}
 
 // 画布状态
 let isDragging = false;
@@ -108,7 +109,7 @@ function buildHTML() {
 .rel-canvas-container {
   flex: 1;
   position: relative;
-  background: var(--bg-canvas, #f8fafc);
+  background: var(--bg, #ffffff);
   overflow: hidden;
 }
 
@@ -252,6 +253,9 @@ function draw() {
   // 清空画布
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
+  // 绘制网格（在变换之前）
+  drawGrid();
+  
   ctx.save();
   ctx.translate(canvasOffsetX, canvasOffsetY);
   ctx.scale(scale, scale);
@@ -261,6 +265,34 @@ function draw() {
   
   // 绘制人物节点
   drawCharacters();
+  
+  ctx.restore();
+}
+
+function drawGrid() {
+  const step = 50; // 网格间距
+  const offsetX = canvasOffsetX % step;
+  const offsetY = canvasOffsetY % step;
+  
+  ctx.save();
+  ctx.strokeStyle = 'rgba(124, 131, 247, 0.07)';
+  ctx.lineWidth = 1;
+  
+  // 垂直线
+  for (let x = offsetX; x < canvas.width; x += step) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+  
+  // 水平线
+  for (let y = offsetY; y < canvas.height; y += step) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
   
   ctx.restore();
 }
@@ -294,57 +326,61 @@ function drawRelationships() {
     ctx.lineTo(pos2.x, pos2.y);
     ctx.stroke();
     
-    // 绘制标签
+    // 绘制标签（在连线两端，始终水平）
     if (rel.fromLabel || rel.toLabel) {
-      const midX = (pos1.x + pos2.x) / 2;
-      const midY = (pos1.y + pos2.y) / 2;
+      // 计算连线的角度和长度
+      const dx = pos2.x - pos1.x;
+      const dy = pos2.y - pos1.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx);
       
-      // 计算角度
-      const angle = Math.atan2(pos2.y - pos1.y, pos2.x - pos1.x);
+      // 单位向量
+      const ux = dx / dist;
+      const uy = dy / dist;
       
-      ctx.save();
-      ctx.translate(midX, midY);
+      // 标签距离节点的偏移量（节点半径 + 间隙）
+      const labelOffset = NODE_RADIUS + 10;
       
-      // 绘制标签背景和文字
+      // char1 侧的标签（fromLabel）
       if (rel.fromLabel) {
-        drawLabel(rel.fromLabel, -20, angle);
-      }
-      if (rel.toLabel) {
-        drawLabel(rel.toLabel, 20, angle + Math.PI);
+        const labelX = pos1.x + ux * labelOffset;
+        const labelY = pos1.y + uy * labelOffset;
+        drawLabelAtPosition(rel.fromLabel, labelX, labelY, isActive);
       }
       
-      ctx.restore();
+      // char2 侧的标签（toLabel）
+      if (rel.toLabel) {
+        const labelX = pos2.x - ux * labelOffset;
+        const labelY = pos2.y - uy * labelOffset;
+        drawLabelAtPosition(rel.toLabel, labelX, labelY, isActive);
+      }
     }
   });
 }
 
-function drawLabel(text, offset, angle) {
+function drawLabelAtPosition(text, x, y, isActive) {
   ctx.save();
   
-  ctx.font = '12px sans-serif';
+  ctx.font = '12px system-ui, sans-serif';
   const metrics = ctx.measureText(text);
-  const padding = 4;
+  const padding = 6;
   const width = metrics.width + padding * 2;
-  const height = 16;
-  
-  // 旋转到垂直于线的方向
-  ctx.rotate(angle + Math.PI / 2);
-  ctx.translate(0, offset);
+  const height = 20;
   
   // 背景
-  ctx.fillStyle = LABEL_BG;
-  ctx.fillRect(-width / 2, -height / 2, width, height);
+  ctx.fillStyle = isActive ? 'rgba(124, 131, 247, 0.95)' : LABEL_BG;
+  ctx.fillRect(x - width / 2, y - height / 2, width, height);
   
   // 边框
-  ctx.strokeStyle = LINE_COLOR;
+  ctx.strokeStyle = isActive ? '#5865f2' : LINE_COLOR;
   ctx.lineWidth = 1;
-  ctx.strokeRect(-width / 2, -height / 2, width, height);
+  ctx.strokeRect(x - width / 2, y - height / 2, width, height);
   
-  // 文字
-  ctx.fillStyle = '#334155';
+  // 文字（始终水平）
+  ctx.fillStyle = isActive ? '#ffffff' : '#334155';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, 0, 0);
+  ctx.fillText(text, x, y);
   
   ctx.restore();
 }
@@ -356,19 +392,22 @@ function drawCharacters() {
     const pos = positions[char.id] || { x: 100, y: 100 };
     const isSelected = selectedIds.has(char.id);
     
-    // 绘制节点圆圈
+    // 绘制节点圆圈背景
+    ctx.save();
     ctx.fillStyle = isSelected ? NODE_SELECTED_COLOR : NODE_COLOR;
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, NODE_RADIUS, 0, Math.PI * 2);
     ctx.fill();
     
     // 绘制头像或首字母
-    if (char.avatar) {
-      // TODO: 如果有头像URL，绘制图片
-      drawInitial(char, pos);
+    const avatarImg = avatarImages[char.id];
+    if (avatarImg && avatarImg.complete) {
+      drawAvatar(avatarImg, pos.x, pos.y);
     } else {
       drawInitial(char, pos);
     }
+    
+    ctx.restore();
     
     // 绘制名字
     ctx.fillStyle = '#1e293b';
@@ -377,6 +416,45 @@ function drawCharacters() {
     ctx.textBaseline = 'top';
     ctx.fillText(char.name, pos.x, pos.y + NODE_RADIUS + 8);
   });
+}
+
+function drawAvatar(img, x, y) {
+  ctx.save();
+  
+  // 创建圆形裁剪路径
+  ctx.beginPath();
+  ctx.arc(x, y, NODE_RADIUS - 2, 0, Math.PI * 2);
+  ctx.clip();
+  
+  // 计算图片绘制尺寸（保持比例，填满圆形）
+  const size = NODE_RADIUS * 2;
+  const imgRatio = img.width / img.height;
+  let drawWidth, drawHeight, offsetX, offsetY;
+  
+  if (imgRatio > 1) {
+    // 宽图：以高度为准
+    drawHeight = size;
+    drawWidth = size * imgRatio;
+    offsetX = -(drawWidth - size) / 2;
+    offsetY = 0;
+  } else {
+    // 高图：以宽度为准
+    drawWidth = size;
+    drawHeight = size / imgRatio;
+    offsetX = 0;
+    offsetY = -(drawHeight - size) / 2;
+  }
+  
+  // 绘制图片
+  ctx.drawImage(
+    img,
+    x - NODE_RADIUS + offsetX,
+    y - NODE_RADIUS + offsetY,
+    drawWidth,
+    drawHeight
+  );
+  
+  ctx.restore();
 }
 
 function drawInitial(char, pos) {
@@ -452,6 +530,23 @@ async function fetchCharacters() {
     if (error) throw error;
     
     characters = data || [];
+    
+    // 预加载头像
+    characters.forEach(char => {
+      if (char.avatar_url && !avatarImages[char.id]) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          avatarImages[char.id] = img;
+          draw(); // 重绘以显示新加载的头像
+        };
+        img.onerror = () => {
+          console.warn(`Failed to load avatar for ${char.name}`);
+          avatarImages[char.id] = null;
+        };
+        img.src = char.avatar_url;
+      }
+    });
     
     // 初始化位置（如果没有保存的位置，使用自动布局）
     await fetchPositions();
