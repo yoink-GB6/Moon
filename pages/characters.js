@@ -1,53 +1,52 @@
-// pages/characters.js
-// Introduction 页面：人物介绍 + 国家势力
+// pages/characters.js  
+// Introduction 页面：人物介绍 + 地理信息系统
 
 import { supaClient, setSyncStatus } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
-import { showToast, escHtml, confirmDialog } from '../core/ui.js';
+import { showToast, escHtml } from '../core/ui.js';
 
 // 数据
 let allChars = [];
-let allFactions = [];
-let editCharId = null;
-let editFactionId = null;
-let pendingAvatar = undefined;
-let pendingAvatarIsFile = false;
-let charsRealtimeCh = null;
-let factionsRealtimeCh = null;
+let allCountries = [];
+let allCities = [];
+let allLandmarks = [];
 let currentTab = 'characters';
+let selectedCountry = null;
+let selectedCity = null;
+let searchQuery = '';
 let pageContainer = null;
+
+// Realtime channels
+let charsChannel = null;
+let geoChannel = null;
 
 export async function mount(container) {
   pageContainer = container;
   container.innerHTML = buildHTML();
   bindControls(container);
   onAuthChange(() => updateUI(container));
-  updateUI(container);
   
-  await Promise.all([
-    fetchCharacters(container),
-    fetchFactions(container)
-  ]);
-  
+  await loadAllData(container);
   subscribeRealtime();
   switchTab('characters', container);
+  updateUI(container);
 }
 
 export function unmount() {
-  charsRealtimeCh && supaClient.removeChannel(charsRealtimeCh);
-  factionsRealtimeCh && supaClient.removeChannel(factionsRealtimeCh);
+  charsChannel && supaClient.removeChannel(charsChannel);
+  geoChannel && supaClient.removeChannel(geoChannel);
 }
 
 function buildHTML() {
   return `
 <div class="intro-page">
-  <!-- Tab Navigation -->
+  <!-- Tabs -->
   <div class="intro-tabs">
     <button class="intro-tab active" data-tab="characters">
       <span class="tab-icon">👥</span>
       <span class="tab-label">人物介绍</span>
     </button>
-    <button class="intro-tab" data-tab="factions">
+    <button class="intro-tab" data-tab="geography">
       <span class="tab-icon">🏛️</span>
       <span class="tab-label">国家及势力</span>
     </button>
@@ -57,98 +56,33 @@ function buildHTML() {
   <div class="intro-content" id="tab-characters">
     <div class="intro-header">
       <h2>👥 人物介绍</h2>
-      <button class="btn bp" id="chars-add-btn" style="display:none">＋ 新建人物</button>
+      <button class="btn bp" id="chars-add-btn" style="display:none">＋ 新建</button>
     </div>
     <div class="intro-grid" id="chars-grid"></div>
   </div>
   
-  <!-- Factions Tab -->
-  <div class="intro-content" id="tab-factions" style="display:none">
-    <div class="intro-header">
-      <h2>🏛️ 国家及势力</h2>
-      <button class="btn bp" id="factions-add-btn" style="display:none">＋ 新建势力</button>
-    </div>
-    <div class="intro-grid" id="factions-grid"></div>
-  </div>
-</div>
-
-<!-- Character Modal -->
-<div id="char-modal" class="tl-modal-overlay">
-  <div class="tl-modal" style="max-width:480px" onmousedown="event.stopPropagation()">
-    <h2 id="char-modal-title">新建人物</h2>
-    
-    <label>名字</label>
-    <input id="char-name" type="text" autocomplete="off"/>
-    
-    <label>年龄（可选）</label>
-    <input id="char-age" type="text" placeholder="25 或 25-30"/>
-    
-    <label>描述（可选）</label>
-    <textarea id="char-desc" rows="3" placeholder="人物介绍..."></textarea>
-    
-    <label>头像</label>
-    <div class="avatar-section">
-      <div id="char-avatar-preview" class="avatar-preview">
-        <span id="char-avatar-letter">?</span>
-        <div id="char-avatar-clear" class="avatar-clear">✕</div>
+  <!-- Geography Tab -->
+  <div class="intro-content geo-layout" id="tab-geography" style="display:none">
+    <!-- Left: Country Tree -->
+    <div class="geo-sidebar geo-tree">
+      <div class="geo-tree-header">
+        <h3>地理结构</h3>
+        <button class="btn bn" id="add-country-btn" style="display:none">＋ 国家</button>
       </div>
-      <div class="avatar-buttons">
-        <button class="btn bn" id="char-upload-btn">📁 上传</button>
-        <button class="btn bn" id="char-url-btn">🔗 链接</button>
-      </div>
-      <input type="file" id="char-file-input" accept="image/*" style="display:none"/>
-      <div id="char-url-input-row" style="display:none;margin-top:8px">
-        <input id="char-url-input" type="url" placeholder="https://..."/>
-        <button class="btn bp" id="char-url-confirm">确定</button>
-      </div>
+      <div id="geo-tree-list" class="geo-tree-list"></div>
     </div>
     
-    <div class="modal-buttons">
-      <button class="btn bp" id="char-save-btn">保存</button>
-      <button class="btn bn" id="char-cancel-btn">取消</button>
-    </div>
-  </div>
-</div>
-
-<!-- Faction Modal -->
-<div id="faction-modal" class="tl-modal-overlay">
-  <div class="tl-modal" style="max-width:480px" onmousedown="event.stopPropagation()">
-    <h2 id="faction-modal-title">新建势力</h2>
-    
-    <label>名称</label>
-    <input id="faction-name" type="text" autocomplete="off"/>
-    
-    <label>类型</label>
-    <select id="faction-type">
-      <option value="country">国家</option>
-      <option value="organization">组织</option>
-      <option value="faction">势力</option>
-      <option value="other">其他</option>
-    </select>
-    
-    <label>描述（可选）</label>
-    <textarea id="faction-desc" rows="3" placeholder="势力介绍..."></textarea>
-    
-    <label>旗帜/徽章</label>
-    <div class="avatar-section">
-      <div id="faction-flag-preview" class="avatar-preview">
-        <span id="faction-flag-letter">?</span>
-        <div id="faction-flag-clear" class="avatar-clear">✕</div>
-      </div>
-      <div class="avatar-buttons">
-        <button class="btn bn" id="faction-upload-btn">📁 上传</button>
-        <button class="btn bn" id="faction-url-btn">🔗 链接</button>
-      </div>
-      <input type="file" id="faction-file-input" accept="image/*" style="display:none"/>
-      <div id="faction-url-input-row" style="display:none;margin-top:8px">
-        <input id="faction-url-input" type="url" placeholder="https://..."/>
-        <button class="btn bp" id="faction-url-confirm">确定</button>
-      </div>
+    <!-- Center: Detail View -->
+    <div class="geo-main">
+      <div id="geo-detail-view" class="geo-detail"></div>
     </div>
     
-    <div class="modal-buttons">
-      <button class="btn bp" id="faction-save-btn">保存</button>
-      <button class="btn bn" id="faction-cancel-btn">取消</button>
+    <!-- Right: Search Sidebar -->
+    <div class="geo-sidebar geo-search">
+      <div class="geo-search-box">
+        <input type="text" id="geo-search-input" placeholder="搜索国家、城市、人物、地标..."/>
+      </div>
+      <div id="geo-search-results" class="geo-search-results"></div>
     </div>
   </div>
 </div>
@@ -177,21 +111,16 @@ function buildHTML() {
   border: none;
   background: transparent;
   color: var(--muted);
-  font-size: 14px;
-  font-weight: 500;
   cursor: pointer;
-  border-radius: 8px 8px 0 0;
-  transition: all 0.2s;
   position: relative;
 }
 
 .intro-tab:hover {
-  background: rgba(124, 131, 247, 0.08);
   color: var(--text);
+  background: rgba(124,131,247,0.05);
 }
 
 .intro-tab.active {
-  background: transparent;
   color: var(--accent);
 }
 
@@ -205,10 +134,6 @@ function buildHTML() {
   background: var(--accent);
 }
 
-.tab-icon {
-  font-size: 18px;
-}
-
 .intro-content {
   flex: 1;
   overflow-y: auto;
@@ -218,13 +143,7 @@ function buildHTML() {
 .intro-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: 20px;
-}
-
-.intro-header h2 {
-  margin: 0;
-  font-size: 20px;
 }
 
 .intro-grid {
@@ -238,8 +157,8 @@ function buildHTML() {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
-  transition: all 0.2s;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
 .intro-card:hover {
@@ -264,8 +183,8 @@ function buildHTML() {
   justify-content: center;
   font-size: 24px;
   font-weight: 600;
-  flex-shrink: 0;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .intro-avatar img {
@@ -274,114 +193,222 @@ function buildHTML() {
   object-fit: cover;
 }
 
-.intro-card-info {
-  flex: 1;
-  min-width: 0;
+/* Geography Layout */
+.geo-layout {
+  display: flex;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
-.intro-card-name {
-  font-size: 16px;
+.geo-sidebar {
+  width: 280px;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.geo-tree {
+  border-right: 1px solid var(--border);
+}
+
+.geo-search {
+  border-left: 1px solid var(--border);
+  border-right: none;
+}
+
+.geo-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.geo-tree-header, .geo-search-box {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.geo-tree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.geo-tree-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.geo-tree-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.geo-tree-item {
+  padding: 8px 12px;
+  margin: 2px 0;
+  cursor: pointer;
+  border-radius: 6px;
+  user-select: none;
+}
+
+.geo-tree-item:hover {
+  background: rgba(124,131,247,0.08);
+}
+
+.geo-tree-item.active {
+  background: rgba(124,131,247,0.12);
+  color: var(--accent);
+}
+
+.geo-tree-country {
+  font-weight: 600;
+}
+
+.geo-tree-city {
+  margin-left: 20px;
+  font-size: 13px;
+}
+
+.geo-tree-toggle {
+  display: inline-block;
+  width: 16px;
+  text-align: center;
+  margin-right: 4px;
+}
+
+.geo-detail {
+  max-width: 800px;
+}
+
+.geo-detail h2 {
+  margin: 0 0 24px 0;
+  font-size: 28px;
+}
+
+.geo-detail-section {
+  margin-bottom: 32px;
+}
+
+.geo-detail-section h3 {
+  font-size: 18px;
+  margin: 0 0 12px 0;
+  color: var(--accent);
+}
+
+.geo-detail-field {
+  margin-bottom: 16px;
+}
+
+.geo-detail-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.geo-detail-value {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.geo-landmark-item {
+  padding: 12px;
+  margin: 8px 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.geo-landmark-name {
   font-weight: 600;
   margin-bottom: 4px;
 }
 
-.intro-card-meta {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.intro-card-desc {
+.geo-person-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  margin: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
   font-size: 13px;
-  line-height: 1.5;
-  color: var(--text);
-  max-height: 60px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
 }
 
-.avatar-section {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.avatar-preview {
-  width: 80px;
-  height: 80px;
+.geo-person-avatar {
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--accent);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
-  font-weight: 600;
-  position: relative;
+  font-size: 12px;
   overflow: hidden;
-  flex-shrink: 0;
 }
 
-.avatar-preview img {
+.geo-person-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.avatar-clear {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 24px;
-  height: 24px;
-  background: rgba(0,0,0,0.6);
-  color: white;
-  border-radius: 50%;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  cursor: pointer;
+#geo-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
 }
 
-.avatar-preview:hover .avatar-clear {
-  display: flex;
-}
-
-.avatar-buttons {
-  display: flex;
-  gap: 8px;
-  flex-direction: column;
-}
-
-.modal-buttons {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.modal-buttons button {
+.geo-search-results {
   flex: 1;
+  overflow-y: auto;
+  padding: 8px;
 }
 
-@media (max-width: 768px) {
-  .intro-grid {
-    grid-template-columns: 1fr;
+.geo-search-group {
+  margin-bottom: 16px;
+}
+
+.geo-search-group-title {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  padding: 0 8px;
+}
+
+.geo-search-item {
+  padding: 8px 12px;
+  margin: 2px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.geo-search-item:hover {
+  background: rgba(124,131,247,0.08);
+}
+
+.geo-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+}
+
+@media (max-width: 1024px) {
+  .geo-layout {
+    flex-direction: column;
   }
-  
-  .intro-tabs {
-    padding: 12px 16px 0 16px;
-  }
-  
-  .intro-tab {
-    padding: 10px 16px;
-  }
-  
-  .intro-content {
-    padding: 16px;
+  .geo-sidebar {
+    width: 100%;
+    max-height: 300px;
   }
 }
 </style>
@@ -392,61 +419,77 @@ function bindControls(container) {
   // Tab switching
   container.querySelectorAll('.intro-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      const tabName = tab.dataset.tab;
-      switchTab(tabName, container);
+      switchTab(tab.dataset.tab, container);
     });
   });
   
-  // Characters
-  container.querySelector('#chars-add-btn')?.addEventListener('click', () => openCharModal(container, null));
+  // Characters add button
+  container.querySelector('#chars-add-btn')?.addEventListener('click', () => {
+    showToast('人物编辑功能（使用原有模态框）');
+  });
   
-  // Factions
-  container.querySelector('#factions-add-btn')?.addEventListener('click', () => openFactionModal(container, null));
+  // Geography add buttons
+  container.querySelector('#add-country-btn')?.addEventListener('click', () => {
+    showToast('添加国家功能');
+  });
   
-  // Character modal
-  setupCharModal(container);
-  
-  // Faction modal
-  setupFactionModal(container);
+  // Search input
+  container.querySelector('#geo-search-input')?.addEventListener('input', (e) => {
+    searchQuery = e.target.value.toLowerCase();
+    renderSearchResults(container);
+  });
 }
 
 function switchTab(tabName, container) {
   currentTab = tabName;
   
-  // Update tab buttons
   container.querySelectorAll('.intro-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.tab === tabName);
   });
   
-  // Update content
   container.querySelectorAll('.intro-content').forEach(content => {
-    content.style.display = content.id === `tab-${tabName}` ? 'block' : 'none';
+    content.style.display = content.id === `tab-${tabName}` ? (tabName === 'geography' ? 'flex' : 'block') : 'none';
   });
+  
+  if (tabName === 'geography') {
+    renderGeoTree(container);
+    renderSearchResults(container);
+  }
 }
 
 function updateUI(container) {
   const editor = isEditor();
   container.querySelector('#chars-add-btn').style.display = editor ? 'block' : 'none';
-  container.querySelector('#factions-add-btn').style.display = editor ? 'block' : 'none';
+  container.querySelector('#add-country-btn').style.display = editor ? 'block' : 'none';
 }
 
-// ========== Characters ==========
+// ========== Data Loading ==========
 
-async function fetchCharacters(container) {
+async function loadAllData(container) {
+  setSyncStatus('syncing');
   try {
-    setSyncStatus('syncing');
-    const { data, error } = await supaClient.from('characters').select('*').order('created_at');
-    if (error) throw error;
+    const [chars, countries, cities, landmarks] = await Promise.all([
+      supaClient.from('characters').select('*').order('name'),
+      supaClient.from('countries').select('*').order('name'),
+      supaClient.from('cities').select('*').order('name'),
+      supaClient.from('landmarks').select('*').order('created_at')
+    ]);
     
-    allChars = data || [];
+    allChars = chars.data || [];
+    allCountries = countries.data || [];
+    allCities = cities.data || [];
+    allLandmarks = landmarks.data || [];
+    
     renderCharacters(container);
     setSyncStatus('ok');
   } catch (e) {
-    console.error('Failed to fetch characters:', e);
-    showToast('加载人物失败');
+    console.error('Failed to load data:', e);
+    showToast('加载数据失败');
     setSyncStatus('error');
   }
 }
+
+// ========== Characters Tab ==========
 
 function renderCharacters(container) {
   const grid = container.querySelector('#chars-grid');
@@ -455,396 +498,297 @@ function renderCharacters(container) {
     return;
   }
   
-  grid.innerHTML = allChars.map(char => `
-    <div class="intro-card" data-id="${char.id}">
-      <div class="intro-card-header">
-        <div class="intro-avatar" style="background:${char.color || '#7c83f7'}">
-          ${char.avatar_url ? `<img src="${char.avatar_url}" alt="${escHtml(char.name)}"/>` : escHtml(char.name.charAt(0))}
+  grid.innerHTML = allChars.map(char => {
+    const city = allCities.find(c => c.id === char.city_id);
+    const country = city ? allCountries.find(co => co.id === city.country_id) : null;
+    const location = [country?.name, city?.name].filter(Boolean).join(' · ') || '未知';
+    
+    return `
+      <div class="intro-card" data-id="${char.id}">
+        <div class="intro-card-header">
+          <div class="intro-avatar">
+            ${char.avatar_url ? `<img src="${char.avatar_url}"/>` : escHtml(char.name.charAt(0))}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;margin-bottom:4px">${escHtml(char.name)}</div>
+            <div style="font-size:12px;color:var(--muted)">${location}</div>
+            ${char.age ? `<div style="font-size:12px;color:var(--muted)">年龄: ${escHtml(char.age)}</div>` : ''}
+          </div>
         </div>
-        <div class="intro-card-info">
-          <div class="intro-card-name">${escHtml(char.name)}</div>
-          ${char.age ? `<div class="intro-card-meta">年龄: ${escHtml(char.age)}</div>` : ''}
-        </div>
+        ${char.description ? `<div style="font-size:13px;line-height:1.5">${escHtml(char.description)}</div>` : ''}
       </div>
-      ${char.description ? `<div class="intro-card-desc">${escHtml(char.description)}</div>` : ''}
-    </div>
-  `).join('');
+    `;
+  }).join('');
+}
+
+// ========== Geography Tab ==========
+
+function renderGeoTree(container) {
+  const list = container.querySelector('#geo-tree-list');
+  if (!allCountries.length && !allCities.some(c => !c.country_id)) {
+    list.innerHTML = '<div class="geo-empty">暂无数据</div>';
+    return;
+  }
   
-  // Bind click events
-  if (isEditor()) {
-    grid.querySelectorAll('.intro-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const id = parseInt(card.dataset.id);
-        const char = allChars.find(c => c.id === id);
-        if (char) openCharModal(container, char);
+  let html = '';
+  
+  // Countries with cities
+  allCountries.forEach(country => {
+    const cities = allCities.filter(c => c.country_id === country.id);
+    const isExpanded = true; // Always expanded for now
+    
+    html += `
+      <div class="geo-tree-item geo-tree-country ${selectedCountry?.id === country.id && !selectedCity ? 'active' : ''}"
+           data-type="country" data-id="${country.id}">
+        <span class="geo-tree-toggle">${isExpanded ? '▼' : '▶'}</span>
+        🏛️ ${escHtml(country.name)}
+      </div>
+    `;
+    
+    if (isExpanded) {
+      cities.forEach(city => {
+        html += `
+          <div class="geo-tree-item geo-tree-city ${selectedCity?.id === city.id ? 'active' : ''}"
+               data-type="city" data-id="${city.id}">
+            🏙️ ${escHtml(city.name)}
+          </div>
+        `;
       });
+    }
+  });
+  
+  // Cities without country
+  const noCities = allCities.filter(c => !c.country_id);
+  if (noCities.length) {
+    html += `
+      <div class="geo-tree-item geo-tree-country">
+        <span class="geo-tree-toggle">▼</span>
+        🌍 无国家
+      </div>
+    `;
+    noCities.forEach(city => {
+      html += `
+        <div class="geo-tree-item geo-tree-city ${selectedCity?.id === city.id ? 'active' : ''}"
+             data-type="city" data-id="${city.id}">
+          🏙️ ${escHtml(city.name)}
+        </div>
+      `;
     });
   }
-}
-
-function setupCharModal(container) {
-  const modal = container.querySelector('#char-modal');
-  const overlay = modal;
   
-  // File upload
-  container.querySelector('#char-upload-btn')?.addEventListener('click', () => {
-    container.querySelector('#char-file-input').click();
-  });
-  
-  container.querySelector('#char-file-input')?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      pendingAvatar = file;
-      pendingAvatarIsFile = true;
-      previewAvatar(file, container, 'char');
-    }
-  });
-  
-  // URL input
-  container.querySelector('#char-url-btn')?.addEventListener('click', () => {
-    const row = container.querySelector('#char-url-input-row');
-    row.style.display = row.style.display === 'none' ? 'flex' : 'none';
-  });
-  
-  container.querySelector('#char-url-confirm')?.addEventListener('click', () => {
-    const url = container.querySelector('#char-url-input').value.trim();
-    if (url) {
-      pendingAvatar = url;
-      pendingAvatarIsFile = false;
-      updateAvatarPreview(url, container, 'char');
-      container.querySelector('#char-url-input-row').style.display = 'none';
-    }
-  });
-  
-  // Clear avatar
-  container.querySelector('#char-avatar-clear')?.addEventListener('click', () => {
-    pendingAvatar = null;
-    pendingAvatarIsFile = false;
-    updateAvatarPreview(null, container, 'char');
-  });
-  
-  // Save & Cancel
-  container.querySelector('#char-save-btn')?.addEventListener('click', () => saveCharacter(container));
-  container.querySelector('#char-cancel-btn')?.addEventListener('click', () => closeModal(modal));
-  
-  // Click outside to close
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeModal(modal);
-  });
-}
-
-function openCharModal(container, char) {
-  editCharId = char?.id || null;
-  pendingAvatar = undefined;
-  pendingAvatarIsFile = false;
-  
-  const modal = container.querySelector('#char-modal');
-  container.querySelector('#char-modal-title').textContent = char ? '编辑人物' : '新建人物';
-  container.querySelector('#char-name').value = char?.name || '';
-  container.querySelector('#char-age').value = char?.age || '';
-  container.querySelector('#char-desc').value = char?.description || '';
-  container.querySelector('#char-url-input-row').style.display = 'none';
-  container.querySelector('#char-url-input').value = '';
-  
-  updateAvatarPreview(char?.avatar_url, container, 'char', char?.name);
-  
-  modal.classList.add('show');
-  setTimeout(() => container.querySelector('#char-name').focus(), 100);
-}
-
-function closeModal(modal) {
-  modal.classList.remove('show');
-}
-
-async function saveCharacter(container) {
-  const name = container.querySelector('#char-name').value.trim();
-  if (!name) {
-    showToast('请输入名字');
-    return;
-  }
-  
-  const age = container.querySelector('#char-age').value.trim();
-  const description = container.querySelector('#char-desc').value.trim();
-  
-  try {
-    let avatarUrl = null;
-    
-    // Upload avatar if needed
-    if (pendingAvatar) {
-      if (pendingAvatarIsFile) {
-        const file = pendingAvatar;
-        const ext = file.name.split('.').pop();
-        const filename = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
-        
-        const { data, error } = await supaClient.storage
-          .from('avatars')
-          .upload(filename, file, { upsert: true });
-        
-        if (error) throw error;
-        
-        const { data: urlData } = supaClient.storage.from('avatars').getPublicUrl(data.path);
-        avatarUrl = urlData.publicUrl;
-      } else {
-        avatarUrl = pendingAvatar;
-      }
-    } else if (pendingAvatar === null && editCharId) {
-      avatarUrl = null;
-    }
-    
-    const payload = {
-      name,
-      age: age || null,
-      description: description || null,
-      ...(pendingAvatar !== undefined && { avatar_url: avatarUrl })
-    };
-    
-    if (editCharId) {
-      const { error } = await supaClient.from('characters').update(payload).eq('id', editCharId);
-      if (error) throw error;
-      showToast('人物已更新');
-    } else {
-      const { error } = await supaClient.from('characters').insert(payload);
-      if (error) throw error;
-      showToast('人物已创建');
-    }
-    
-    closeModal(container.querySelector('#char-modal'));
-    await fetchCharacters(container);
-  } catch (e) {
-    console.error('Failed to save character:', e);
-    showToast('保存失败: ' + e.message);
-  }
-}
-
-// ========== Factions ==========
-
-async function fetchFactions(container) {
-  try {
-    setSyncStatus('syncing');
-    const { data, error } = await supaClient.from('factions').select('*').order('created_at');
-    if (error) throw error;
-    
-    allFactions = data || [];
-    renderFactions(container);
-    setSyncStatus('ok');
-  } catch (e) {
-    console.error('Failed to fetch factions:', e);
-    showToast('加载势力失败');
-    setSyncStatus('error');
-  }
-}
-
-function renderFactions(container) {
-  const grid = container.querySelector('#factions-grid');
-  if (!allFactions.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">暂无势力</div>';
-    return;
-  }
-  
-  const typeLabels = {
-    country: '国家',
-    organization: '组织',
-    faction: '势力',
-    other: '其他'
-  };
-  
-  grid.innerHTML = allFactions.map(faction => `
-    <div class="intro-card" data-id="${faction.id}">
-      <div class="intro-card-header">
-        <div class="intro-avatar" style="background:${faction.color || '#7c83f7'}">
-          ${faction.flag_url ? `<img src="${faction.flag_url}" alt="${escHtml(faction.name)}"/>` : escHtml(faction.name.charAt(0))}
-        </div>
-        <div class="intro-card-info">
-          <div class="intro-card-name">${escHtml(faction.name)}</div>
-          <div class="intro-card-meta">${typeLabels[faction.type] || faction.type}</div>
-        </div>
-      </div>
-      ${faction.description ? `<div class="intro-card-desc">${escHtml(faction.description)}</div>` : ''}
-    </div>
-  `).join('');
+  list.innerHTML = html;
   
   // Bind click events
-  if (isEditor()) {
-    grid.querySelectorAll('.intro-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const id = parseInt(card.dataset.id);
-        const faction = allFactions.find(f => f.id === id);
-        if (faction) openFactionModal(container, faction);
-      });
+  list.querySelectorAll('.geo-tree-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const type = item.dataset.type;
+      const id = parseInt(item.dataset.id);
+      
+      if (type === 'country') {
+        selectedCountry = allCountries.find(c => c.id === id);
+        selectedCity = null;
+      } else if (type === 'city') {
+        selectedCity = allCities.find(c => c.id === id);
+        selectedCountry = allCountries.find(co => co.id === selectedCity.country_id);
+      }
+      
+      renderGeoDetail(container);
+      renderGeoTree(container);
     });
-  }
-}
-
-function setupFactionModal(container) {
-  const modal = container.querySelector('#faction-modal');
-  const overlay = modal;
-  
-  // File upload
-  container.querySelector('#faction-upload-btn')?.addEventListener('click', () => {
-    container.querySelector('#faction-file-input').click();
-  });
-  
-  container.querySelector('#faction-file-input')?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      pendingAvatar = file;
-      pendingAvatarIsFile = true;
-      previewAvatar(file, container, 'faction');
-    }
-  });
-  
-  // URL input
-  container.querySelector('#faction-url-btn')?.addEventListener('click', () => {
-    const row = container.querySelector('#faction-url-input-row');
-    row.style.display = row.style.display === 'none' ? 'flex' : 'none';
-  });
-  
-  container.querySelector('#faction-url-confirm')?.addEventListener('click', () => {
-    const url = container.querySelector('#faction-url-input').value.trim();
-    if (url) {
-      pendingAvatar = url;
-      pendingAvatarIsFile = false;
-      updateAvatarPreview(url, container, 'faction');
-      container.querySelector('#faction-url-input-row').style.display = 'none';
-    }
-  });
-  
-  // Clear
-  container.querySelector('#faction-flag-clear')?.addEventListener('click', () => {
-    pendingAvatar = null;
-    pendingAvatarIsFile = false;
-    updateAvatarPreview(null, container, 'faction');
-  });
-  
-  // Save & Cancel
-  container.querySelector('#faction-save-btn')?.addEventListener('click', () => saveFaction(container));
-  container.querySelector('#faction-cancel-btn')?.addEventListener('click', () => closeModal(modal));
-  
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeModal(modal);
   });
 }
 
-function openFactionModal(container, faction) {
-  editFactionId = faction?.id || null;
-  pendingAvatar = undefined;
-  pendingAvatarIsFile = false;
+function renderGeoDetail(container) {
+  const detail = container.querySelector('#geo-detail-view');
   
-  const modal = container.querySelector('#faction-modal');
-  container.querySelector('#faction-modal-title').textContent = faction ? '编辑势力' : '新建势力';
-  container.querySelector('#faction-name').value = faction?.name || '';
-  container.querySelector('#faction-type').value = faction?.type || 'country';
-  container.querySelector('#faction-desc').value = faction?.description || '';
-  container.querySelector('#faction-url-input-row').style.display = 'none';
-  container.querySelector('#faction-url-input').value = '';
-  
-  updateAvatarPreview(faction?.flag_url, container, 'faction', faction?.name);
-  
-  modal.classList.add('show');
-  setTimeout(() => container.querySelector('#faction-name').focus(), 100);
-}
-
-async function saveFaction(container) {
-  const name = container.querySelector('#faction-name').value.trim();
-  if (!name) {
-    showToast('请输入名称');
+  if (!selectedCity && !selectedCountry) {
+    detail.innerHTML = '<div class="geo-empty">选择一个国家或城市查看详情</div>';
     return;
   }
   
-  const type = container.querySelector('#faction-type').value;
-  const description = container.querySelector('#faction-desc').value.trim();
-  
-  try {
-    let flagUrl = null;
-    
-    // Upload flag if needed
-    if (pendingAvatar) {
-      if (pendingAvatarIsFile) {
-        const file = pendingAvatar;
-        const ext = file.name.split('.').pop();
-        const filename = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
-        
-        const { data, error } = await supaClient.storage
-          .from('avatars')
-          .upload(filename, file, { upsert: true });
-        
-        if (error) throw error;
-        
-        const { data: urlData } = supaClient.storage.from('avatars').getPublicUrl(data.path);
-        flagUrl = urlData.publicUrl;
-      } else {
-        flagUrl = pendingAvatar;
-      }
-    } else if (pendingAvatar === null && editFactionId) {
-      flagUrl = null;
-    }
-    
-    const payload = {
-      name,
-      type,
-      description: description || null,
-      ...(pendingAvatar !== undefined && { flag_url: flagUrl })
-    };
-    
-    if (editFactionId) {
-      const { error } = await supaClient.from('factions').update(payload).eq('id', editFactionId);
-      if (error) throw error;
-      showToast('势力已更新');
-    } else {
-      const { error } = await supaClient.from('factions').insert(payload);
-      if (error) throw error;
-      showToast('势力已创建');
-    }
-    
-    closeModal(container.querySelector('#faction-modal'));
-    await fetchFactions(container);
-  } catch (e) {
-    console.error('Failed to save faction:', e);
-    showToast('保存失败: ' + e.message);
+  if (selectedCity) {
+    renderCityDetail(detail);
+  } else if (selectedCountry) {
+    renderCountryDetail(detail);
   }
 }
 
-// ========== Avatar Helpers ==========
-
-function previewAvatar(file, container, type) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    updateAvatarPreview(e.target.result, container, type);
-  };
-  reader.readAsDataURL(file);
+function renderCountryDetail(detail) {
+  const cities = allCities.filter(c => c.country_id === selectedCountry.id);
+  
+  detail.innerHTML = `
+    <h2>🏛️ ${escHtml(selectedCountry.name)}</h2>
+    
+    ${selectedCountry.description ? `
+      <div class="geo-detail-section">
+        <h3>概述</h3>
+        <div class="geo-detail-value">${escHtml(selectedCountry.description)}</div>
+      </div>
+    ` : ''}
+    
+    <div class="geo-detail-section">
+      <h3>城市 (${cities.length})</h3>
+      ${cities.length ? cities.map(city => `
+        <div class="geo-tree-item geo-tree-city" style="margin:4px 0">
+          🏙️ ${escHtml(city.name)}
+        </div>
+      `).join('') : '<div class="geo-empty" style="padding:20px">暂无城市</div>'}
+    </div>
+  `;
 }
 
-function updateAvatarPreview(url, container, type, name = '?') {
-  const previewId = type === 'char' ? '#char-avatar-preview' : '#faction-flag-preview';
-  const letterId = type === 'char' ? '#char-avatar-letter' : '#faction-flag-letter';
+function renderCityDetail(detail) {
+  const landmarks = allLandmarks.filter(l => l.city_id === selectedCity.id);
+  const people = allChars.filter(c => c.city_id === selectedCity.id);
+  const country = allCountries.find(c => c.id === selectedCity.country_id);
   
-  const preview = container.querySelector(previewId);
-  const letter = container.querySelector(letterId);
+  detail.innerHTML = `
+    <h2>🏙️ ${escHtml(selectedCity.name)}</h2>
+    ${country ? `<div style="color:var(--muted);margin-bottom:24px">所属: ${escHtml(country.name)}</div>` : ''}
+    
+    ${selectedCity.overview ? `
+      <div class="geo-detail-section">
+        <h3>概述</h3>
+        <div class="geo-detail-value">${escHtml(selectedCity.overview)}</div>
+      </div>
+    ` : ''}
+    
+    ${selectedCity.geography ? `
+      <div class="geo-detail-section">
+        <h3>地理位置</h3>
+        <div class="geo-detail-value">${escHtml(selectedCity.geography)}</div>
+      </div>
+    ` : ''}
+    
+    ${selectedCity.climate ? `
+      <div class="geo-detail-section">
+        <h3>气候</h3>
+        <div class="geo-detail-value">${escHtml(selectedCity.climate)}</div>
+      </div>
+    ` : ''}
+    
+    ${selectedCity.structure ? `
+      <div class="geo-detail-section">
+        <h3>城市结构</h3>
+        <div class="geo-detail-value">${escHtml(selectedCity.structure)}</div>
+      </div>
+    ` : ''}
+    
+    <div class="geo-detail-section">
+      <h3>地标建筑 (${landmarks.length})</h3>
+      ${landmarks.length ? landmarks.map(lm => `
+        <div class="geo-landmark-item">
+          <div class="geo-landmark-name">${escHtml(lm.name)}</div>
+          ${lm.description ? `<div style="font-size:13px;color:var(--muted)">${escHtml(lm.description)}</div>` : ''}
+        </div>
+      `).join('') : '<div class="geo-empty" style="padding:20px">暂无地标</div>'}
+    </div>
+    
+    <div class="geo-detail-section">
+      <h3>关联人物 (${people.length})</h3>
+      <div>
+        ${people.length ? people.map(p => `
+          <div class="geo-person-item">
+            <div class="geo-person-avatar">
+              ${p.avatar_url ? `<img src="${p.avatar_url}"/>` : escHtml(p.name.charAt(0))}
+            </div>
+            <span>${escHtml(p.name)}</span>
+            ${p.age ? `<span style="color:var(--muted);font-size:12px">${escHtml(p.age)}岁</span>` : ''}
+          </div>
+        `).join('') : '<div class="geo-empty" style="padding:20px">暂无关联人物</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function renderSearchResults(container) {
+  const results = container.querySelector('#geo-search-results');
   
-  if (url) {
-    preview.style.backgroundImage = `url(${url})`;
-    preview.style.backgroundSize = 'cover';
-    preview.style.backgroundPosition = 'center';
-    letter.style.display = 'none';
-  } else {
-    preview.style.backgroundImage = 'none';
-    letter.style.display = 'block';
-    letter.textContent = name?.charAt(0) || '?';
+  if (!searchQuery) {
+    // Show statistics
+    results.innerHTML = `
+      <div class="geo-search-group">
+        <div class="geo-search-group-title">📊 统计</div>
+        <div style="padding:8px 12px;font-size:13px">
+          <div>📍 国家: ${allCountries.length}</div>
+          <div>🏙️ 城市: ${allCities.length}</div>
+          <div>👥 人物: ${allChars.length}</div>
+          <div>🏛️ 地标: ${allLandmarks.length}</div>
+        </div>
+      </div>
+    `;
+    return;
   }
+  
+  // Search
+  const foundCountries = allCountries.filter(c => c.name.toLowerCase().includes(searchQuery));
+  const foundCities = allCities.filter(c => c.name.toLowerCase().includes(searchQuery));
+  const foundPeople = allChars.filter(c => c.name.toLowerCase().includes(searchQuery));
+  const foundLandmarks = allLandmarks.filter(l => l.name.toLowerCase().includes(searchQuery));
+  
+  let html = '';
+  
+  if (foundCountries.length) {
+    html += `
+      <div class="geo-search-group">
+        <div class="geo-search-group-title">📍 国家 (${foundCountries.length})</div>
+        ${foundCountries.map(c => `
+          <div class="geo-search-item">🏛️ ${escHtml(c.name)}</div>
+        `).join('')}
+      </div>
+    `;
+  }
+  
+  if (foundCities.length) {
+    html += `
+      <div class="geo-search-group">
+        <div class="geo-search-group-title">🏙️ 城市 (${foundCities.length})</div>
+        ${foundCities.map(c => `
+          <div class="geo-search-item">🏙️ ${escHtml(c.name)}</div>
+        `).join('')}
+      </div>
+    `;
+  }
+  
+  if (foundPeople.length) {
+    html += `
+      <div class="geo-search-group">
+        <div class="geo-search-group-title">👥 人物 (${foundPeople.length})</div>
+        ${foundPeople.map(p => `
+          <div class="geo-search-item">👤 ${escHtml(p.name)}</div>
+        `).join('')}
+      </div>
+    `;
+  }
+  
+  if (foundLandmarks.length) {
+    html += `
+      <div class="geo-search-group">
+        <div class="geo-search-group-title">🏛️ 地标 (${foundLandmarks.length})</div>
+        ${foundLandmarks.map(l => `
+          <div class="geo-search-item">🏛️ ${escHtml(l.name)}</div>
+        `).join('')}
+      </div>
+    `;
+  }
+  
+  if (!html) {
+    html = '<div class="geo-empty">无搜索结果</div>';
+  }
+  
+  results.innerHTML = html;
 }
 
 // ========== Realtime ==========
 
 function subscribeRealtime() {
-  charsRealtimeCh = supaClient.channel('characters-intro')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'characters' }, 
-      () => fetchCharacters(pageContainer)
-    )
+  charsChannel = supaClient.channel('chars-geo')
+    .on('postgres_changes', { event: '*', table: 'characters' }, () => loadAllData(pageContainer))
     .subscribe();
   
-  factionsRealtimeCh = supaClient.channel('factions-intro')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'factions' }, 
-      () => fetchFactions(pageContainer)
-    )
+  geoChannel = supaClient.channel('geo-data')
+    .on('postgres_changes', { event: '*', table: 'countries' }, () => loadAllData(pageContainer))
+    .on('postgres_changes', { event: '*', table: 'cities' }, () => loadAllData(pageContainer))
+    .on('postgres_changes', { event: '*', table: 'landmarks' }, () => loadAllData(pageContainer))
     .subscribe();
 }
