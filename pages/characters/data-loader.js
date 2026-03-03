@@ -4,6 +4,9 @@
 import { supaClient, setSyncStatus } from '../../core/supabase-client.js';
 import * as State from './state.js';
 
+/**
+ * 加载所有数据
+ */
 export async function loadAllData() {
   setSyncStatus('syncing');
   try {
@@ -28,14 +31,15 @@ export async function loadAllData() {
   }
 }
 
+/**
+ * 订阅实时更新
+ */
 export function subscribeRealtime(onUpdate) {
   // 人物表监听
   const charsChannel = supaClient.channel('chars-intro')
     .on('postgres_changes', 
       { event: '*', schema: 'public', table: 'characters' }, 
-      () => {
-        loadAllData().then(onUpdate);
-      }
+      () => loadAllData().then(onUpdate)
     )
     .subscribe();
   
@@ -59,6 +63,9 @@ export function subscribeRealtime(onUpdate) {
   State.setGeoChannel(geoChannel);
 }
 
+/**
+ * 取消订阅
+ */
 export function unsubscribeRealtime() {
   if (State.charsChannel) supaClient.removeChannel(State.charsChannel);
   if (State.geoChannel) supaClient.removeChannel(State.geoChannel);

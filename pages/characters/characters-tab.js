@@ -1,22 +1,26 @@
 // pages/characters/characters-tab.js
-// 人物标签页的渲染和交互
+// 人物标签页渲染和交互
 
 import { isEditor } from '../../core/auth.js';
 import { escHtml } from '../../core/ui.js';
 import * as State from './state.js';
 import { openCharModal } from './modals/character-modal.js';
+import { getLocationPath } from './utils.js';
 
-export function renderCharactersTab(container) {
+/**
+ * 渲染人物标签页
+ */
+export function renderCharactersTab() {
+  const container = State.pageContainer;
   const grid = container.querySelector('#chars-grid');
+  
   if (!State.allChars.length) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">暂无人物</div>';
     return;
   }
   
   grid.innerHTML = State.allChars.map(char => {
-    const city = State.allCities.find(c => c.id === char.city_id);
-    const country = city ? State.allCountries.find(co => co.id === city.country_id) : null;
-    const location = [country?.name, city?.name].filter(Boolean).join(' · ') || '未知';
+    const location = getLocationPath(char.city_id, State.allCities, State.allCountries);
     
     return `
       <div class="intro-card" data-id="${char.id}">
@@ -47,9 +51,18 @@ export function renderCharactersTab(container) {
   }
 }
 
-export function bindCharactersTab(container) {
+/**
+ * 绑定人物标签页按钮
+ */
+export function bindCharactersTab() {
+  const container = State.pageContainer;
   const addBtn = container.querySelector('#chars-add-btn');
   if (addBtn) {
-    addBtn.addEventListener('click', () => openCharModal(null));
+    // 移除旧监听器（如果有）
+    const newBtn = addBtn.cloneNode(true);
+    addBtn.parentNode.replaceChild(newBtn, addBtn);
+    
+    // 添加新监听器
+    newBtn.addEventListener('click', () => openCharModal(null));
   }
 }

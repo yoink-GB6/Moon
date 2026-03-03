@@ -1,5 +1,5 @@
 // pages/characters/geo-tree.js
-// 左侧地理树的渲染和交互
+// 地理树渲染和交互
 
 import { isEditor } from '../../core/auth.js';
 import { escHtml } from '../../core/ui.js';
@@ -8,8 +8,15 @@ import { renderGeoDetail } from './geo-detail.js';
 import { openCountryModal } from './modals/country-modal.js';
 import { openCityModal } from './modals/city-modal.js';
 
-export function renderGeoTree(container) {
+/**
+ * 渲染地理树
+ */
+export function renderGeoTree() {
+  const container = State.pageContainer;
   const list = container.querySelector('#geo-tree-list');
+  
+  if (!list) return;
+  
   if (!State.allCountries.length && !State.allCities.some(c => !c.country_id)) {
     list.innerHTML = '<div class="geo-empty">暂无数据</div>';
     return;
@@ -77,8 +84,14 @@ export function renderGeoTree(container) {
   list.innerHTML = html;
 }
 
-export function bindGeoTree(container) {
+/**
+ * 绑定地理树事件
+ */
+export function bindGeoTree() {
+  const container = State.pageContainer;
   const list = container.querySelector('#geo-tree-list');
+  
+  if (!list) return;
   
   // 展开/收起
   list.querySelectorAll('[data-toggle]').forEach(toggle => {
@@ -86,7 +99,7 @@ export function bindGeoTree(container) {
       e.stopPropagation();
       const id = parseInt(toggle.dataset.toggle);
       State.toggleCountryExpanded(id);
-      renderGeoTree(container);
+      renderGeoTree();
     });
   });
   
@@ -94,6 +107,7 @@ export function bindGeoTree(container) {
   list.querySelectorAll('.geo-tree-item[data-type]').forEach(item => {
     item.addEventListener('click', (e) => {
       if (e.target.closest('.geo-tree-actions')) return;
+      
       const type = item.dataset.type;
       const id = parseInt(item.dataset.id);
       
@@ -107,8 +121,8 @@ export function bindGeoTree(container) {
         State.setSelectedCountry(State.allCountries.find(co => co.id === city.country_id));
       }
       
-      renderGeoDetail(container);
-      renderGeoTree(container);
+      renderGeoDetail();
+      renderGeoTree();
     });
   });
   
