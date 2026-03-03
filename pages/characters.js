@@ -60,18 +60,24 @@ function buildHTML() {
     <div class="intro-main">
       <div class="intro-content" id="tab-characters">
         <div class="intro-header">
+          <h2>👥 人物介绍</h2>
           <button class="btn bp" id="chars-add-btn" style="display:none">＋ 新建</button>
         </div>
         <div class="intro-grid" id="chars-grid"></div>
       </div>
 
       <div class="intro-content geo-layout" id="tab-geography" style="display:none">
-        <div class="geo-sidebar geo-tree">
+        <div class="geo-sidebar geo-tree" id="geo-tree-sidebar">
           <div class="geo-tree-header">
-            <h3>地理结构</h3>
-            <button class="btn bn" id="add-country-btn" style="display:none">＋</button>
+            <h3 class="geo-tree-title">地理结构</h3>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button class="btn bn" id="add-country-btn" style="display:none">＋</button>
+              <button class="geo-sidebar-collapse-btn" id="geo-tree-collapse" title="收起">◀</button>
+            </div>
           </div>
           <div id="geo-tree-list" class="geo-tree-list"></div>
+          <!-- 收起时显示的展开按钮 -->
+          <button class="geo-sidebar-expand-btn" id="geo-tree-expand" title="展开">▶</button>
         </div>
         <div class="geo-main">
           <div id="geo-detail-view" class="geo-detail"></div>
@@ -79,9 +85,10 @@ function buildHTML() {
       </div>
     </div>
 
+    <!-- 右侧面板展开按钮（在panel外，不受overflow:hidden影响）-->
+    <button id="chars-panel-expand" class="panel-expand-trigger" title="展开面板">▶</button>
     <!-- 右侧面板：人物页=搜索人物，地理页=搜索地名 -->
     <div id="chars-panel" class="tl-panel">
-      <button id="chars-panel-expand" class="expand-btn-float" title="展开面板">◀</button>
       <div class="map-panel-hdr" id="chars-panel-toggle">
         <span id="chars-panel-title">🔍 搜索人物</span>
         <span id="chars-panel-chevron">◀</span>
@@ -219,7 +226,47 @@ function buildHTML() {
 
 /* ===== 地理布局 ===== */
 .geo-layout{display:flex;gap:0;padding:0;overflow:hidden;flex:1}
-.geo-sidebar{width:280px;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border);flex-shrink:0}
+.geo-sidebar{
+  width:280px;background:var(--bg);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  border-right:1px solid var(--border);
+  flex-shrink:0;
+  transition:width 0.28s ease;
+  position:relative;
+}
+.geo-sidebar.collapsed{width:36px;min-width:36px}
+.geo-sidebar.collapsed .geo-tree-title,
+.geo-sidebar.collapsed .geo-tree-list,
+.geo-sidebar.collapsed #add-country-btn,
+.geo-sidebar.collapsed .geo-sidebar-collapse-btn{display:none !important}
+.geo-sidebar.collapsed .geo-tree-header{justify-content:center;padding:10px 0;border-bottom:none}
+/* 收起状态：圆形展开按钮（图中样式） */
+.geo-sidebar-expand-btn{
+  display:none;
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(20,21,40,0.85);
+  border:1.5px solid rgba(124,131,247,0.5);
+  color:var(--accent);font-size:12px;
+  cursor:pointer;
+  align-items:center;justify-content:center;
+  transition:background 0.2s,border-color 0.2s,box-shadow 0.2s;
+  z-index:10;
+}
+.geo-sidebar-expand-btn:hover{
+  background:rgba(124,131,247,0.18);
+  border-color:var(--accent);
+  box-shadow:0 0 8px rgba(124,131,247,0.3);
+}
+.geo-sidebar.collapsed .geo-sidebar-expand-btn{display:flex}
+.geo-sidebar-collapse-btn{
+  padding:3px 7px;font-size:11px;
+  background:transparent;color:var(--muted);
+  border:1px solid var(--border);border-radius:4px;
+  cursor:pointer;transition:color 0.2s,border-color 0.2s;flex-shrink:0;
+}
+.geo-sidebar-collapse-btn:hover{color:var(--accent);border-color:var(--accent)}
 .geo-main{flex:1;overflow-y:auto;padding:24px}
 .geo-tree-header{padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .geo-tree-header h3{margin:0;font-size:14px;font-weight:600}
@@ -255,17 +302,29 @@ function buildHTML() {
   display:flex;flex-direction:column;
   overflow:hidden;
   transition:width 0.28s ease;
-  position:relative;
 }
 .tl-panel.collapsed{width:0;border-left:none}
-.expand-btn-float{
-  position:absolute;left:-28px;top:50%;transform:translateY(-50%);
-  background:var(--accent);color:white;border:none;
-  padding:10px 7px;border-radius:6px 0 0 6px;
-  cursor:pointer;opacity:0;pointer-events:none;
-  transition:opacity 0.25s;z-index:20;font-size:12px;
+/* 展开按钮位于panel外部，不受overflow:hidden裁剪 */
+.panel-expand-trigger{
+  display:none;
+  flex-shrink:0;
+  align-self:center;
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(20,21,40,0.85);
+  border:1.5px solid rgba(124,131,247,0.5);
+  color:var(--accent);font-size:12px;
+  cursor:pointer;
+  align-items:center;justify-content:center;
+  margin-left:6px;
+  transition:background 0.2s,border-color 0.2s,box-shadow 0.2s;
+  z-index:10;
 }
-.tl-panel.collapsed .expand-btn-float{opacity:1;pointer-events:auto}
+.panel-expand-trigger:hover{
+  background:rgba(124,131,247,0.18);
+  border-color:var(--accent);
+  box-shadow:0 0 8px rgba(124,131,247,0.3);
+}
+.panel-expand-trigger.visible{display:flex}
 .map-panel-hdr{
   padding:14px 16px;
   border-bottom:1px solid var(--border);
@@ -359,6 +418,7 @@ function bindControls() {
 
   bindCharactersTab();
   bindSidePanel();
+  bindGeoSidebar();
 }
 
 function switchTab(tabName) {
@@ -394,20 +454,47 @@ function syncPanelHeader(tabName) {
   renderPanelList('');
 }
 
+function bindGeoSidebar() {
+  const container = State.pageContainer;
+  const sidebar = container.querySelector('#geo-tree-sidebar');
+  const collapseBtn = container.querySelector('#geo-tree-collapse');
+  const expandBtn = container.querySelector('#geo-tree-expand');
+
+  function collapse() {
+    sidebar.classList.add('collapsed');
+  }
+  function expand() {
+    sidebar.classList.remove('collapsed');
+  }
+
+  if (collapseBtn) collapseBtn.addEventListener('click', (e) => { e.stopPropagation(); collapse(); });
+  if (expandBtn) expandBtn.addEventListener('click', (e) => { e.stopPropagation(); expand(); });
+}
+
 function bindSidePanel() {
   const container = State.pageContainer;
   const panel = container.querySelector('#chars-panel');
   const toggle = container.querySelector('#chars-panel-toggle');
-  const expandBtn = container.querySelector('#chars-panel-expand');
+  const expandBtn = container.querySelector('#chars-panel-expand'); // outside panel
   const chevron = container.querySelector('#chars-panel-chevron');
 
+  function collapsePanel() {
+    panel.classList.add('collapsed');
+    if (chevron) chevron.textContent = '▶';
+    if (expandBtn) expandBtn.classList.add('visible');
+  }
+  function expandPanel() {
+    panel.classList.remove('collapsed');
+    if (chevron) chevron.textContent = '◀';
+    if (expandBtn) expandBtn.classList.remove('visible');
+  }
   function togglePanel() {
-    const collapsed = panel.classList.toggle('collapsed');
-    if (chevron) chevron.textContent = collapsed ? '▶' : '◀';
+    if (panel.classList.contains('collapsed')) expandPanel();
+    else collapsePanel();
   }
 
   if (toggle) toggle.addEventListener('click', togglePanel);
-  if (expandBtn) expandBtn.addEventListener('click', togglePanel);
+  if (expandBtn) expandBtn.addEventListener('click', expandPanel);
 
   const searchInput = container.querySelector('#chars-panel-search');
   if (searchInput) {
