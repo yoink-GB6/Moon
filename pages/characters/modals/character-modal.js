@@ -40,11 +40,8 @@ export function setupCharModal() {
     }
   });
   
-  // 保存/删除/取消
-  container.querySelector('#char-save-btn')?.addEventListener('click', saveCharacter);
-  container.querySelector('#char-delete-btn')?.addEventListener('click', deleteCharacter);
+  // 取消/关闭（不随 open 重绑，这些不依赖编辑状态）
   container.querySelector('#char-cancel-btn')?.addEventListener('click', () => closeModal(modal));
-  
   modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal(modal);
   });
@@ -71,7 +68,20 @@ export function openCharModal(char) {
     }).join('');
   
   updateAvatarPreview(char?.avatar_url, container, char?.name);
-  container.querySelector('#char-delete-btn').style.display = char ? 'block' : 'none';
+  
+  const deleteBtn = container.querySelector('#char-delete-btn');
+  deleteBtn.style.display = char ? 'block' : 'none';
+
+  // 每次打开时重新绑定保存/删除，防止旧监听器残留或未绑上
+  const saveBtn = container.querySelector('#char-save-btn');
+  const newSaveBtn = saveBtn.cloneNode(true);
+  saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+  newSaveBtn.addEventListener('click', saveCharacter);
+
+  const newDeleteBtn = deleteBtn.cloneNode(true);
+  deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+  newDeleteBtn.style.display = char ? 'block' : 'none';
+  newDeleteBtn.addEventListener('click', deleteCharacter);
   
   modal.classList.add('show');
   setTimeout(() => container.querySelector('#char-name').focus(), 100);

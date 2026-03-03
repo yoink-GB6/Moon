@@ -12,8 +12,7 @@ export function setupLandmarkModal() {
   const container = State.pageContainer;
   const modal = container.querySelector('#landmark-modal');
   
-  container.querySelector('#landmark-save-btn')?.addEventListener('click', saveLandmark);
-  container.querySelector('#landmark-delete-btn')?.addEventListener('click', deleteLandmark);
+  // 只绑定关闭行为，保存/删除在 open 时绑定，避免事件丢失
   container.querySelector('#landmark-cancel-btn')?.addEventListener('click', () => closeModal(modal));
   
   modal.addEventListener('click', (e) => {
@@ -40,7 +39,19 @@ export function openLandmarkModal(landmark, preselectedCityId = null) {
   
   modal.dataset.cityId = landmark?.city_id || preselectedCityId;
   
-  container.querySelector('#landmark-delete-btn').style.display = landmark ? 'block' : 'none';
+  const deleteBtn = container.querySelector('#landmark-delete-btn');
+  deleteBtn.style.display = landmark ? 'block' : 'none';
+
+  // 每次打开时重新绑定保存/删除，防止旧监听器残留或未绑上
+  const saveBtn = container.querySelector('#landmark-save-btn');
+  const newSaveBtn = saveBtn.cloneNode(true);
+  saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+  newSaveBtn.addEventListener('click', saveLandmark);
+
+  const newDeleteBtn = deleteBtn.cloneNode(true);
+  deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+  newDeleteBtn.style.display = landmark ? 'block' : 'none';
+  newDeleteBtn.addEventListener('click', deleteLandmark);
   
   modal.classList.add('show');
   setTimeout(() => container.querySelector('#landmark-name').focus(), 100);

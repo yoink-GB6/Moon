@@ -13,8 +13,7 @@ export function setupCityModal() {
   const container = State.pageContainer;
   const modal = container.querySelector('#city-modal');
   
-  container.querySelector('#city-save-btn')?.addEventListener('click', saveCity);
-  container.querySelector('#city-delete-btn')?.addEventListener('click', deleteCity);
+  // 只绑定关闭行为，保存/删除在 open 时绑定，避免事件丢失
   container.querySelector('#city-cancel-btn')?.addEventListener('click', () => closeModal(modal));
   
   modal.addEventListener('click', (e) => {
@@ -41,7 +40,19 @@ export function openCityModal(city, preselectedCountryId = null) {
       `<option value="${c.id}" ${(city?.country_id === c.id || preselectedCountryId === c.id) ? 'selected' : ''}>${escHtml(c.name)}</option>`
     ).join('');
   
-  container.querySelector('#city-delete-btn').style.display = city ? 'block' : 'none';
+  const deleteBtn = container.querySelector('#city-delete-btn');
+  deleteBtn.style.display = city ? 'block' : 'none';
+  
+  // 每次打开时重新绑定保存/删除，防止旧监听器残留或未绑上
+  const saveBtn = container.querySelector('#city-save-btn');
+  const newSaveBtn = saveBtn.cloneNode(true);
+  saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+  newSaveBtn.addEventListener('click', saveCity);
+  
+  const newDeleteBtn = deleteBtn.cloneNode(true);
+  deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+  newDeleteBtn.style.display = city ? 'block' : 'none';
+  newDeleteBtn.addEventListener('click', deleteCity);
   
   modal.classList.add('show');
   setTimeout(() => container.querySelector('#city-name').focus(), 100);
@@ -81,7 +92,8 @@ async function saveCity() {
     closeModal(container.querySelector('#city-modal'));
     await loadAllData();
     renderGeoTree();
-    if (State.selectedCity) renderGeoDetail();
+    // 修复：无论是新建还是编辑都刷新详情（原来新建时 selectedCity 为 null 导致不刷新）
+    renderGeoDetail();
   } catch (e) {
     console.error('Save city failed:', e);
     showToast('保存失败: ' + e.message);
