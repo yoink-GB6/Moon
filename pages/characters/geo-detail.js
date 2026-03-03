@@ -69,7 +69,7 @@ function renderCountryDetail(detail) {
     });
   }
   
-  // 绑定城市选择
+  // 绑定城市选择 - 修复：使用 import 而非 require
   detail.querySelectorAll('[data-select-city]').forEach(item => {
     item.addEventListener('click', () => {
       const cityId = parseInt(item.dataset.selectCity);
