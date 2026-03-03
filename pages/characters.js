@@ -67,21 +67,11 @@ function buildHTML() {
       </div>
 
       <div class="intro-content geo-layout" id="tab-geography" style="display:none">
-        <div class="geo-sidebar geo-tree" id="geo-tree-sidebar">
-          <div class="geo-tree-header">
-            <h3 class="geo-tree-title">地理结构</h3>
-            <div style="display:flex;gap:6px;align-items:center">
-              <button class="btn bn" id="add-country-btn" style="display:none">＋</button>
-              <button class="geo-sidebar-collapse-btn" id="geo-tree-collapse" title="收起">◀</button>
-            </div>
-          </div>
-          <div id="geo-tree-list" class="geo-tree-list"></div>
-          <!-- 收起时显示的展开按钮 -->
-          <button class="geo-sidebar-expand-btn" id="geo-tree-expand" title="展开">▶</button>
-        </div>
         <div class="geo-main">
           <div id="geo-detail-view" class="geo-detail"></div>
         </div>
+        <!-- 隐藏的代理按钮，由面板内按钮触发 -->
+        <button id="add-country-btn" style="display:none">＋ 新建国家</button>
       </div>
     </div>
 
@@ -90,13 +80,33 @@ function buildHTML() {
     <!-- 右侧面板：人物页=搜索人物，地理页=搜索地名 -->
     <div id="chars-panel" class="tl-panel">
       <div class="map-panel-hdr" id="chars-panel-toggle">
-        <span id="chars-panel-title">🔍 搜索人物</span>
+        <span id="chars-panel-title">👥 人物列表</span>
         <span id="chars-panel-chevron">◀</span>
       </div>
-      <div class="panel-search-box">
-        <input type="text" id="chars-panel-search" placeholder="输入名字搜索..." autocomplete="off"/>
+      <div id="panel-chars-body" class="panel-body-section">
+        <div class="panel-search-box">
+          <input type="text" id="chars-panel-search" placeholder="输入名字搜索..." autocomplete="off"/>
+        </div>
+        <div id="chars-panel-list" class="tl-clist"></div>
       </div>
-      <div id="chars-panel-list" class="tl-clist"></div>
+      <!-- 地理页：搜索框+下拉结果+三级树 -->
+      <div id="panel-geo-body" class="panel-body-section" style="display:none">
+        <!-- 搜索区 -->
+        <div class="geo-panel-search-box">
+          <div class="geo-panel-search-wrap">
+            <span class="geo-panel-search-icon">🔍</span>
+            <input type="text" id="geo-panel-search" placeholder="搜索国家、城市、地标..." autocomplete="off"/>
+          </div>
+          <!-- 搜索结果下拉 -->
+          <div id="geo-panel-results" class="geo-panel-results"></div>
+        </div>
+        <!-- 新建按钮 -->
+        <div class="geo-panel-add">
+          <button class="btn bn" id="panel-add-country-btn" style="display:none">＋ 新建国家</button>
+        </div>
+        <!-- 树形结构 -->
+        <div id="geo-tree-list" class="geo-tree-list"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -225,51 +235,28 @@ function buildHTML() {
 .intro-avatar img{width:100%;height:100%;object-fit:cover}
 
 /* ===== 地理布局 ===== */
-.geo-layout{display:flex;gap:0;padding:0;overflow:hidden;flex:1}
-.geo-sidebar{
-  width:280px;background:var(--bg);
-  display:flex;flex-direction:column;
-  overflow:hidden;
-  border-right:1px solid var(--border);
-  flex-shrink:0;
-  transition:width 0.28s ease;
-  position:relative;
-}
-.geo-sidebar.collapsed{width:36px;min-width:36px}
-.geo-sidebar.collapsed .geo-tree-title,
-.geo-sidebar.collapsed .geo-tree-list,
-.geo-sidebar.collapsed #add-country-btn,
-.geo-sidebar.collapsed .geo-sidebar-collapse-btn{display:none !important}
-.geo-sidebar.collapsed .geo-tree-header{justify-content:center;padding:10px 0;border-bottom:none}
-/* 收起状态：圆形展开按钮（图中样式） */
-.geo-sidebar-expand-btn{
-  display:none;
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:32px;height:32px;border-radius:50%;
-  background:rgba(20,21,40,0.85);
-  border:1.5px solid rgba(124,131,247,0.5);
-  color:var(--accent);font-size:12px;
-  cursor:pointer;
-  align-items:center;justify-content:center;
-  transition:background 0.2s,border-color 0.2s,box-shadow 0.2s;
-  z-index:10;
-}
-.geo-sidebar-expand-btn:hover{
-  background:rgba(124,131,247,0.18);
-  border-color:var(--accent);
-  box-shadow:0 0 8px rgba(124,131,247,0.3);
-}
-.geo-sidebar.collapsed .geo-sidebar-expand-btn{display:flex}
-.geo-sidebar-collapse-btn{
-  padding:3px 7px;font-size:11px;
-  background:transparent;color:var(--muted);
-  border:1px solid var(--border);border-radius:4px;
-  cursor:pointer;transition:color 0.2s,border-color 0.2s;flex-shrink:0;
-}
-.geo-sidebar-collapse-btn:hover{color:var(--accent);border-color:var(--accent)}
+.geo-layout{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;flex:1}
+/* 面板内地理搜索 */
+.geo-panel-search-box{padding:10px 12px 6px;flex-shrink:0}
+.geo-panel-search-wrap{position:relative}
+.geo-panel-search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;opacity:0.45;pointer-events:none}
+.geo-panel-search-wrap input{width:100%;padding:7px 10px 7px 28px;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none;transition:border-color 0.2s,box-shadow 0.2s}
+.geo-panel-search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,247,0.15)}
+.geo-panel-results{display:none;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,0.25);overflow-y:auto;max-height:220px}
+.geo-panel-results.open{display:block}
+.geo-panel-result-item{display:flex;align-items:center;gap:8px;padding:8px 11px;cursor:pointer;font-size:12px;border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.12s}
+.geo-panel-result-item:last-child{border-bottom:none}
+.geo-panel-result-item:hover,.geo-panel-result-item.focused{background:rgba(124,131,247,0.1)}
+.geo-panel-result-icon{width:18px;text-align:center;flex-shrink:0;font-size:13px}
+.geo-panel-result-name{flex:1;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.geo-panel-result-path{font-size:10px;color:var(--muted);flex-shrink:0}
+.geo-panel-results-empty{padding:16px;text-align:center;color:var(--muted);font-size:12px}
+.geo-panel-add{padding:2px 12px 6px;flex-shrink:0}
+.geo-panel-add .btn{width:100%;font-size:12px;padding:5px}
+.panel-body-section{display:flex;flex-direction:column;flex:1;overflow:hidden}
 .geo-main{flex:1;overflow-y:auto;padding:24px}
-.geo-tree-header{padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
-.geo-tree-header h3{margin:0;font-size:14px;font-weight:600}
+.panel-body-section{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.geo-tree-list{flex:1;overflow-y:auto;padding:6px}
 .geo-tree-list{flex:1;overflow-y:auto;padding:8px}
 .geo-tree-item{padding:8px 12px;margin:2px 0;cursor:pointer;border-radius:6px;user-select:none;display:flex;justify-content:space-between;align-items:center}
 .geo-tree-item:hover{background:rgba(124,131,247,0.08)}
@@ -418,7 +405,6 @@ function bindControls() {
 
   bindCharactersTab();
   bindSidePanel();
-  bindGeoSidebar();
 }
 
 function switchTab(tabName) {
@@ -441,34 +427,21 @@ function switchTab(tabName) {
 function syncPanelHeader(tabName) {
   const container = State.pageContainer;
   const title = container.querySelector('#chars-panel-title');
+  const charsBody = container.querySelector('#panel-chars-body');
+  const geoBody = container.querySelector('#panel-geo-body');
   const input = container.querySelector('#chars-panel-search');
 
   if (tabName === 'characters') {
-    if (title) title.textContent = '🔍 搜索人物';
-    if (input) input.placeholder = '输入名字搜索...';
+    if (title) title.textContent = '👥 人物列表';
+    if (charsBody) charsBody.style.display = 'flex';
+    if (geoBody) geoBody.style.display = 'none';
+    if (input) input.value = '';
+    renderPanelList('');
   } else {
-    if (title) title.textContent = '🔍 搜索地名';
-    if (input) input.placeholder = '搜索国家、城市、地标...';
+    if (title) title.textContent = '🗺️ 地理结构';
+    if (charsBody) charsBody.style.display = 'none';
+    if (geoBody) geoBody.style.display = 'flex';
   }
-  if (input) input.value = '';
-  renderPanelList('');
-}
-
-function bindGeoSidebar() {
-  const container = State.pageContainer;
-  const sidebar = container.querySelector('#geo-tree-sidebar');
-  const collapseBtn = container.querySelector('#geo-tree-collapse');
-  const expandBtn = container.querySelector('#geo-tree-expand');
-
-  function collapse() {
-    sidebar.classList.add('collapsed');
-  }
-  function expand() {
-    sidebar.classList.remove('collapsed');
-  }
-
-  if (collapseBtn) collapseBtn.addEventListener('click', (e) => { e.stopPropagation(); collapse(); });
-  if (expandBtn) expandBtn.addEventListener('click', (e) => { e.stopPropagation(); expand(); });
 }
 
 function bindSidePanel() {
@@ -508,12 +481,7 @@ export function renderPanelList(query) {
   const container = State.pageContainer;
   const list = container.querySelector('#chars-panel-list');
   if (!list) return;
-
-  if (State.currentTab === 'characters') {
-    _renderCharPanel(list, query);
-  } else {
-    _renderGeoPanel(list, query);
-  }
+  _renderCharPanel(list, query);
 }
 
 function _renderCharPanel(list, query) {
@@ -556,112 +524,207 @@ function _renderCharPanel(list, query) {
   });
 }
 
-function _renderGeoPanel(list, query) {
-  let html = '';
-
-  if (!query) {
-    // 无搜索词：显示所有国家列表
-    if (!State.allCountries.length) {
-      list.innerHTML = '<div class="tl-empty">暂无地理数据</div>';
-      return;
-    }
-    html = State.allCountries.map(c => {
-      const cityCount = State.allCities.filter(ci => ci.country_id === c.id).length;
-      return `<div class="geo-search-item" data-select-country="${c.id}">
-        <div>🏛️ ${escHtml(c.name)}</div>
-        <div class="geo-search-path">${cityCount} 座城市</div>
-      </div>`;
-    }).join('');
-  } else {
-    // 搜索国家
-    State.allCountries.filter(c => c.name.toLowerCase().includes(query)).forEach(c => {
-      html += `<div class="geo-search-item" data-select-country="${c.id}">
-        <div>🏛️ ${escHtml(c.name)}</div>
-        <div class="geo-search-path">国家</div>
-      </div>`;
-    });
-    // 搜索城市
-    State.allCities.filter(c => c.name.toLowerCase().includes(query)).forEach(city => {
-      const country = State.allCountries.find(co => co.id === city.country_id);
-      const path = country ? `${escHtml(country.name)} › ${escHtml(city.name)}` : escHtml(city.name);
-      html += `<div class="geo-search-item" data-select-city="${city.id}" data-country-id="${city.country_id || ''}">
-        <div>🏙️ ${escHtml(city.name)}</div>
-        <div class="geo-search-path">${path}</div>
-      </div>`;
-    });
-    // 搜索地标
-    State.allLandmarks.filter(l => l.name.toLowerCase().includes(query)).forEach(lm => {
-      const city = State.allCities.find(c => c.id === lm.city_id);
-      const country = city ? State.allCountries.find(co => co.id === city.country_id) : null;
-      const path = [country?.name, city?.name].filter(Boolean).map(s => escHtml(s)).join(' › ');
-      html += `<div class="geo-search-item" data-select-city="${lm.city_id || ''}" data-country-id="${city?.country_id || ''}">
-        <div>🏛 ${escHtml(lm.name)}</div>
-        <div class="geo-search-path">${path || '未知位置'}</div>
-      </div>`;
-    });
-    // 搜索人物
-    State.allChars.filter(c => c.name.toLowerCase().includes(query)).forEach(p => {
-      const city = State.allCities.find(c => c.id === p.city_id);
-      const country = city ? State.allCountries.find(co => co.id === city.country_id) : null;
-      const path = [country?.name, city?.name].filter(Boolean).map(s => escHtml(s)).join(' › ');
-      html += `<div class="geo-search-item" data-select-city="${p.city_id || ''}" data-country-id="${city?.country_id || ''}">
-        <div>👤 ${escHtml(p.name)}</div>
-        <div class="geo-search-path">${path || '未知位置'}</div>
-      </div>`;
-    });
-    if (!html) html = '<div class="tl-empty">无搜索结果</div>';
-  }
-
-  list.innerHTML = html;
-
-  list.querySelectorAll('[data-select-country]').forEach(item => {
-    item.addEventListener('click', () => {
-      const id = parseInt(item.dataset.selectCountry);
-      const country = State.allCountries.find(c => c.id === id);
-      if (!country) return;
-      State.setSelectedCountry(country);
-      State.setSelectedCity(null);
-      if (!State.expandedCountries.has(id)) State.toggleCountryExpanded(id);
-      renderGeoTree();
-      renderGeoDetail();
-    });
-  });
-
-  list.querySelectorAll('[data-select-city]').forEach(item => {
-    item.addEventListener('click', () => {
-      const cityId = parseInt(item.dataset.selectCity);
-      const countryId = item.dataset.countryId ? parseInt(item.dataset.countryId) : null;
-      if (!cityId) return;
-      const city = State.allCities.find(c => c.id === cityId);
-      if (!city) return;
-      State.setSelectedCity(city);
-      if (countryId) {
-        State.setSelectedCountry(State.allCountries.find(c => c.id === countryId));
-        if (!State.expandedCountries.has(countryId)) State.toggleCountryExpanded(countryId);
-      }
-      renderGeoTree();
-      renderGeoDetail();
-    });
-  });
-}
-
 function renderCurrentTab() {
   const container = State.pageContainer;
   if (State.currentTab === 'characters') {
     renderCharactersTab();
+    const searchInput = container.querySelector('#chars-panel-search');
+    renderPanelList(searchInput?.value?.trim().toLowerCase() || '');
   } else if (State.currentTab === 'geography') {
     initGeographyTab();
+    renderGeoTree();
+    _bindGeoSearch();
+    _bindPanelAddCountry();
   }
-  // 刷新侧边栏
-  const searchInput = container.querySelector('#chars-panel-search');
-  renderPanelList(searchInput?.value?.trim().toLowerCase() || '');
 }
 
+/**
+ * 绑定右侧面板地理搜索框
+ * 输入时实时搜索，结果以下拉列表展示；选中后主区域跳转对应详情
+ */
+function _bindGeoSearch() {
+  const container = State.pageContainer;
+  const input = container.querySelector('#geo-panel-search');
+  const results = container.querySelector('#geo-panel-results');
+  if (!input || !results) return;
+
+  // 防重复绑定
+  const freshInput = input.cloneNode(true);
+  input.parentNode.replaceChild(freshInput, input);
+
+  let focusedIdx = -1;
+  let currentHits = [];
+
+  function buildResults(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) {
+      results.classList.remove('open');
+      results.innerHTML = '';
+      currentHits = [];
+      return;
+    }
+
+    const hits = [];
+
+    // 搜索国家/势力
+    State.allCountries
+      .filter(co => co.name.toLowerCase().includes(q))
+      .forEach(co => hits.push({
+        type: 'country', icon: '🏛️',
+        label: co.name, path: '',
+        obj: co
+      }));
+
+    // 搜索城市
+    State.allCities
+      .filter(ci => ci.name.toLowerCase().includes(q))
+      .forEach(ci => {
+        const country = State.allCountries.find(co => co.id === ci.country_id);
+        hits.push({
+          type: 'city', icon: '🏙️',
+          label: ci.name, path: country ? country.name : '',
+          obj: ci, parentCountry: country
+        });
+      });
+
+    // 搜索地标
+    State.allLandmarks
+      .filter(lm => lm.name.toLowerCase().includes(q))
+      .forEach(lm => {
+        const city = State.allCities.find(ci => ci.id === lm.city_id);
+        const country = city ? State.allCountries.find(co => co.id === city.country_id) : null;
+        const path = [country && country.name, city && city.name].filter(Boolean).join(' › ');
+        hits.push({
+          type: 'landmark', icon: '🏛',
+          label: lm.name, path,
+          obj: lm, parentCity: city, parentCountry: country
+        });
+      });
+
+    currentHits = hits;
+    focusedIdx = -1;
+
+    if (!hits.length) {
+      results.innerHTML = '<div class="geo-panel-results-empty">无匹配结果</div>';
+      results.classList.add('open');
+      return;
+    }
+
+    results.innerHTML = hits.map((h, i) =>
+      '<div class="geo-panel-result-item" data-idx="' + i + '">' +
+        '<span class="geo-panel-result-icon">' + h.icon + '</span>' +
+        '<span class="geo-panel-result-name">' + escHtml(h.label) + '</span>' +
+        (h.path ? '<span class="geo-panel-result-path">' + escHtml(h.path) + '</span>' : '') +
+      '</div>'
+    ).join('');
+    results.classList.add('open');
+
+    // 绑定点击选中
+    results.querySelectorAll('.geo-panel-result-item').forEach(function(el, i) {
+      el.addEventListener('mousedown', function(e) {
+        e.preventDefault(); // 防止 input blur 先触发，导致下拉关闭
+        selectHit(currentHits[i]);
+        freshInput.value = '';
+        results.classList.remove('open');
+        results.innerHTML = '';
+        currentHits = [];
+      });
+    });
+  }
+
+  function selectHit(hit) {
+    if (!hit) return;
+    if (hit.type === 'country') {
+      State.setSelectedCountry(hit.obj);
+      State.setSelectedCity(null);
+      if (!State.expandedCountries.has(hit.obj.id)) State.toggleCountryExpanded(hit.obj.id);
+
+    } else if (hit.type === 'city') {
+      State.setSelectedCity(hit.obj);
+      if (hit.parentCountry) {
+        State.setSelectedCountry(hit.parentCountry);
+        if (!State.expandedCountries.has(hit.parentCountry.id))
+          State.toggleCountryExpanded(hit.parentCountry.id);
+      }
+      if (State.expandedCities && !State.expandedCities.has(hit.obj.id))
+        State.toggleCityExpanded && State.toggleCityExpanded(hit.obj.id);
+
+    } else if (hit.type === 'landmark') {
+      // 地标：跳到所在城市详情
+      if (hit.parentCity) {
+        State.setSelectedCity(hit.parentCity);
+        if (hit.parentCountry) {
+          State.setSelectedCountry(hit.parentCountry);
+          if (!State.expandedCountries.has(hit.parentCountry.id))
+            State.toggleCountryExpanded(hit.parentCountry.id);
+        }
+        if (State.expandedCities && !State.expandedCities.has(hit.parentCity.id))
+          State.toggleCityExpanded && State.toggleCityExpanded(hit.parentCity.id);
+      }
+    }
+    renderGeoDetail();
+    renderGeoTree();
+  }
+
+  // 输入事件
+  freshInput.addEventListener('input', function(e) {
+    buildResults(e.target.value);
+  });
+
+  // 键盘导航：上/下/回车/Esc
+  freshInput.addEventListener('keydown', function(e) {
+    const items = results.querySelectorAll('.geo-panel-result-item');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusedIdx = Math.min(focusedIdx + 1, items.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusedIdx = Math.max(focusedIdx - 1, 0);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (focusedIdx >= 0 && currentHits[focusedIdx]) {
+        selectHit(currentHits[focusedIdx]);
+        freshInput.value = '';
+        results.classList.remove('open');
+        results.innerHTML = '';
+        currentHits = [];
+      }
+      return;
+    } else if (e.key === 'Escape') {
+      results.classList.remove('open');
+      return;
+    }
+    items.forEach(function(el, i) { el.classList.toggle('focused', i === focusedIdx); });
+    if (focusedIdx >= 0) items[focusedIdx].scrollIntoView({ block: 'nearest' });
+  });
+
+  // 失焦时关闭（setTimeout 确保 mousedown 先执行完）
+  freshInput.addEventListener('blur', function() {
+    setTimeout(function() { results.classList.remove('open'); }, 160);
+  });
+}
+
+/** 面板内「新建国家」按钮代理 */
+function _bindPanelAddCountry() {
+  const container = State.pageContainer;
+  const btn = container.querySelector('#panel-add-country-btn');
+  if (!btn) return;
+  const fresh = btn.cloneNode(true);
+  btn.parentNode.replaceChild(fresh, btn);
+  fresh.style.display = isEditor() ? 'block' : 'none';
+  fresh.addEventListener('click', function() {
+    container.querySelector('#add-country-btn') && container.querySelector('#add-country-btn').click();
+  });
+}
 function updateUI() {
   const container = State.pageContainer;
   const editor = isEditor();
   container.querySelector('#chars-add-btn').style.display = editor ? 'block' : 'none';
+  // add-country-btn 保持隐藏，由 panel-add-country-btn 代理触发
   const addCountryBtn = container.querySelector('#add-country-btn');
-  if (addCountryBtn) addCountryBtn.style.display = editor ? 'block' : 'none';
+  if (addCountryBtn) addCountryBtn.style.display = 'none';
+  const panelAddBtn = container.querySelector('#panel-add-country-btn');
+  if (panelAddBtn) panelAddBtn.style.display = (editor && State.currentTab === 'geography') ? 'block' : 'none';
   syncPanelHeader(State.currentTab);
 }
