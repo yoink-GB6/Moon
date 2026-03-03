@@ -1,4 +1,4 @@
-// pages/characters.js - 修复版本
+// pages/characters.js
 // 主入口文件 - 协调所有模块
 
 import { isEditor, onAuthChange } from '../core/auth.js';
@@ -23,7 +23,12 @@ export async function mount(container) {
   
   // 绑定控制
   bindControls();
-  onAuthChange(() => updateUI());
+
+  // 解锁状态变化时：刷新按钮可见性 + 重新渲染当前标签（编辑按钮立即出现，无需手动切换）
+  onAuthChange(() => {
+    updateUI();
+    renderCurrentTab();
+  });
   
   // 加载数据
   await loadAllData();
@@ -239,8 +244,7 @@ function bindControls() {
   
   container.querySelectorAll('.intro-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      const tabName = tab.dataset.tab;
-      switchTab(tabName);
+      switchTab(tab.dataset.tab);
     });
   });
   
@@ -256,9 +260,8 @@ function switchTab(tabName) {
   });
   
   container.querySelectorAll('.intro-content').forEach(content => {
-    // 关键修复：使用字符串拼接而不是模板字符串
     const targetId = 'tab-' + tabName;
-    content.style.display = content.id === targetId ? 
+    content.style.display = content.id === targetId ?
       (tabName === 'geography' ? 'flex' : 'block') : 'none';
   });
   
