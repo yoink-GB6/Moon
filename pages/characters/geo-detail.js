@@ -8,6 +8,7 @@ import { openCountryModal } from './modals/country-modal.js';
 import { openCityModal } from './modals/city-modal.js';
 import { openLandmarkModal } from './modals/landmark-modal.js';
 import { openCharModal } from './modals/character-modal.js';
+import { renderGeoTree } from './geo-tree.js';
 
 export function renderGeoDetail() {
   const container = State.pageContainer;
@@ -74,7 +75,6 @@ function renderCountryDetail(detail) {
       const cityId = parseInt(item.dataset.selectCity);
       State.setSelectedCity(State.allCities.find(c => c.id === cityId));
       renderGeoDetail();
-      const { renderGeoTree } = require('./geo-tree.js');
       renderGeoTree();
     });
   });
