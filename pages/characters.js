@@ -60,6 +60,9 @@ function buildHTML() {
     <div class="intro-main">
       <div class="intro-content" id="tab-characters">
         <div class="intro-header">
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn bn" id="chars-filter-clear" style="display:none;font-size:12px;padding:4px 10px">✕ 清除筛选</button>
+          </div>
           <button class="btn bp" id="chars-add-btn" style="display:none">＋ 新建</button>
         </div>
         <div class="intro-grid" id="chars-grid"></div>
@@ -402,6 +405,12 @@ function bindControls() {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
 
+  // 清除人物筛选按钮
+  const clearBtn = container.querySelector('#chars-filter-clear');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => _filterCharGrid(null));
+  }
+
   bindCharactersTab();
   bindSidePanel();
 }
@@ -409,6 +418,11 @@ function bindControls() {
 function switchTab(tabName) {
   const container = State.pageContainer;
   State.setCurrentTab(tabName);
+
+  // 切换 tab 时重置人物筛选
+  const clearBtn = container.querySelector('#chars-filter-clear');
+  if (clearBtn) clearBtn.style.display = 'none';
+  container.querySelectorAll('#chars-panel-list .tl-ci').forEach(el => el.classList.remove('active-item'));
 
   container.querySelectorAll('.intro-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.tab === tabName);
@@ -489,38 +503,89 @@ function _renderCharPanel(list, query) {
     : [...State.allChars];
 
   if (!chars.length) {
-    list.innerHTML = `<div class="tl-empty">${query ? '无匹配人物' : '暂无人物'}</div>`;
+    list.innerHTML = '<div class="tl-empty">' + (query ? '无匹配人物' : '暂无人物') + '</div>';
     return;
   }
 
-  list.innerHTML = chars.map(c => {
-    const city = State.allCities.find(ci => ci.id === c.city_id);
-    const country = city ? State.allCountries.find(co => co.id === city.country_id) : null;
-    const location = [country?.name, city?.name].filter(Boolean).join(' › ');
-    // 修复年龄显示：age 可能是字符串"0"或数字，用 != null 而非 truthy 判断
-    const ageStr = (c.age != null && c.age !== '') ? String(c.age) : '';
+  list.innerHTML = chars.map(function(c) {
+    const city = State.allCities.find(function(ci) { return ci.id === c.city_id; });
+    const country = city ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null;
+    const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
+    const ageStr = (c.base_age != null && c.base_age !== '') ? String(c.base_age) : '';
     const meta = [ageStr ? ageStr + '岁' : '', location].filter(Boolean).join(' · ');
 
     const av = c.avatar_url
-      ? `<div class="tl-ci-av"><img src="${escHtml(c.avatar_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div>`
-      : `<div class="tl-ci-av">${escHtml(c.name.charAt(0).toUpperCase())}</div>`;
+      ? '<div class="tl-ci-av"><img src="' + escHtml(c.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div>'
+      : '<div class="tl-ci-av">' + escHtml(c.name.charAt(0).toUpperCase()) + '</div>';
 
-    return `<div class="tl-ci" data-char-id="${c.id}">
-      ${av}
-      <div class="tl-ci-info">
-        <div class="tl-cname">${escHtml(c.name)}</div>
-        ${meta ? `<div class="tl-cmeta">${escHtml(meta)}</div>` : ''}
-      </div>
-    </div>`;
+    return '<div class="tl-ci" data-char-id="' + c.id + '">' +
+      av +
+      '<div class="tl-ci-info">' +
+        '<div class="tl-cname">' + escHtml(c.name) + '</div>' +
+        (meta ? '<div class="tl-cmeta">' + escHtml(meta) + '</div>' : '') +
+      '</div>' +
+    '</div>';
   }).join('');
 
-  list.querySelectorAll('.tl-ci[data-char-id]').forEach(item => {
-    item.addEventListener('click', () => {
+  list.querySelectorAll('.tl-ci[data-char-id]').forEach(function(item) {
+    item.addEventListener('click', function() {
       const id = parseInt(item.dataset.charId);
-      const char = State.allChars.find(c => c.id === id);
-      if (char && isEditor()) openCharModal(char);
+      // 高亮选中
+      list.querySelectorAll('.tl-ci').forEach(function(el) { el.classList.remove('active-item'); });
+      item.classList.add('active-item');
+      // 主区域只显示该人物
+      _filterCharGrid(id);
     });
   });
+}
+
+/** 筛选主区域只展示指定人物卡片，传 null 恢复全部 */
+function _filterCharGrid(charId) {
+  const container = State.pageContainer;
+  const clearBtn = container.querySelector('#chars-filter-clear');
+
+  if (charId == null) {
+    // 恢复全部
+    if (clearBtn) clearBtn.style.display = 'none';
+    container.querySelectorAll('#chars-panel-list .tl-ci').forEach(function(el) {
+      el.classList.remove('active-item');
+    });
+    renderCharactersTab();
+    return;
+  }
+
+  if (clearBtn) clearBtn.style.display = 'inline-flex';
+
+  const char = State.allChars.find(function(c) { return c.id === charId; });
+  if (!char) return;
+
+  const grid = container.querySelector('#chars-grid');
+  if (!grid) return;
+
+  const city = State.allCities.find(function(ci) { return ci.id === char.city_id; });
+  const country = city ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null;
+  const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
+  const hasAge = char.base_age != null && char.base_age !== '';
+
+  grid.innerHTML =
+    '<div class="intro-card" data-id="' + char.id + '">' +
+      '<div style="display:flex;gap:12px;margin-bottom:12px">' +
+        '<div class="intro-avatar">' +
+          (char.avatar_url ? '<img src="' + escHtml(char.avatar_url) + '"/>' : escHtml(char.name.charAt(0))) +
+        '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:600;margin-bottom:4px;font-size:15px">' + escHtml(char.name) + '</div>' +
+          (location ? '<div style="font-size:12px;color:var(--muted)">' + escHtml(location) + '</div>' : '') +
+          (hasAge ? '<div style="font-size:12px;color:var(--muted)">年龄：' + escHtml(String(char.base_age)) + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+      (char.description ? '<div style="font-size:13px;line-height:1.6">' + escHtml(char.description) + '</div>' : '') +
+    '</div>';
+
+  if (isEditor()) {
+    const card = grid.querySelector('.intro-card');
+    if (card) card.addEventListener('click', function() { openCharModal(char); });
+  }
 }
 
 function renderCurrentTab() {
