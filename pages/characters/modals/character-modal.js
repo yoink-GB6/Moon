@@ -13,7 +13,6 @@ export function setupCharModal() {
   const container = State.pageContainer;
   const modal = container.querySelector('#char-modal');
 
-  // 文件上传
   container.querySelector('#char-upload-btn')?.addEventListener('click', () => {
     container.querySelector('#char-file-input').click();
   });
@@ -26,7 +25,6 @@ export function setupCharModal() {
     }
   });
 
-  // URL 输入切换
   container.querySelector('#char-url-btn')?.addEventListener('click', () => {
     const row = container.querySelector('#char-url-row');
     const isHidden = row.style.display === 'none' || row.style.display === '';
@@ -42,7 +40,6 @@ export function setupCharModal() {
     }
   });
 
-  // 取消/关闭
   container.querySelector('#char-cancel-btn')?.addEventListener('click', () => closeModal(modal));
   modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal(modal);
@@ -57,10 +54,9 @@ export function openCharModal(char) {
   const modal = container.querySelector('#char-modal');
   container.querySelector('#char-modal-title').textContent = char ? '编辑人物' : '新建人物';
   container.querySelector('#char-name').value = char?.name || '';
-  container.querySelector('#char-age').value = char?.age || '';
+  container.querySelector('#char-age').value = (char?.base_age != null) ? String(char.base_age) : '';
   container.querySelector('#char-desc').value = char?.description || '';
 
-  // 城市选择
   const citySelect = container.querySelector('#char-city');
   citySelect.innerHTML = '<option value="">无</option>' +
     State.allCities.map(c => {
@@ -69,7 +65,6 @@ export function openCharModal(char) {
       return `<option value="${c.id}" ${char?.city_id === c.id ? 'selected' : ''}>${escHtml(label)}</option>`;
     }).join('');
 
-  // 重置 URL 行
   const urlRow = container.querySelector('#char-url-row');
   urlRow.style.display = 'none';
   container.querySelector('#char-url-input').value = '';
@@ -79,7 +74,6 @@ export function openCharModal(char) {
   const deleteBtn = container.querySelector('#char-delete-btn');
   deleteBtn.style.display = char ? 'block' : 'none';
 
-  // 每次打开重新绑定保存/删除
   const saveBtn = container.querySelector('#char-save-btn');
   const newSaveBtn = saveBtn.cloneNode(true);
   saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
@@ -100,10 +94,9 @@ function previewAvatar(file, container) {
   reader.readAsDataURL(file);
 }
 
-function updateAvatarPreview(url, container, name = '?') {
+function updateAvatarPreview(url, container, name) {
   const preview = container.querySelector('#char-avatar-preview');
   const letter = container.querySelector('#char-avatar-letter');
-
   if (url) {
     preview.style.backgroundImage = `url(${url})`;
     letter.style.display = 'none';
@@ -119,7 +112,12 @@ async function saveCharacter() {
   const name = container.querySelector('#char-name').value.trim();
   if (!name) return showToast('请输入名字');
 
-  const age = container.querySelector('#char-age').value.trim();
+  const ageRaw = container.querySelector('#char-age').value.trim();
+  const baseAge = ageRaw !== '' ? parseInt(ageRaw) : null;
+  if (ageRaw !== '' && (isNaN(baseAge) || baseAge < 0)) {
+    return showToast('年龄请输入有效数字');
+  }
+
   const cityId = container.querySelector('#char-city').value;
   const description = container.querySelector('#char-desc').value.trim();
 
@@ -131,13 +129,8 @@ async function saveCharacter() {
         const file = State.pendingAvatar;
         const ext = file.name.split('.').pop();
         const filename = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
-
-        const { data, error } = await supaClient.storage
-          .from('avatars')
-          .upload(filename, file, { upsert: true });
-
+        const { data, error } = await supaClient.storage.from('avatars').upload(filename, file, { upsert: true });
         if (error) throw error;
-
         const { data: urlData } = supaClient.storage.from('avatars').getPublicUrl(data.path);
         avatarUrl = urlData.publicUrl;
       } else {
@@ -149,7 +142,7 @@ async function saveCharacter() {
 
     const payload = {
       name,
-      age: age || null,
+      base_age: baseAge,
       city_id: cityId ? parseInt(cityId) : null,
       description: description || null,
       ...(State.pendingAvatar !== undefined && { avatar_url: avatarUrl })
@@ -177,11 +170,9 @@ async function saveCharacter() {
 
 async function deleteCharacter() {
   if (!await confirmDialog('确定要删除这个人物吗？')) return;
-
   try {
     const { error } = await supaClient.from('characters').delete().eq('id', State.editingCharId);
     if (error) throw error;
-
     showToast('已删除');
     closeModal(State.pageContainer.querySelector('#char-modal'));
     await loadAllData();
