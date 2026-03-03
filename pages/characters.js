@@ -60,7 +60,6 @@ function buildHTML() {
     <div class="intro-main">
       <div class="intro-content" id="tab-characters">
         <div class="intro-header">
-          <h2>👥 人物介绍</h2>
           <button class="btn bp" id="chars-add-btn" style="display:none">＋ 新建</button>
         </div>
         <div class="intro-grid" id="chars-grid"></div>
