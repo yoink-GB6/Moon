@@ -13,6 +13,7 @@ export let selectedCountry = null;
 export let selectedCity = null;
 export let searchQuery = '';
 export let expandedCountries = new Set();
+export let expandedCities = new Set(); // 新增：控制城市节点下地标列表的展开状态
 
 // ========== 编辑状态 ==========
 export let editingCharId = null;
@@ -57,5 +58,13 @@ export function toggleCountryExpanded(countryId) {
     expandedCountries.delete(countryId);
   } else {
     expandedCountries.add(countryId);
+  }
+}
+
+export function toggleCityExpanded(cityId) {
+  if (expandedCities.has(cityId)) {
+    expandedCities.delete(cityId);
+  } else {
+    expandedCities.add(cityId);
   }
 }
