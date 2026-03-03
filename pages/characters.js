@@ -14,31 +14,22 @@ import { setupLandmarkModal } from './characters/modals/landmark-modal.js';
 export async function mount(container) {
   State.setPageContainer(container);
   container.innerHTML = buildHTML();
-  
-  // 设置所有模态框
+
   setupCharModal();
   setupCountryModal();
   setupCityModal();
   setupLandmarkModal();
-  
-  // 绑定控制
+
   bindControls();
 
-  // 解锁状态变化时：刷新按钮可见性 + 重新渲染当前标签（编辑按钮立即出现，无需手动切换）
   onAuthChange(() => {
     updateUI();
     renderCurrentTab();
   });
-  
-  // 加载数据
+
   await loadAllData();
-  
-  // 渲染当前标签
   renderCurrentTab();
-  
-  // 订阅实时更新
   subscribeRealtime(() => renderCurrentTab());
-  
   updateUI();
 }
 
@@ -59,7 +50,7 @@ function buildHTML() {
       <span class="tab-label">国家及势力</span>
     </button>
   </div>
-  
+
   <div class="intro-content" id="tab-characters">
     <div class="intro-header">
       <h2>👥 人物介绍</h2>
@@ -67,7 +58,7 @@ function buildHTML() {
     </div>
     <div class="intro-grid" id="chars-grid"></div>
   </div>
-  
+
   <div class="intro-content geo-layout" id="tab-geography" style="display:none">
     <div class="geo-sidebar geo-tree">
       <div class="geo-tree-header">
@@ -76,11 +67,11 @@ function buildHTML() {
       </div>
       <div id="geo-tree-list" class="geo-tree-list"></div>
     </div>
-    
+
     <div class="geo-main">
       <div id="geo-detail-view" class="geo-detail"></div>
     </div>
-    
+
     <button id="geo-search-expand" class="geo-expand-btn" title="展开搜索">◀</button>
     <div class="geo-sidebar geo-search">
       <div class="geo-search-header" id="geo-search-toggle">
@@ -97,6 +88,7 @@ function buildHTML() {
   </div>
 </div>
 
+<!-- 人物模态框 -->
 <div id="char-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:500px" onmousedown="event.stopPropagation()">
     <h2 id="char-modal-title">编辑人物</h2>
@@ -105,31 +97,38 @@ function buildHTML() {
     <label>年龄</label>
     <input id="char-age" type="text" placeholder="25 或 25-30"/>
     <label>所属城市</label>
-    <select id="char-city"><option value="">无</option></select>
+    <div class="modal-select-wrap">
+      <select id="char-city"><option value="">无</option></select>
+      <span class="modal-select-arrow">▼</span>
+    </div>
     <label>描述</label>
     <textarea id="char-desc" rows="3"></textarea>
     <label>头像</label>
-    <div style="display:flex;gap:12px;margin-bottom:16px">
-      <div id="char-avatar-preview" style="width:80px;height:80px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:600;overflow:hidden">
+    <div class="avatar-row">
+      <div id="char-avatar-preview" class="avatar-preview">
         <span id="char-avatar-letter">?</span>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="avatar-btns">
         <button class="btn bn" id="char-upload-btn">📁 上传</button>
         <button class="btn bn" id="char-url-btn">🔗 URL</button>
       </div>
       <input type="file" id="char-file-input" accept="image/*" style="display:none"/>
-      <div id="char-url-row" style="display:none;margin-top:8px;flex:1">
-        <input id="char-url-input" type="url" placeholder="https://..." style="width:100%"/>
-      </div>
     </div>
-    <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="btn bp" id="char-save-btn" style="flex:1">保存</button>
-      <button class="btn br" id="char-delete-btn" style="display:none">删除</button>
-      <button class="btn bn" id="char-cancel-btn" style="flex:1">取消</button>
+    <div id="char-url-row" class="url-input-row" style="display:none">
+      <span class="url-input-icon">🔗</span>
+      <input id="char-url-input" type="url" placeholder="粘贴图片链接 https://..."/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn br modal-btn-delete" id="char-delete-btn" style="display:none">删除</button>
+      <div class="modal-actions-right">
+        <button class="btn bp modal-btn" id="char-save-btn">保存</button>
+        <button class="btn bn modal-btn" id="char-cancel-btn">取消</button>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- 国家模态框 -->
 <div id="country-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:500px" onmousedown="event.stopPropagation()">
     <h2 id="country-modal-title">编辑国家</h2>
@@ -137,21 +136,27 @@ function buildHTML() {
     <input id="country-name" type="text"/>
     <label>描述</label>
     <textarea id="country-desc" rows="3"></textarea>
-    <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="btn bp" id="country-save-btn" style="flex:1">保存</button>
-      <button class="btn br" id="country-delete-btn" style="display:none">删除</button>
-      <button class="btn bn" id="country-cancel-btn" style="flex:1">取消</button>
+    <div class="modal-actions">
+      <button class="btn br modal-btn-delete" id="country-delete-btn" style="display:none">删除</button>
+      <div class="modal-actions-right">
+        <button class="btn bp modal-btn" id="country-save-btn">保存</button>
+        <button class="btn bn modal-btn" id="country-cancel-btn">取消</button>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- 城市模态框 -->
 <div id="city-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:500px" onmousedown="event.stopPropagation()">
     <h2 id="city-modal-title">编辑城市</h2>
     <label>名称</label>
     <input id="city-name" type="text"/>
     <label>所属国家</label>
-    <select id="city-country"><option value="">无</option></select>
+    <div class="modal-select-wrap">
+      <select id="city-country"><option value="">无</option></select>
+      <span class="modal-select-arrow">▼</span>
+    </div>
     <label>概述</label>
     <textarea id="city-overview" rows="2" placeholder="城市总体介绍..."></textarea>
     <label>地理位置</label>
@@ -160,14 +165,17 @@ function buildHTML() {
     <textarea id="city-climate" rows="2" placeholder="气候类型、季节特点..."></textarea>
     <label>城市结构</label>
     <textarea id="city-structure" rows="2" placeholder="城区划分、建筑风格..."></textarea>
-    <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="btn bp" id="city-save-btn" style="flex:1">保存</button>
-      <button class="btn br" id="city-delete-btn" style="display:none">删除</button>
-      <button class="btn bn" id="city-cancel-btn" style="flex:1">取消</button>
+    <div class="modal-actions">
+      <button class="btn br modal-btn-delete" id="city-delete-btn" style="display:none">删除</button>
+      <div class="modal-actions-right">
+        <button class="btn bp modal-btn" id="city-save-btn">保存</button>
+        <button class="btn bn modal-btn" id="city-cancel-btn">取消</button>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- 地标模态框 -->
 <div id="landmark-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:500px" onmousedown="event.stopPropagation()">
     <h2 id="landmark-modal-title">编辑地标</h2>
@@ -175,15 +183,18 @@ function buildHTML() {
     <input id="landmark-name" type="text"/>
     <label>描述</label>
     <textarea id="landmark-desc" rows="3" placeholder="地标详细介绍..."></textarea>
-    <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="btn bp" id="landmark-save-btn" style="flex:1">保存</button>
-      <button class="btn br" id="landmark-delete-btn" style="display:none">删除</button>
-      <button class="btn bn" id="landmark-cancel-btn" style="flex:1">取消</button>
+    <div class="modal-actions">
+      <button class="btn br modal-btn-delete" id="landmark-delete-btn" style="display:none">删除</button>
+      <div class="modal-actions-right">
+        <button class="btn bp modal-btn" id="landmark-save-btn">保存</button>
+        <button class="btn bn modal-btn" id="landmark-cancel-btn">取消</button>
+      </div>
     </div>
   </div>
 </div>
 
 <style>
+/* ===== 页面结构 ===== */
 .intro-page{height:100%;display:flex;flex-direction:column;overflow:hidden}
 .intro-tabs{display:flex;gap:4px;padding:16px 20px 0 20px;border-bottom:2px solid var(--border)}
 .intro-tab{display:flex;align-items:center;gap:8px;padding:12px 24px;border:none;background:transparent;color:var(--muted);cursor:pointer;position:relative;transition:all 0.2s}
@@ -197,6 +208,8 @@ function buildHTML() {
 .intro-card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.08);border-color:var(--accent)}
 .intro-avatar{width:60px;height:60px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:600;overflow:hidden;flex-shrink:0}
 .intro-avatar img{width:100%;height:100%;object-fit:cover}
+
+/* ===== 地理布局 ===== */
 .geo-layout{display:flex;gap:0;padding:0;overflow:hidden;position:relative}
 .geo-sidebar{width:280px;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;transition:width 0.3s ease;border-right:1px solid var(--border)}
 .geo-search{border-left:1px solid var(--border);border-right:none}
@@ -209,7 +222,10 @@ function buildHTML() {
 .geo-tree-item:hover{background:rgba(124,131,247,0.08)}
 .geo-tree-item.active{background:rgba(124,131,247,0.12);color:var(--accent)}
 .geo-tree-city{margin-left:20px;font-size:13px}
-.geo-tree-toggle{display:inline-block;width:16px;text-align:center;margin-right:4px;cursor:pointer}
+.geo-tree-landmark{margin-left:40px;font-size:12px;color:var(--muted)}
+.geo-tree-landmark:hover{color:var(--text)}
+.geo-tree-landmark-empty{margin-left:48px;font-size:12px;color:var(--muted);padding:4px 0;opacity:0.6}
+.geo-tree-toggle{display:inline-block;width:16px;text-align:center;margin-right:4px;cursor:pointer;font-size:10px;opacity:0.7}
 .geo-tree-actions{opacity:0;display:flex;gap:4px}
 .geo-tree-item:hover .geo-tree-actions{opacity:1}
 .geo-tree-btn{padding:2px 6px;font-size:11px;background:var(--accent);color:white;border:none;border-radius:4px;cursor:pointer}
@@ -235,36 +251,100 @@ function buildHTML() {
 .geo-landmark-item:hover .geo-item-actions,.geo-person-item:hover .geo-item-actions{opacity:1}
 .geo-empty{text-align:center;padding:40px;color:var(--muted)}
 @media (max-width:1024px){.geo-layout{flex-direction:column}.geo-sidebar{width:100%;max-height:300px}}
+
+/* ===== 模态框：自定义 Select ===== */
+.modal-select-wrap{position:relative;margin-bottom:16px}
+.modal-select-wrap select{
+  width:100%;
+  padding:9px 36px 9px 12px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:var(--bg2, var(--bg));
+  color:var(--text);
+  font-size:14px;
+  appearance:none;
+  -webkit-appearance:none;
+  cursor:pointer;
+  transition:border-color 0.2s, box-shadow 0.2s;
+  outline:none;
+}
+.modal-select-wrap select:hover{border-color:var(--accent)}
+.modal-select-wrap select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,247,0.15)}
+.modal-select-arrow{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  font-size:10px;color:var(--muted);pointer-events:none;
+}
+
+/* ===== 模态框：头像区域 ===== */
+.avatar-row{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.avatar-preview{
+  width:80px;height:80px;border-radius:50%;
+  background:var(--accent);color:white;
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;font-weight:600;overflow:hidden;flex-shrink:0;
+  background-size:cover;background-position:center;
+}
+.avatar-btns{display:flex;flex-direction:column;gap:8px}
+
+/* ===== 模态框：URL 输入框 ===== */
+.url-input-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:var(--bg2, var(--bg));
+  margin-bottom:16px;
+  transition:border-color 0.2s, box-shadow 0.2s;
+}
+.url-input-row:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,247,0.15)}
+.url-input-icon{font-size:15px;flex-shrink:0;opacity:0.6}
+.url-input-row input{
+  flex:1;border:none;background:transparent;
+  color:var(--text);font-size:13px;outline:none;
+}
+.url-input-row input::placeholder{color:var(--muted)}
+
+/* ===== 模态框：按钮区域（删除左 / 保存+取消右）===== */
+.modal-actions{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  margin-top:20px;
+}
+.modal-actions-right{display:flex;gap:8px;margin-left:auto}
+.modal-btn{min-width:88px}
+.modal-btn-delete{min-width:88px}
+/* 无删除按钮时右侧组自动顶到最右 */
+.modal-actions:not(:has(.modal-btn-delete[style*="block"])) .modal-actions-right{margin-left:auto}
 </style>
   `;
 }
 
 function bindControls() {
   const container = State.pageContainer;
-  
+
   container.querySelectorAll('.intro-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      switchTab(tab.dataset.tab);
-    });
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
-  
+
   bindCharactersTab();
 }
 
 function switchTab(tabName) {
   const container = State.pageContainer;
   State.setCurrentTab(tabName);
-  
+
   container.querySelectorAll('.intro-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.tab === tabName);
   });
-  
+
   container.querySelectorAll('.intro-content').forEach(content => {
     const targetId = 'tab-' + tabName;
     content.style.display = content.id === targetId ?
       (tabName === 'geography' ? 'flex' : 'block') : 'none';
   });
-  
+
   renderCurrentTab();
 }
 
