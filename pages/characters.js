@@ -217,15 +217,33 @@ function buildHTML() {
 .geo-panel-add{padding:2px 12px 6px;flex-shrink:0}
 .geo-panel-add .btn{width:100%;font-size:12px;padding:5px}
 /* ── 地理树 ── */
-.geo-tree-list{flex:1;overflow-y:auto;padding:8px}
-.geo-tree-item{padding:8px 12px;margin:2px 0;cursor:pointer;border-radius:6px;user-select:none;display:flex;justify-content:space-between;align-items:center}
-.geo-tree-item:hover{background:rgba(124,131,247,0.08)}
-.geo-tree-item.active{background:rgba(124,131,247,0.12);color:var(--accent)}
-.geo-tree-city{margin-left:20px;font-size:13px}
-.geo-tree-toggle{display:inline-block;width:16px;text-align:center;margin-right:4px}
-.geo-tree-actions{opacity:0;display:flex;gap:4px}
-.geo-tree-item:hover .geo-tree-actions{opacity:1}
-.geo-tree-btn{padding:2px 6px;font-size:11px;background:var(--accent);color:white;border:none;border-radius:4px;cursor:pointer}
+.geo-tree-list{flex:1;overflow-y:auto;padding:6px 4px}
+/* 树节点公共 */
+.gt-row{display:flex;align-items:center;padding:6px 8px;border-radius:6px;cursor:pointer;user-select:none;transition:background 0.13s}
+.gt-row:hover{background:rgba(124,131,247,0.08)}
+.gt-toggle{width:18px;flex-shrink:0;text-align:center;font-size:10px;color:var(--muted);transition:color 0.15s}
+.gt-row:hover .gt-toggle{color:var(--accent)}
+.gt-label{flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gt-actions{display:flex;gap:3px;opacity:0;transition:opacity 0.15s;flex-shrink:0}
+.gt-row:hover .gt-actions{opacity:1}
+.gt-btn{padding:1px 5px;font-size:11px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:all 0.12s}
+.gt-btn:hover{background:rgba(124,131,247,0.12);border-color:var(--accent);color:var(--accent)}
+/* 国家 0级 */
+.gt-country .gt-row{padding-left:6px}
+.gt-country.active .gt-row{background:rgba(124,131,247,0.12)}
+.gt-country.active .gt-label{color:var(--accent);font-weight:600}
+/* 城市 1级 */
+.gt-city .gt-row{padding-left:22px}
+.gt-city.active .gt-row{background:rgba(124,131,247,0.1)}
+.gt-city.active .gt-label{color:var(--accent)}
+/* 地标 2级 */
+.gt-landmark .gt-row{padding-left:40px}
+.gt-landmark .gt-label{font-size:12px;color:var(--muted)}
+.gt-landmark:hover .gt-label{color:var(--text)}
+/* 空提示 */
+.gt-empty-city{font-size:11px;color:var(--muted);padding:3px 8px 3px 24px;font-style:italic}
+.gt-empty-lm{font-size:11px;color:var(--muted);padding:3px 8px 3px 40px;font-style:italic}
+.gt-group-label{font-size:11px;color:var(--muted);padding:8px 8px 2px;letter-spacing:0.05em}
 /* ── 地理详情 ── */
 .geo-detail h2{margin:0 0 24px 0;display:flex;justify-content:space-between;align-items:center}
 .geo-detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
