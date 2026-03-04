@@ -13,6 +13,9 @@ import { setupCountryModal } from './characters/modals/country-modal.js';
 import { setupCityModal } from './characters/modals/city-modal.js';
 import { setupLandmarkModal } from './characters/modals/landmark-modal.js';
 
+let _unsubAuth = null;
+let _dataLoaded = false;
+
 export async function mount(container) {
   State.setPageContainer(container);
   container.innerHTML = buildHTML();
@@ -21,19 +24,19 @@ export async function mount(container) {
   setupCityModal();
   setupLandmarkModal();
   bindControls();
-  const _unsubAuth = onAuthChange(() => { updateUI(); renderCurrentTab(); });
-  State._unsubAuth = _unsubAuth;
+  if (_unsubAuth) _unsubAuth(); // 防止重复注册
+  _unsubAuth = onAuthChange(() => { updateUI(); renderCurrentTab(); });
   await loadAllData();
-  State._dataLoaded = true;
+  _dataLoaded = true;
   renderCurrentTab();
   subscribeRealtime(() => renderCurrentTab());
   updateUI();
 }
 
 export function unmount() {
-  State._dataLoaded = false;
+  _dataLoaded = false;
   unsubscribeRealtime();
-  if (State._unsubAuth) { State._unsubAuth(); State._unsubAuth = null; }
+  if (_unsubAuth) { _unsubAuth(); _unsubAuth = null; }
 }
 
 // ── HTML ──────────────────────────────────────────────────────
@@ -436,7 +439,7 @@ function syncPanelHeader(tabName) {
 }
 
 function renderCurrentTab() {
-  if (!State._dataLoaded) return;
+  if (!_dataLoaded) return;
   const container = State.pageContainer;
   if (State.currentTab === 'characters') {
     renderCharactersTab();
