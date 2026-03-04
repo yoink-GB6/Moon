@@ -6,10 +6,11 @@ import { openCountryModal } from './modals/country-modal.js';
 import { openCityModal } from './modals/city-modal.js';
 import { openLandmarkModal } from './modals/landmark-modal.js';
 import { openCharModal } from './modals/character-modal.js';
+import { renderGeoTree } from './geo-tree.js';
 
 export function renderGeoDetail() {
   const container = State.pageContainer;
-  const detail = container.querySelector('#geo-detail-view');
+  const detail    = container.querySelector('#geo-detail-view');
   if (!detail) return;
   if (!State.selectedCity && !State.selectedCountry) {
     detail.innerHTML = '<div class="geo-empty">选择一个国家或城市查看详情</div>';
@@ -19,24 +20,22 @@ export function renderGeoDetail() {
   else renderCountryDetail(detail);
 }
 
-// ── 国家详情 ───────────────────────────────────────────────
+// ── 公共：把 sections JSON 渲染成折叠卡片 ─────────────────────
 
-function renderCountryDetail(detail) {
-  const country = State.selectedCountry;
-  const cities = State.allCities.filter(c => c.country_id === country.id);
-
-  // 解析 sections（兼容旧版纯文本）
-  let sections = [];
-  if (country.description) {
-    try {
-      const parsed = JSON.parse(country.description);
-      sections = Array.isArray(parsed) ? parsed : [{ title: '概述', content: country.description }];
-    } catch (_) {
-      sections = [{ title: '概述', content: country.description }];
-    }
+function _parseSections(raw) {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    return [{ title: '概述', content: raw }];
+  } catch (_) {
+    return [{ title: '概述', content: raw }];
   }
+}
 
-  const sectionsHTML = sections.map(s => `
+function _sectionsHTML(sections) {
+  if (!sections.length) return '';
+  return sections.map(s => `
     <div class="geo-section-card">
       <div class="geo-section-toggle">
         <span class="geo-section-title">${escHtml(s.title)}</span>
@@ -47,60 +46,85 @@ function renderCountryDetail(detail) {
       </div>
     </div>
   `).join('');
+}
+
+function _bindSectionToggles(detail) {
+  detail.querySelectorAll('.geo-section-toggle').forEach(toggle => {
+    toggle.addEventListener('click', () => {
+      toggle.closest('.geo-section-card').classList.toggle('open');
+    });
+  });
+}
+
+// ── 国家详情 ──────────────────────────────────────────────────
+
+function renderCountryDetail(detail) {
+  const country  = State.selectedCountry;
+  const cities   = State.allCities.filter(c => c.country_id === country.id);
+  const sections = _parseSections(country.description);
 
   detail.innerHTML = `
     <div class="geo-detail-header">
-      <h2>🏙️ ${escHtml(country.name)}</h2>
+      <h2>🏛️ ${escHtml(country.name)}</h2>
       ${isEditor() ? `<button class="btn bn" id="edit-country-${country.id}">编辑</button>` : ''}
     </div>
 
-    ${sectionsHTML}
+    ${_sectionsHTML(sections)}
 
     <div class="geo-detail-section">
       <h3>
         <span>城市 (${cities.length})</span>
         ${isEditor() ? `<button class="btn bn" id="add-city-${country.id}">＋ 添加</button>` : ''}
       </h3>
-      ${cities.length ? cities.map(city => `
-        <div class="geo-tree-item" style="margin:4px 0" data-select-city="${city.id}">
-          🏙️ ${escHtml(city.name)}
-        </div>
-      `).join('') : '<div class="geo-empty" style="padding:20px">暂无城市</div>'}
+      ${cities.length
+        ? cities.map(city => `
+          <div class="geo-tree-item" style="margin:4px 0" data-select-city="${city.id}">
+            🏙️ ${escHtml(city.name)}
+          </div>
+        `).join('')
+        : '<div class="geo-empty" style="padding:20px">暂无城市</div>'
+      }
     </div>
   `;
 
-  // 绑定按钞
   if (isEditor()) {
-    detail.querySelector(`#edit-country-${country.id}`)?.addEventListener('click', () => openCountryModal(country));
-    detail.querySelector(`#add-city-${country.id}`)?.addEventListener('click', () => openCityModal(null, country.id));
+    detail.querySelector(`#edit-country-${country.id}`)
+      ?.addEventListener('click', () => openCountryModal(country));
+    detail.querySelector(`#add-city-${country.id}`)
+      ?.addEventListener('click', () => openCityModal(null, country.id));
   }
 
-  // 绑定城市选择
   detail.querySelectorAll('[data-select-city]').forEach(item => {
     item.addEventListener('click', () => {
       const cityId = parseInt(item.dataset.selectCity);
       State.setSelectedCity(State.allCities.find(c => c.id === cityId));
       renderGeoDetail();
-      import('./geo-tree.js').then(m => m.renderGeoTree());
+      renderGeoTree();
     });
   });
 
-  // 绑定小节卡片展开/折叠
-  detail.querySelectorAll('.geo-section-toggle').forEach(toggle => {
-    toggle.addEventListener('click', () => {
-      const card = toggle.closest('.geo-section-card');
-      card.classList.toggle('open');
-    });
-  });
+  _bindSectionToggles(detail);
 }
 
-// ── 城市详情 ───────────────────────────────────────────────
+// ── 城市详情 ──────────────────────────────────────────────────
 
 function renderCityDetail(detail) {
-  const city = State.selectedCity;
+  const city      = State.selectedCity;
   const landmarks = State.allLandmarks.filter(l => l.city_id === city.id);
-  const people = State.allChars.filter(c => c.city_id === city.id);
-  const country = State.allCountries.find(c => c.id === city.country_id);
+  const people    = State.allChars.filter(c => c.city_id === city.id);
+  const country   = State.allCountries.find(c => c.id === city.country_id);
+
+  // 解析城市小节：新格式存在 overview，旧格式四个字段自动合并
+  let sections = _parseSections(city.overview);
+  // 若 overview 不是 JSON，但还有旧字段，补充合并
+  if (!sections.length || (sections.length === 1 && sections[0].title === '概述' && !JSON.parse._isNew)) {
+    const oldSections = [];
+    if (city.overview  && !_isJSON(city.overview))  oldSections.push({ title: '概述',     content: city.overview  });
+    if (city.geography && !_isJSON(city.geography))  oldSections.push({ title: '地理位置', content: city.geography });
+    if (city.climate   && !_isJSON(city.climate))    oldSections.push({ title: '气候',     content: city.climate   });
+    if (city.structure && !_isJSON(city.structure))  oldSections.push({ title: '城市结构', content: city.structure });
+    if (oldSections.length) sections = oldSections;
+  }
 
   detail.innerHTML = `
     <div class="geo-detail-header">
@@ -109,48 +133,53 @@ function renderCityDetail(detail) {
     </div>
     ${country ? `<div style="color:var(--muted);margin-bottom:20px">所属: ${escHtml(country.name)}</div>` : ''}
 
-    ${city.overview ? `<div class="geo-detail-section"><h3>概述</h3><div class="geo-detail-value">${escHtml(city.overview)}</div></div>` : ''}
-    ${city.geography ? `<div class="geo-detail-section"><h3>地理位置</h3><div class="geo-detail-value">${escHtml(city.geography)}</div></div>` : ''}
-    ${city.climate ? `<div class="geo-detail-section"><h3>气候</h3><div class="geo-detail-value">${escHtml(city.climate)}</div></div>` : ''}
-    ${city.structure ? `<div class="geo-detail-section"><h3>城市结构</h3><div class="geo-detail-value">${escHtml(city.structure)}</div></div>` : ''}
+    ${_sectionsHTML(sections)}
 
     <div class="geo-detail-section">
       <h3>
         <span>地标建筑 (${landmarks.length})</span>
         ${isEditor() ? `<button class="btn bn" id="add-landmark-${city.id}">＋ 添加</button>` : ''}
       </h3>
-      ${landmarks.length ? landmarks.map(lm => `
-        <div class="geo-landmark-item">
-          <div>
-            <div class="geo-landmark-name">${escHtml(lm.name)}</div>
-            ${lm.description ? `<div style="font-size:13px;color:var(--muted)">${escHtml(lm.description)}</div>` : ''}
+      ${landmarks.length
+        ? landmarks.map(lm => `
+          <div class="geo-landmark-item">
+            <div>
+              <div class="geo-landmark-name">${escHtml(lm.name)}</div>
+              ${lm.description ? `<div style="font-size:13px;color:var(--muted)">${escHtml(lm.description)}</div>` : ''}
+            </div>
+            ${isEditor() ? `<div class="geo-item-actions"><button class="btn bn" data-edit-landmark="${lm.id}">✏️</button></div>` : ''}
           </div>
-          ${isEditor() ? `<div class="geo-item-actions"><button class="btn bn" data-edit-landmark="${lm.id}">✏️</button></div>` : ''}
-        </div>
-      `).join('') : '<div class="geo-empty" style="padding:20px">暂无地标</div>'}
+        `).join('')
+        : '<div class="geo-empty" style="padding:20px">暂无地标</div>'
+      }
     </div>
 
     <div class="geo-detail-section">
       <h3>关联人物 (${people.length})</h3>
-      ${people.length ? people.map(p => `
-        <div class="geo-person-item" ${isEditor() ? `data-edit-char="${p.id}"` : ''}>
-          <div style="display:flex;gap:8px;align-items:center">
-            <div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden">
-              ${p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover"/>` : escHtml(p.name.charAt(0))}
-            </div>
-            <div>
-              <div>${escHtml(p.name)}</div>
-              ${(p.base_age != null && p.base_age !== '') ? `<div style="font-size:12px;color:var(--muted)">${String(p.base_age)}岁</div>` : ''}
+      ${people.length
+        ? people.map(p => `
+          <div class="geo-person-item" ${isEditor() ? `data-edit-char="${p.id}"` : ''}>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden">
+                ${p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover"/>` : escHtml(p.name.charAt(0))}
+              </div>
+              <div>
+                <div>${escHtml(p.name)}</div>
+                ${(p.base_age != null && p.base_age !== '') ? `<div style="font-size:12px;color:var(--muted)">${String(p.base_age)}岁</div>` : ''}
+              </div>
             </div>
           </div>
-        </div>
-      `).join('') : '<div class="geo-empty" style="padding:20px">暂无关联人物</div>'}
+        `).join('')
+        : '<div class="geo-empty" style="padding:20px">暂无关联人物</div>'
+      }
     </div>
   `;
 
   if (isEditor()) {
-    detail.querySelector(`#edit-city-${city.id}`)?.addEventListener('click', () => openCityModal(city));
-    detail.querySelector(`#add-landmark-${city.id}`)?.addEventListener('click', () => openLandmarkModal(null, city.id));
+    detail.querySelector(`#edit-city-${city.id}`)
+      ?.addEventListener('click', () => openCityModal(city));
+    detail.querySelector(`#add-landmark-${city.id}`)
+      ?.addEventListener('click', () => openLandmarkModal(null, city.id));
     detail.querySelectorAll('[data-edit-landmark]').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = parseInt(btn.dataset.editLandmark);
@@ -164,4 +193,12 @@ function renderCityDetail(detail) {
       });
     });
   }
+
+  _bindSectionToggles(detail);
+}
+
+// 判断字符串是否为 JSON 数组
+function _isJSON(str) {
+  if (!str) return false;
+  try { const p = JSON.parse(str); return Array.isArray(p); } catch (_) { return false; }
 }
