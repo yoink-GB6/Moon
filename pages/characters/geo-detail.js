@@ -36,12 +36,28 @@ function _isJSON(str) {
 function _sectionsHTML(sections) {
   if (!sections.length) return '';
   return sections.map(function(s) {
+    const childrenHTML = (s.children && s.children.length)
+      ? '<div class="geo-section-children">' +
+          s.children.map(function(c) {
+            return '<div class="geo-section-child">' +
+              '<div class="geo-section-child-toggle">' +
+                '<span class="geo-section-child-title">' + escHtml(c.title) + '</span>' +
+                '<span class="geo-section-arrow" style="font-size:9px">\u25bc</span>' +
+              '</div>' +
+              '<div class="geo-section-child-body"><div class="geo-section-content">' + escHtml(c.content || '') + '</div></div>' +
+            '</div>';
+          }).join('') +
+        '</div>'
+      : '';
     return '<div class="geo-section-card">' +
       '<div class="geo-section-toggle">' +
         '<span class="geo-section-title">' + escHtml(s.title) + '</span>' +
         '<span class="geo-section-arrow">\u25bc</span>' +
       '</div>' +
-      '<div class="geo-section-body"><div class="geo-section-content">' + escHtml(s.content || '') + '</div></div>' +
+      '<div class="geo-section-body">' +
+        '<div class="geo-section-content">' + escHtml(s.content || '') + '</div>' +
+        childrenHTML +
+      '</div>' +
     '</div>';
   }).join('');
 }
@@ -49,6 +65,9 @@ function _sectionsHTML(sections) {
 function _bindSectionToggles(detail) {
   detail.querySelectorAll('.geo-section-toggle').forEach(function(t) {
     t.addEventListener('click', function() { t.closest('.geo-section-card').classList.toggle('open'); });
+  });
+  detail.querySelectorAll('.geo-section-child-toggle').forEach(function(t) {
+    t.addEventListener('click', function() { t.closest('.geo-section-child').classList.toggle('open'); });
   });
 }
 
