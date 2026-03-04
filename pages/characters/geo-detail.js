@@ -20,39 +20,35 @@ export function renderGeoDetail() {
   else renderCountryDetail(detail);
 }
 
-// ── 公共：把 sections JSON 渲染成折叠卡片 ─────────────────────
-
 function _parseSections(raw) {
   if (!raw) return [];
   try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
-    return [{ title: '概述', content: raw }];
-  } catch (_) {
-    return [{ title: '概述', content: raw }];
-  }
+    const p = JSON.parse(raw);
+    return Array.isArray(p) ? p : [{ title: '概述', content: raw }];
+  } catch (_) { return [{ title: '概述', content: raw }]; }
+}
+
+function _isJSON(str) {
+  if (!str) return false;
+  try { return Array.isArray(JSON.parse(str)); } catch (_) { return false; }
 }
 
 function _sectionsHTML(sections) {
   if (!sections.length) return '';
-  return sections.map(s => `
-    <div class="geo-section-card">
-      <div class="geo-section-toggle">
-        <span class="geo-section-title">${escHtml(s.title)}</span>
-        <span class="geo-section-arrow">▼</span>
-      </div>
-      <div class="geo-section-body">
-        <div class="geo-section-content">${escHtml(s.content || '')}</div>
-      </div>
-    </div>
-  `).join('');
+  return sections.map(function(s) {
+    return '<div class="geo-section-card">' +
+      '<div class="geo-section-toggle">' +
+        '<span class="geo-section-title">' + escHtml(s.title) + '</span>' +
+        '<span class="geo-section-arrow">\u25bc</span>' +
+      '</div>' +
+      '<div class="geo-section-body"><div class="geo-section-content">' + escHtml(s.content || '') + '</div></div>' +
+    '</div>';
+  }).join('');
 }
 
 function _bindSectionToggles(detail) {
-  detail.querySelectorAll('.geo-section-toggle').forEach(toggle => {
-    toggle.addEventListener('click', () => {
-      toggle.closest('.geo-section-card').classList.toggle('open');
-    });
+  detail.querySelectorAll('.geo-section-toggle').forEach(function(t) {
+    t.addEventListener('click', function() { t.closest('.geo-section-card').classList.toggle('open'); });
   });
 }
 
@@ -60,44 +56,42 @@ function _bindSectionToggles(detail) {
 
 function renderCountryDetail(detail) {
   const country  = State.selectedCountry;
-  const cities   = State.allCities.filter(c => c.country_id === country.id);
+  const cities   = State.allCities.filter(function(c) { return c.country_id === country.id; });
   const sections = _parseSections(country.description);
 
-  detail.innerHTML = `
-    <div class="geo-detail-header">
-      <h2>🏛️ ${escHtml(country.name)}</h2>
-      ${isEditor() ? `<button class="btn bn" id="edit-country-${country.id}">编辑</button>` : ''}
-    </div>
+  const citiesHTML = cities.length
+    ? cities.map(function(city) {
+        return '<div class="geo-city-card" data-select-city="' + city.id + '">' +
+          '<span class="geo-city-card-name">' + escHtml(city.name) + '</span>' +
+          '<span class="geo-city-card-arrow">\u203a</span>' +
+        '</div>';
+      }).join('')
+    : '<div class="geo-empty" style="padding:16px 0">暂无城市</div>';
 
-    ${_sectionsHTML(sections)}
-
-    <div class="geo-detail-section">
-      <h3>
-        <span>城市 (${cities.length})</span>
-        ${isEditor() ? `<button class="btn bn" id="add-city-${country.id}">＋ 添加</button>` : ''}
-      </h3>
-      ${cities.length
-        ? cities.map(city => `
-          <div class="geo-tree-item" style="margin:4px 0" data-select-city="${city.id}">
-            🏙️ ${escHtml(city.name)}
-          </div>
-        `).join('')
-        : '<div class="geo-empty" style="padding:20px">暂无城市</div>'
-      }
-    </div>
-  `;
+  detail.innerHTML =
+    '<div class="geo-detail-header">' +
+      '<h2>' + escHtml(country.name) + '</h2>' +
+      (isEditor() ? '<button class="btn bn" id="edit-country-' + country.id + '">编辑</button>' : '') +
+    '</div>' +
+    _sectionsHTML(sections) +
+    '<div class="geo-detail-section">' +
+      '<h3><span>城市 (' + cities.length + ')</span>' +
+        (isEditor() ? '<button class="btn bn" id="add-city-' + country.id + '">+ 添加</button>' : '') +
+      '</h3>' +
+      '<div class="geo-city-list">' + citiesHTML + '</div>' +
+    '</div>';
 
   if (isEditor()) {
-    detail.querySelector(`#edit-country-${country.id}`)
-      ?.addEventListener('click', () => openCountryModal(country));
-    detail.querySelector(`#add-city-${country.id}`)
-      ?.addEventListener('click', () => openCityModal(null, country.id));
+    detail.querySelector('#edit-country-' + country.id)
+      ?.addEventListener('click', function() { openCountryModal(country); });
+    detail.querySelector('#add-city-' + country.id)
+      ?.addEventListener('click', function() { openCityModal(null, country.id); });
   }
 
-  detail.querySelectorAll('[data-select-city]').forEach(item => {
-    item.addEventListener('click', () => {
+  detail.querySelectorAll('[data-select-city]').forEach(function(item) {
+    item.addEventListener('click', function() {
       const cityId = parseInt(item.dataset.selectCity);
-      State.setSelectedCity(State.allCities.find(c => c.id === cityId));
+      State.setSelectedCity(State.allCities.find(function(c) { return c.id === cityId; }));
       renderGeoDetail();
       renderGeoTree();
     });
@@ -110,95 +104,126 @@ function renderCountryDetail(detail) {
 
 function renderCityDetail(detail) {
   const city      = State.selectedCity;
-  const landmarks = State.allLandmarks.filter(l => l.city_id === city.id);
-  const people    = State.allChars.filter(c => c.city_id === city.id);
-  const country   = State.allCountries.find(c => c.id === city.country_id);
+  const landmarks = State.allLandmarks.filter(function(l) { return l.city_id === city.id; });
+  const people    = State.allChars.filter(function(c) { return c.city_id === city.id; });
+  const country   = State.allCountries.find(function(c) { return c.id === city.country_id; });
 
-  // 解析城市小节：新格式存在 overview，旧格式四个字段自动合并
   let sections = _parseSections(city.overview);
-  // 若 overview 不是 JSON，但还有旧字段，补充合并
-  if (!sections.length || (sections.length === 1 && sections[0].title === '概述' && !JSON.parse._isNew)) {
-    const oldSections = [];
-    if (city.overview  && !_isJSON(city.overview))  oldSections.push({ title: '概述',     content: city.overview  });
-    if (city.geography && !_isJSON(city.geography))  oldSections.push({ title: '地理位置', content: city.geography });
-    if (city.climate   && !_isJSON(city.climate))    oldSections.push({ title: '气候',     content: city.climate   });
-    if (city.structure && !_isJSON(city.structure))  oldSections.push({ title: '城市结构', content: city.structure });
-    if (oldSections.length) sections = oldSections;
+  if (!sections.length) {
+    const old = [];
+    if (city.overview  && !_isJSON(city.overview))  old.push({ title: '概述',     content: city.overview  });
+    if (city.geography && !_isJSON(city.geography)) old.push({ title: '地理位置', content: city.geography });
+    if (city.climate   && !_isJSON(city.climate))   old.push({ title: '气候',     content: city.climate   });
+    if (city.structure && !_isJSON(city.structure)) old.push({ title: '城市结构', content: city.structure });
+    if (old.length) sections = old;
   }
 
-  detail.innerHTML = `
-    <div class="geo-detail-header">
-      <h2>🏙️ ${escHtml(city.name)}</h2>
-      ${isEditor() ? `<button class="btn bn" id="edit-city-${city.id}">编辑</button>` : ''}
-    </div>
-    ${country ? `<div style="color:var(--muted);margin-bottom:20px">所属: ${escHtml(country.name)}</div>` : ''}
+  const landmarksHTML = landmarks.length
+    ? landmarks.map(function(lm) {
+        return '<div class="geo-landmark-item">' +
+          '<div><div class="geo-landmark-name">' + escHtml(lm.name) + '</div>' +
+          (lm.description ? '<div style="font-size:13px;color:var(--muted)">' + escHtml(lm.description) + '</div>' : '') +
+          '</div>' +
+          (isEditor() ? '<div class="geo-item-actions"><button class="btn bn" data-edit-landmark="' + lm.id + '">✏️</button></div>' : '') +
+        '</div>';
+      }).join('')
+    : '<div class="geo-empty" style="padding:16px 0">暂无地标</div>';
 
-    ${_sectionsHTML(sections)}
+  const peopleHTML = people.length
+    ? people.map(function(p) {
+        const age = (p.base_age != null && p.base_age !== '') ? String(p.base_age) + '岁' : '';
+        return '<div class="geo-person-item" data-char-id="' + p.id + '">' +
+          '<div class="geo-person-av">' +
+            (p.avatar_url ? '<img src="' + escHtml(p.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>' : escHtml(p.name.charAt(0))) +
+          '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;font-weight:500">' + escHtml(p.name) + '</div>' +
+            (age ? '<div style="font-size:11px;color:var(--muted)">' + age + '</div>' : '') +
+          '</div>' +
+          '<span style="color:var(--muted);font-size:16px">›</span>' +
+        '</div>';
+      }).join('')
+    : '<div class="geo-empty" style="padding:16px 0">暂无关联人物</div>';
 
-    <div class="geo-detail-section">
-      <h3>
-        <span>地标建筑 (${landmarks.length})</span>
-        ${isEditor() ? `<button class="btn bn" id="add-landmark-${city.id}">＋ 添加</button>` : ''}
-      </h3>
-      ${landmarks.length
-        ? landmarks.map(lm => `
-          <div class="geo-landmark-item">
-            <div>
-              <div class="geo-landmark-name">${escHtml(lm.name)}</div>
-              ${lm.description ? `<div style="font-size:13px;color:var(--muted)">${escHtml(lm.description)}</div>` : ''}
-            </div>
-            ${isEditor() ? `<div class="geo-item-actions"><button class="btn bn" data-edit-landmark="${lm.id}">✏️</button></div>` : ''}
-          </div>
-        `).join('')
-        : '<div class="geo-empty" style="padding:20px">暂无地标</div>'
-      }
-    </div>
-
-    <div class="geo-detail-section">
-      <h3>关联人物 (${people.length})</h3>
-      ${people.length
-        ? people.map(p => `
-          <div class="geo-person-item" ${isEditor() ? `data-edit-char="${p.id}"` : ''}>
-            <div style="display:flex;gap:8px;align-items:center">
-              <div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden">
-                ${p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover"/>` : escHtml(p.name.charAt(0))}
-              </div>
-              <div>
-                <div>${escHtml(p.name)}</div>
-                ${(p.base_age != null && p.base_age !== '') ? `<div style="font-size:12px;color:var(--muted)">${String(p.base_age)}岁</div>` : ''}
-              </div>
-            </div>
-          </div>
-        `).join('')
-        : '<div class="geo-empty" style="padding:20px">暂无关联人物</div>'
-      }
-    </div>
-  `;
+  detail.innerHTML =
+    '<div class="geo-detail-header">' +
+      '<h2>' + escHtml(city.name) + '</h2>' +
+      (isEditor() ? '<button class="btn bn" id="edit-city-' + city.id + '">编辑</button>' : '') +
+    '</div>' +
+    (country ? '<div style="color:var(--muted);margin-bottom:16px;font-size:13px">所属：' + escHtml(country.name) + '</div>' : '') +
+    _sectionsHTML(sections) +
+    '<div class="geo-detail-section"><h3><span>地标建筑 (' + landmarks.length + ')</span>' +
+      (isEditor() ? '<button class="btn bn" id="add-landmark-' + city.id + '">+ 添加</button>' : '') +
+    '</h3>' + landmarksHTML + '</div>' +
+    '<div class="geo-detail-section"><h3>关联人物 (' + people.length + ')</h3>' + peopleHTML + '</div>';
 
   if (isEditor()) {
-    detail.querySelector(`#edit-city-${city.id}`)
-      ?.addEventListener('click', () => openCityModal(city));
-    detail.querySelector(`#add-landmark-${city.id}`)
-      ?.addEventListener('click', () => openLandmarkModal(null, city.id));
-    detail.querySelectorAll('[data-edit-landmark]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = parseInt(btn.dataset.editLandmark);
-        openLandmarkModal(State.allLandmarks.find(l => l.id === id));
-      });
-    });
-    detail.querySelectorAll('[data-edit-char]').forEach(item => {
-      item.addEventListener('click', () => {
-        const id = parseInt(item.dataset.editChar);
-        openCharModal(State.allChars.find(c => c.id === id));
+    detail.querySelector('#edit-city-' + city.id)
+      ?.addEventListener('click', function() { openCityModal(city); });
+    detail.querySelector('#add-landmark-' + city.id)
+      ?.addEventListener('click', function() { openLandmarkModal(null, city.id); });
+    detail.querySelectorAll('[data-edit-landmark]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        openLandmarkModal(State.allLandmarks.find(function(l) { return l.id === parseInt(btn.dataset.editLandmark); }));
       });
     });
   }
+
+  // 人物点击：编辑模式打开编辑框，只读模式打开介绍弹窗
+  detail.querySelectorAll('[data-char-id]').forEach(function(item) {
+    item.addEventListener('click', function() {
+      const id   = parseInt(item.dataset.charId);
+      const char = State.allChars.find(function(c) { return c.id === id; });
+      if (!char) return;
+      if (isEditor()) { openCharModal(char); } else { _openCharReadonly(char); }
+    });
+  });
 
   _bindSectionToggles(detail);
 }
 
-// 判断字符串是否为 JSON 数组
-function _isJSON(str) {
-  if (!str) return false;
-  try { const p = JSON.parse(str); return Array.isArray(p); } catch (_) { return false; }
+// ── 只读人物弹窗 ──────────────────────────────────────────────
+
+function _openCharReadonly(char) {
+  const container = State.pageContainer;
+  let overlay = container.querySelector('#char-readonly-modal');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'char-readonly-modal';
+    overlay.className = 'tl-modal-overlay';
+    container.appendChild(overlay);
+  }
+
+  const city    = State.allCities.find(function(c) { return c.id === char.city_id; });
+  const country = city ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null;
+  const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
+  const age = (char.base_age != null && char.base_age !== '') ? String(char.base_age) + ' 岁' : '';
+
+  overlay.innerHTML =
+    '<div class="tl-modal" style="max-width:420px" onmousedown="event.stopPropagation()">' +
+      '<div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px">' +
+        '<div class="geo-person-av" style="width:56px;height:56px;font-size:22px;flex-shrink:0">' +
+          (char.avatar_url ? '<img src="' + escHtml(char.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>' : escHtml(char.name.charAt(0))) +
+        '</div>' +
+        '<div style="flex:1">' +
+          '<h2 style="margin:0 0 4px">' + escHtml(char.name) + '</h2>' +
+          (age      ? '<div style="font-size:13px;color:var(--muted)">' + age + '</div>' : '') +
+          (location ? '<div style="font-size:13px;color:var(--muted)">' + escHtml(location) + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+      (char.description
+        ? '<div style="font-size:13px;line-height:1.75;white-space:pre-wrap">' + escHtml(char.description) + '</div>'
+        : '<div style="font-size:13px;color:var(--muted);font-style:italic">暂无介绍</div>') +
+      '<div style="margin-top:20px;text-align:right">' +
+        '<button class="btn bn" id="char-readonly-close">关闭</button>' +
+      '</div>' +
+    '</div>';
+
+  overlay.classList.add('show');
+  overlay.querySelector('#char-readonly-close').addEventListener('click', function() {
+    overlay.classList.remove('show');
+  });
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.classList.remove('show');
+  });
 }
