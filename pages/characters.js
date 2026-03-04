@@ -46,7 +46,6 @@ function buildHTML() {
     <div class="intro-content" id="tab-characters">
       <div class="intro-header">
         <div style="display:flex;align-items:center;gap:10px">
-          <h2 style="margin:0">👥 人物介绍</h2>
           <button class="btn bn" id="chars-filter-clear" style="display:none;font-size:12px;padding:4px 10px">✕ 清除筛选</button>
         </div>
         <button class="btn bp" id="chars-add-btn" style="display:none">＋ 新建</button>
