@@ -254,8 +254,17 @@ function buildHTML() {
 .geo-detail-section{margin-bottom:24px}
 .geo-detail-section h3{font-size:16px;margin:0 0 12px 0;color:var(--accent);display:flex;justify-content:space-between;align-items:center}
 .geo-detail-value{font-size:14px;line-height:1.6}
-.geo-landmark-item,.geo-person-item{padding:12px;margin:8px 0;background:var(--bg);border:1px solid var(--border);border-radius:8px;display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer}
-.geo-landmark-item:hover,.geo-person-item:hover{border-color:var(--accent)}
+.geo-city-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.geo-city-card{display:flex;align-items:center;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color 0.15s,background 0.15s}
+.geo-city-card:hover{border-color:var(--accent);background:rgba(124,131,247,0.06)}
+.geo-city-card-name{flex:1;font-size:13px;font-weight:500}
+.geo-city-card-arrow{color:var(--muted);font-size:16px;transition:color 0.15s}
+.geo-city-card:hover .geo-city-card-arrow{color:var(--accent)}
+.geo-landmark-item{padding:12px;margin:6px 0;background:var(--bg);border:1px solid var(--border);border-radius:8px;display:flex;justify-content:space-between;align-items:flex-start}
+.geo-landmark-item:hover{border-color:rgba(124,131,247,0.3)}
+.geo-person-item{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:6px 0;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color 0.15s,background 0.15s}
+.geo-person-item:hover{border-color:var(--accent);background:rgba(124,131,247,0.06)}
+.geo-person-av{width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;overflow:hidden;flex-shrink:0}
 .geo-landmark-name{font-weight:600;margin-bottom:4px}
 .geo-item-actions{opacity:0;display:flex;gap:4px}
 .geo-landmark-item:hover .geo-item-actions,.geo-person-item:hover .geo-item-actions{opacity:1}
