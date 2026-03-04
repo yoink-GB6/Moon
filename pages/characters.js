@@ -60,7 +60,7 @@ function buildHTML() {
   </div><!-- /intro-main -->
 
   <!-- 右侧面板展开按钮（panel外，不受overflow:hidden影响）-->
-  <button id="chars-panel-expand" class="panel-expand-trigger" title="展开面板">▶</button>
+  <button id="chars-panel-expand" class="panel-expand-trigger" title="展开面板">◀</button>
 
   <!-- 右侧面板 -->
   <div id="chars-panel" class="tl-panel">
