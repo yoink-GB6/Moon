@@ -21,7 +21,7 @@ export async function mount(container) {
   setupCityModal();
   setupLandmarkModal();
   bindControls();
-  onAuthChange(() => updateUI());
+  onAuthChange(() => { updateUI(); renderCurrentTab(); });
   await loadAllData();
   renderCurrentTab();
   subscribeRealtime(() => renderCurrentTab());
