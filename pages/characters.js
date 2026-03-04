@@ -135,21 +135,8 @@ function buildHTML() {
 
 <!-- 城市模态框 -->
 <div id="city-modal" class="tl-modal-overlay">
-  <div class="tl-modal" style="max-width:500px" onmousedown="event.stopPropagation()">
-    <h2 id="city-modal-title">编辑城市</h2>
-    <label>名称</label><input id="city-name" type="text"/>
-    <label>所属国家</label><select id="city-country"><option value="">无</option></select>
-    <label>概述</label><textarea id="city-overview" rows="2" placeholder="城市总体介绍..."></textarea>
-    <label>地理位置</label><textarea id="city-geography" rows="2" placeholder="地理坐标、地形特征..."></textarea>
-    <label>气候</label><textarea id="city-climate" rows="2" placeholder="气候类型、季节特点..."></textarea>
-    <label>城市结构</label><textarea id="city-structure" rows="2" placeholder="城区划分、建筑风格..."></textarea>
-    <div class="modal-actions">
-      <button class="btn br modal-btn-delete" id="city-delete-btn" style="display:none">删除</button>
-      <div class="modal-actions-right">
-        <button class="btn bp modal-btn" id="city-save-btn">保存</button>
-        <button class="btn bn modal-btn" id="city-cancel-btn">取消</button>
-      </div>
-    </div>
+  <div class="tl-modal city-modal-inner" style="max-width:560px" onmousedown="event.stopPropagation()">
+    <!-- 内容由 city-modal.js 动态填充 -->
   </div>
 </div>
 
