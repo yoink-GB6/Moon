@@ -160,8 +160,8 @@ function buildHTML() {
 /* ── 整体布局 ── */
 .intro-body{height:100%;display:flex;overflow:hidden}
 .intro-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.intro-tabs{display:flex;gap:4px;padding:16px 20px 0;border-bottom:2px solid var(--border);flex-shrink:0}
-.intro-tab{display:flex;align-items:center;gap:8px;padding:12px 24px;border:none;background:transparent;color:var(--muted);cursor:pointer;position:relative;transition:all 0.2s}
+.intro-tabs{display:flex;gap:0;padding:0;border-bottom:2px solid var(--border);flex-shrink:0}
+.intro-tab{display:flex;align-items:center;gap:8px;padding:10px 20px;border:none;background:transparent;color:var(--muted);cursor:pointer;position:relative;transition:all 0.2s}
 .intro-tab:hover{color:var(--text);background:rgba(124,131,247,0.05)}
 .intro-tab.active{color:var(--accent)}
 .intro-tab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--accent)}
