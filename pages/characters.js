@@ -155,19 +155,8 @@ function buildHTML() {
 
 <!-- 国家模态框 -->
 <div id="country-modal" class="tl-modal-overlay">
-  <div class="tl-modal" style="max-width:500px" onmousedown="event.stopPropagation()">
-    <h2 id="country-modal-title">编辑国家</h2>
-    <label>名称</label>
-    <input id="country-name" type="text"/>
-    <label>描述</label>
-    <textarea id="country-desc" rows="3"></textarea>
-    <div class="modal-actions">
-      <button class="btn br modal-btn-delete" id="country-delete-btn" style="display:none">删除</button>
-      <div class="modal-actions-right">
-        <button class="btn bp modal-btn" id="country-save-btn">保存</button>
-        <button class="btn bn modal-btn" id="country-cancel-btn">取消</button>
-      </div>
-    </div>
+  <div class="tl-modal country-modal-inner" style="max-width:560px" onmousedown="event.stopPropagation()">
+    <!-- 内容由 country-modal.js 动态填充 -->
   </div>
 </div>
 
@@ -275,6 +264,39 @@ function buildHTML() {
 .geo-detail-section{margin-bottom:24px}
 .geo-detail-section h3{font-size:16px;margin:0 0 12px 0;color:var(--accent);display:flex;justify-content:space-between;align-items:center}
 .geo-detail-value{font-size:14px;line-height:1.6}
+/* 国家详情：标题+编辑按钮行 */
+.geo-detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.geo-detail-header h2{margin:0}
+/* 折叠小节卡片 */
+.geo-section-card{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;transition:border-color 0.2s}
+.geo-section-card:hover{border-color:rgba(124,131,247,0.35)}
+.geo-section-toggle{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;cursor:pointer;user-select:none;background:rgba(124,131,247,0.04);transition:background 0.15s}
+.geo-section-toggle:hover{background:rgba(124,131,247,0.09)}
+.geo-section-title{font-size:14px;font-weight:600}
+.geo-section-arrow{font-size:10px;color:var(--muted);transition:transform 0.22s;transform:rotate(-90deg)}
+.geo-section-card.open .geo-section-arrow{transform:rotate(0deg)}
+.geo-section-body{display:none;padding:12px 16px;border-top:1px solid var(--border)}
+.geo-section-card.open .geo-section-body{display:block}
+.geo-section-content{font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text)}
+/* 国家编辑模态框内样式 */
+.cm-sec-hdr{display:flex;align-items:baseline;gap:10px;margin:16px 0 6px}
+.cm-sec-hdr span:first-child{font-size:13px;font-weight:600}
+.cm-hint{font-size:11px;color:var(--muted)}
+.cm-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:28px}
+.cm-tag{padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:transparent;color:var(--text);font-size:12px;cursor:pointer;transition:border-color 0.15s,background 0.15s}
+.cm-tag:hover{border-color:var(--accent);background:rgba(124,131,247,0.1);color:var(--accent)}
+.cm-tags-empty{font-size:11px;color:var(--muted);padding:4px 0}
+.cm-custom-row{display:flex;gap:8px;margin-bottom:12px}
+.cm-custom-row input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none}
+.cm-custom-row input:focus{border-color:var(--accent)}
+.cm-list{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;padding-right:2px}
+.cm-row{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.cm-row-hdr{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(124,131,247,0.04);border-bottom:1px solid var(--border)}
+.cm-row-grip{color:var(--muted);font-size:14px;cursor:grab;flex-shrink:0}
+.cm-row-title{flex:1;border:none;background:transparent;color:var(--text);font-size:13px;font-weight:500;outline:none;padding:0}
+.cm-row-del{flex-shrink:0;padding:2px 6px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;border-radius:4px;transition:color 0.15s,background 0.15s}
+.cm-row-del:hover{color:#e05c5c;background:rgba(224,92,92,0.1)}
+.cm-row textarea{width:100%;box-sizing:border-box;padding:8px 10px;border:none;background:transparent;color:var(--text);font-size:13px;line-height:1.5;resize:vertical;min-height:60px;outline:none;font-family:inherit}
 .geo-landmark-item,.geo-person-item{padding:12px;margin:8px 0;background:var(--bg);border:1px solid var(--border);border-radius:8px;display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer}
 .geo-landmark-item:hover,.geo-person-item:hover{border-color:var(--accent)}
 .geo-landmark-name{font-weight:600;margin-bottom:4px}
@@ -394,6 +416,36 @@ function buildHTML() {
 .modal-actions-right{display:flex;gap:8px;margin-left:auto}
 .modal-btn{min-width:88px}
 .modal-btn-delete{min-width:88px}
+
+/* national section editor */
+.section-editor-hdr{display:flex;align-items:baseline;justify-content:space-between;margin:16px 0 6px}
+.section-editor-label{font-size:13px;font-weight:600}
+.section-editor-hint{font-size:11px;color:var(--muted)}
+.preset-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:20px}
+.preset-tag{padding:4px 10px;font-size:12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:border-color 0.15s,background 0.15s}
+.preset-tag:hover{border-color:var(--accent);background:rgba(124,131,247,0.08);color:var(--accent)}
+.preset-empty{font-size:12px;color:var(--muted);opacity:0.6;padding:2px 0}
+.custom-add-row{display:flex;gap:8px;margin-bottom:10px}
+.custom-add-row input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none}
+.custom-add-row input:focus{border-color:var(--accent)}
+.sections-list{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;padding-right:2px}
+.section-row{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:rgba(124,131,247,0.03)}
+.section-row-hdr{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(124,131,247,0.06);border-bottom:1px solid var(--border)}
+.section-title-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:13px;font-weight:500}
+.section-remove-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:4px;line-height:1;transition:color 0.15s}
+.section-remove-btn:hover{color:#e06c75}
+.section-content{width:100%;box-sizing:border-box;padding:8px 10px;border:none;background:transparent;color:var(--text);font-size:13px;line-height:1.55;resize:vertical;outline:none;font-family:inherit;min-height:68px}
+
+/* collapsible section cards */
+.geo-collapse-card{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;transition:box-shadow 0.2s}
+.geo-collapse-card:hover{box-shadow:0 2px 10px rgba(0,0,0,0.15)}
+.geo-collapse-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;cursor:pointer;user-select:none;background:rgba(124,131,247,0.04);transition:background 0.15s}
+.geo-collapse-hdr:hover{background:rgba(124,131,247,0.09)}
+.geo-collapse-title{font-size:13px;font-weight:600;color:var(--text)}
+.geo-collapse-arrow{font-size:11px;color:var(--muted);transition:transform 0.22s ease;display:inline-block}
+.geo-collapse-card.open .geo-collapse-arrow{transform:rotate(180deg)}
+.geo-collapse-body{display:none;padding:12px 16px;font-size:13px;line-height:1.7;color:var(--text);white-space:pre-wrap;border-top:1px solid var(--border)}
+.geo-collapse-card.open .geo-collapse-body{display:block}
 </style>
   `;
 }
@@ -460,36 +512,6 @@ function syncPanelHeader(tabName) {
 function bindSidePanel() {
   const container = State.pageContainer;
   const panel = container.querySelector('#chars-panel');
-  const toggle = container.querySelector('#chars-panel-toggle');
-  const expandBtn = container.querySelector('#chars-panel-expand'); // outside panel
-  const chevron = container.querySelector('#chars-panel-chevron');
-
-  function collapsePanel() {
-    panel.classList.add('collapsed');
-    if (chevron) chevron.textContent = '▶';
-    if (expandBtn) expandBtn.classList.add('visible');
-  }
-  function expandPanel() {
-    panel.classList.remove('collapsed');
-    if (chevron) chevron.textContent = '◀';
-    if (expandBtn) expandBtn.classList.remove('visible');
-  }
-  function togglePanel() {
-    if (panel.classList.contains('collapsed')) expandPanel();
-    else collapsePanel();
-  }
-
-  if (toggle) toggle.addEventListener('click', togglePanel);
-  if (expandBtn) expandBtn.addEventListener('click', expandPanel);
-
-  const searchInput = container.querySelector('#chars-panel-search');
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      renderPanelList(e.target.value.trim().toLowerCase());
-    });
-  }
-}
-
 export function renderPanelList(query) {
   const container = State.pageContainer;
   const list = container.querySelector('#chars-panel-list');
@@ -587,9 +609,6 @@ function _filterCharGrid(charId) {
     if (card) card.addEventListener('click', function() { openCharModal(char); });
   }
 }
-
-function renderCurrentTab() {
-  const container = State.pageContainer;
   if (State.currentTab === 'characters') {
     renderCharactersTab();
     const searchInput = container.querySelector('#chars-panel-search');
@@ -617,6 +636,170 @@ function _bindGeoSearch() {
   input.parentNode.replaceChild(freshInput, input);
 
   let focusedIdx = -1;
+  let currentHits = [];
+
+  function buildResults(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) {
+      results.classList.remove('open');
+      results.innerHTML = '';
+      currentHits = [];
+      return;
+    }
+
+    const hits = [];
+
+    // 搜索国家/势力
+    State.allCountries
+      .filter(co => co.name.toLowerCase().includes(q))
+      .forEach(co => hits.push({
+        type: 'country', icon: '🏛️',
+        label: co.name, path: '',
+        obj: co
+      }));
+
+    // 搜索城市
+    State.allCities
+      .filter(ci => ci.name.toLowerCase().includes(q))
+      .forEach(ci => {
+        const country = State.allCountries.find(co => co.id === ci.country_id);
+        hits.push({
+          type: 'city', icon: '🏙️',
+          label: ci.name, path: country ? country.name : '',
+          obj: ci, parentCountry: country
+        });
+      });
+
+    // 搜索地标
+    State.allLandmarks
+      .filter(lm => lm.name.toLowerCase().includes(q))
+      .forEach(lm => {
+        const city = State.allCities.find(ci => ci.id === lm.city_id);
+        const country = city ? State.allCountries.find(co => co.id === city.country_id) : null;
+        const path = [country && country.name, city && city.name].filter(Boolean).join(' › ');
+        hits.push({
+          type: 'landmark', icon: '🏛',
+          label: lm.name, path,
+          obj: lm, parentCity: city, parentCountry: country
+        });
+      });
+
+    currentHits = hits;
+    focusedIdx = -1;
+
+    if (!hits.length) {
+      results.innerHTML = '<div class="geo-panel-results-empty">无匹配结果</div>';
+      results.classList.add('open');
+      return;
+    }
+
+    results.innerHTML = hits.map((h, i) =>
+      '<div class="geo-panel-result-item" data-idx="' + i + '">' +
+        '<span class="geo-panel-result-icon">' + h.icon + '</span>' +
+        '<span class="geo-panel-result-name">' + escHtml(h.label) + '</span>' +
+        (h.path ? '<span class="geo-panel-result-path">' + escHtml(h.path) + '</span>' : '') +
+      '</div>'
+    ).join('');
+    results.classList.add('open');
+
+    // 绑定点击选中
+    results.querySelectorAll('.geo-panel-result-item').forEach(function(el, i) {
+      el.addEventListener('mousedown', function(e) {
+        e.preventDefault(); // 防止 input blur 先触发，导致下拉关闭
+        selectHit(currentHits[i]);
+        freshInput.value = '';
+        results.classList.remove('open');
+        results.innerHTML = '';
+        currentHits = [];
+      });
+    });
+  }
+
+  function selectHit(hit) {
+    if (!hit) return;
+    if (hit.type === 'country') {
+      State.setSelectedCountry(hit.obj);
+      State.setSelectedCity(null);
+      if (!State.expandedCountries.has(hit.obj.id)) State.toggleCountryExpanded(hit.obj.id);
+
+    } else if (hit.type === 'city') {
+      State.setSelectedCity(hit.obj);
+      if (hit.parentCountry) {
+        State.setSelectedCountry(hit.parentCountry);
+        if (!State.expandedCountries.has(hit.parentCountry.id))
+          State.toggleCountryExpanded(hit.parentCountry.id);
+      }
+      if (State.expandedCities && !State.expandedCities.has(hit.obj.id))
+        State.toggleCityExpanded && State.toggleCityExpanded(hit.obj.id);
+
+    } else if (hit.type === 'landmark') {
+      // 地标：跳到所在城市详情
+      if (hit.parentCity) {
+        State.setSelectedCity(hit.parentCity);
+        if (hit.parentCountry) {
+          State.setSelectedCountry(hit.parentCountry);
+          if (!State.expandedCountries.has(hit.parentCountry.id))
+            State.toggleCountryExpanded(hit.parentCountry.id);
+        }
+        if (State.expandedCities && !State.expandedCities.has(hit.parentCity.id))
+          State.toggleCityExpanded && State.toggleCityExpanded(hit.parentCity.id);
+      }
+    }
+    renderGeoDetail();
+    renderGeoTree();
+  }
+
+  // 输入事件
+  freshInput.addEventListener('input', function(e) {
+    buildResults(e.target.value);
+  });
+
+  // 键盘导航：上/下/回车/Esc
+  freshInput.addEventListener('keydown', function(e) {
+    const items = results.querySelectorAll('.geo-panel-result-item');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusedIdx = Math.min(focusedIdx + 1, items.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusedIdx = Math.max(focusedIdx - 1, 0);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (focusedIdx >= 0 && currentHits[focusedIdx]) {
+        selectHit(currentHits[focusedIdx]);
+        freshInput.value = '';
+        results.classList.remove('open');
+        results.innerHTML = '';
+        currentHits = [];
+      }
+      return;
+    } else if (e.key === 'Escape') {
+      results.classList.remove('open');
+      return;
+    }
+    items.forEach(function(el, i) { el.classList.toggle('focused', i === focusedIdx); });
+    if (focusedIdx >= 0) items[focusedIdx].scrollIntoView({ block: 'nearest' });
+  });
+
+  // 失焦时关闭（setTimeout 确保 mousedown 先执行完）
+  freshInput.addEventListener('blur', function() {
+    setTimeout(function() { results.classList.remove('open'); }, 160);
+  });
+}
+
+/** 面板内「新建国家」按钮代理 */
+function _bindPanelAddCountry() {
+  const container = State.pageContainer;
+  const btn = container.querySelector('#panel-add-country-btn');
+  if (!btn) return;
+  const fresh = btn.cloneNode(true);
+  btn.parentNode.replaceChild(fresh, btn);
+  fresh.style.display = isEditor() ? 'block' : 'none';
+  fresh.addEventListener('click', function() {
+    container.querySelector('#add-country-btn') && container.querySelector('#add-country-btn').click();
+  });
+}
   let currentHits = [];
 
   function buildResults(query) {
