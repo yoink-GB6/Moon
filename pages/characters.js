@@ -21,15 +21,19 @@ export async function mount(container) {
   setupCityModal();
   setupLandmarkModal();
   bindControls();
-  onAuthChange(() => { updateUI(); renderCurrentTab(); });
+  const _unsubAuth = onAuthChange(() => { updateUI(); renderCurrentTab(); });
+  State._unsubAuth = _unsubAuth;
   await loadAllData();
+  State._dataLoaded = true;
   renderCurrentTab();
   subscribeRealtime(() => renderCurrentTab());
   updateUI();
 }
 
 export function unmount() {
+  State._dataLoaded = false;
   unsubscribeRealtime();
+  if (State._unsubAuth) { State._unsubAuth(); State._unsubAuth = null; }
 }
 
 // ── HTML ──────────────────────────────────────────────────────
@@ -60,7 +64,7 @@ function buildHTML() {
   </div><!-- /intro-main -->
 
   <!-- 右侧面板展开按钮（panel外，不受overflow:hidden影响）-->
-  <button id="chars-panel-expand" class="panel-expand-trigger" title="展开面板">◀</button>
+  <button id="chars-panel-expand" class="panel-expand-trigger" title="展开面板">▶</button>
 
   <!-- 右侧面板 -->
   <div id="chars-panel" class="tl-panel">
@@ -432,6 +436,7 @@ function syncPanelHeader(tabName) {
 }
 
 function renderCurrentTab() {
+  if (!State._dataLoaded) return;
   const container = State.pageContainer;
   if (State.currentTab === 'characters') {
     renderCharactersTab();
