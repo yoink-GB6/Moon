@@ -1,6 +1,4 @@
 // pages/characters/modals/character-modal.js
-// 人物编辑模态框
-
 import { supaClient } from '../../../core/supabase-client.js';
 import { showToast, escHtml, confirmDialog } from '../../../core/ui.js';
 import * as State from '../state.js';
@@ -9,144 +7,167 @@ import { loadAllData } from '../data-loader.js';
 import { renderCharactersTab } from '../characters-tab.js';
 import { renderGeoDetail } from '../geo-detail.js';
 
+// ── 自定义下拉通用工具 ────────────────────────────────────────
+// options: [{ value, label }]，selectedValue: 当前选中值
+// onChange(value) 回调
+export function initTlSelect(wrapEl, options, selectedValue, onChange) {
+  const trigger  = wrapEl.querySelector('.tl-select-trigger');
+  const valEl    = wrapEl.querySelector('.tl-select-val');
+  const dropdown = wrapEl.querySelector('.tl-select-dropdown');
+  const hidden   = wrapEl.nextElementSibling; // <input type="hidden">
+
+  function render(sel) {
+    const found = options.find(function(o) { return String(o.value) === String(sel); });
+    valEl.textContent = found ? found.label : (options[0] ? options[0].label : '');
+    hidden.value = sel != null ? sel : '';
+    dropdown.innerHTML = options.map(function(o) {
+      const isSel = String(o.value) === String(sel);
+      return '<div class="tl-select-opt' + (isSel ? ' selected' : '') + '" data-val="' + escHtml(String(o.value)) + '">' + escHtml(o.label) + '</div>';
+    }).join('');
+    dropdown.querySelectorAll('.tl-select-opt').forEach(function(opt) {
+      opt.addEventListener('click', function() {
+        const v = opt.dataset.val;
+        render(v);
+        wrapEl.classList.remove('open');
+        if (onChange) onChange(v);
+      });
+    });
+  }
+
+  render(selectedValue != null ? String(selectedValue) : '');
+
+  trigger.addEventListener('click', function(e) {
+    e.stopPropagation();
+    const wasOpen = wrapEl.classList.contains('open');
+    // 关掉其他所有下拉
+    document.querySelectorAll('.tl-select.open').forEach(function(el) { el.classList.remove('open'); });
+    if (!wasOpen) wrapEl.classList.add('open');
+  });
+
+  // 点外部关闭
+  function onOutside(e) {
+    if (!wrapEl.contains(e.target)) wrapEl.classList.remove('open');
+  }
+  document.addEventListener('click', onOutside);
+  // modal 关闭时自动清理监听
+  wrapEl._cleanupTlSelect = function() { document.removeEventListener('click', onOutside); };
+}
+
+// ── setupCharModal ────────────────────────────────────────────
+
 export function setupCharModal() {
   const container = State.pageContainer;
-  const modal = container.querySelector('#char-modal');
+  const modal     = container.querySelector('#char-modal');
 
-  container.querySelector('#char-upload-btn')?.addEventListener('click', () => {
+  container.querySelector('#char-upload-btn')?.addEventListener('click', function() {
     container.querySelector('#char-file-input').click();
   });
-
-  container.querySelector('#char-file-input')?.addEventListener('change', (e) => {
+  container.querySelector('#char-file-input')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
-    if (file) {
-      State.setPendingAvatar(file, true);
-      previewAvatar(file, container);
-    }
+    if (file) { State.setPendingAvatar(file, true); previewAvatar(file, container); }
   });
-
-  container.querySelector('#char-url-btn')?.addEventListener('click', () => {
+  container.querySelector('#char-url-btn')?.addEventListener('click', function() {
     const row = container.querySelector('#char-url-row');
-    const isHidden = row.style.display === 'none' || row.style.display === '';
-    row.style.display = isHidden ? 'flex' : 'none';
-    if (isHidden) container.querySelector('#char-url-input').focus();
+    row.style.display = row.style.display === 'none' ? 'block' : 'none';
   });
-
-  container.querySelector('#char-url-input')?.addEventListener('input', (e) => {
+  container.querySelector('#char-url-input')?.addEventListener('change', function(e) {
     const url = e.target.value.trim();
-    if (url) {
-      State.setPendingAvatar(url, false);
-      updateAvatarPreview(url, container);
-    }
+    if (url) { State.setPendingAvatar(url, false); updateAvatarPreview(url, container); }
   });
-
-  container.querySelector('#char-cancel-btn')?.addEventListener('click', () => closeModal(modal));
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal(modal);
-  });
+  container.querySelector('#char-save-btn')?.addEventListener('click', saveCharacter);
+  container.querySelector('#char-delete-btn')?.addEventListener('click', deleteCharacter);
+  container.querySelector('#char-cancel-btn')?.addEventListener('click', function() { closeModal(modal); });
+  modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(modal); });
 }
+
+// ── openCharModal ─────────────────────────────────────────────
 
 export function openCharModal(char) {
   const container = State.pageContainer;
-  State.setEditingCharId(char?.id || null);
+  State.setEditingCharId(char ? char.id : null);
   State.setPendingAvatar(undefined, false);
 
   const modal = container.querySelector('#char-modal');
   container.querySelector('#char-modal-title').textContent = char ? '编辑人物' : '新建人物';
-  container.querySelector('#char-name').value = char?.name || '';
-  container.querySelector('#char-age').value = (char?.base_age != null) ? String(char.base_age) : '';
-  container.querySelector('#char-desc').value = char?.description || '';
+  container.querySelector('#char-name').value = char ? char.name || '' : '';
+  // 使用 base_age 字段
+  container.querySelector('#char-age').value  = (char && char.base_age != null) ? char.base_age : '';
+  container.querySelector('#char-desc').value = char ? char.description || '' : '';
 
-  const citySelect = container.querySelector('#char-city');
-  citySelect.innerHTML = '<option value="">无</option>' +
-    State.allCities.map(c => {
-      const country = State.allCountries.find(co => co.id === c.country_id);
-      const label = country ? `${country.name} - ${c.name}` : c.name;
-      return `<option value="${c.id}" ${char?.city_id === c.id ? 'selected' : ''}>${escHtml(label)}</option>`;
-    }).join('');
+  // 初始化城市自定义下拉
+  const cityOptions = [{ value: '', label: '无' }].concat(
+    State.allCities.map(function(c) {
+      const country = State.allCountries.find(function(co) { return co.id === c.country_id; });
+      return { value: String(c.id), label: country ? country.name + ' - ' + c.name : c.name };
+    })
+  );
+  const cityWrap = container.querySelector('#char-city-select');
+  if (cityWrap._cleanupTlSelect) cityWrap._cleanupTlSelect();
+  initTlSelect(cityWrap, cityOptions, char && char.city_id ? String(char.city_id) : '', null);
 
-  const urlRow = container.querySelector('#char-url-row');
-  urlRow.style.display = 'none';
-  container.querySelector('#char-url-input').value = '';
-
-  updateAvatarPreview(char?.avatar_url, container, char?.name);
-
-  const deleteBtn = container.querySelector('#char-delete-btn');
-  deleteBtn.style.display = char ? 'block' : 'none';
-
-  const saveBtn = container.querySelector('#char-save-btn');
-  const newSaveBtn = saveBtn.cloneNode(true);
-  saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-  newSaveBtn.addEventListener('click', saveCharacter);
-
-  const newDeleteBtn = deleteBtn.cloneNode(true);
-  deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
-  newDeleteBtn.style.display = char ? 'block' : 'none';
-  newDeleteBtn.addEventListener('click', deleteCharacter);
+  updateAvatarPreview(char ? char.avatar_url : null, container, char ? char.name : '');
+  container.querySelector('#char-delete-btn').style.display = char ? 'block' : 'none';
 
   modal.classList.add('show');
-  setTimeout(() => container.querySelector('#char-name').focus(), 100);
+  setTimeout(function() { container.querySelector('#char-name').focus(); }, 100);
 }
+
+// ── 头像预览 ──────────────────────────────────────────────────
 
 function previewAvatar(file, container) {
   const reader = new FileReader();
-  reader.onload = (e) => updateAvatarPreview(e.target.result, container);
+  reader.onload = function(e) { updateAvatarPreview(e.target.result, container); };
   reader.readAsDataURL(file);
 }
 
 function updateAvatarPreview(url, container, name) {
   const preview = container.querySelector('#char-avatar-preview');
-  const letter = container.querySelector('#char-avatar-letter');
+  const letter  = container.querySelector('#char-avatar-letter');
   if (url) {
-    preview.style.backgroundImage = `url(${url})`;
+    preview.style.backgroundImage = 'url(' + url + ')';
+    preview.style.backgroundSize = 'cover';
+    preview.style.backgroundPosition = 'center';
     letter.style.display = 'none';
   } else {
     preview.style.backgroundImage = 'none';
     letter.style.display = 'block';
-    letter.textContent = name?.charAt(0) || '?';
+    letter.textContent = (name && name.charAt(0)) || '?';
   }
 }
+
+// ── 保存/删除 ─────────────────────────────────────────────────
 
 async function saveCharacter() {
   const container = State.pageContainer;
   const name = container.querySelector('#char-name').value.trim();
   if (!name) return showToast('请输入名字');
 
-  const ageRaw = container.querySelector('#char-age').value.trim();
-  const baseAge = ageRaw !== '' ? parseInt(ageRaw) : null;
-  if (ageRaw !== '' && (isNaN(baseAge) || baseAge < 0)) {
-    return showToast('年龄请输入有效数字');
-  }
-
-  const cityId = container.querySelector('#char-city').value;
-  const description = container.querySelector('#char-desc').value.trim();
+  const ageVal    = container.querySelector('#char-age').value.trim();
+  const cityIdVal = container.querySelector('#char-city').value; // hidden input
+  const desc      = container.querySelector('#char-desc').value.trim();
 
   try {
     let avatarUrl = null;
-
     if (State.pendingAvatar) {
       if (State.pendingAvatarIsFile) {
         const file = State.pendingAvatar;
-        const ext = file.name.split('.').pop();
-        const filename = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
+        const ext  = file.name.split('.').pop();
+        const filename = Date.now() + '_' + Math.random().toString(36).substr(2,9) + '.' + ext;
         const { data, error } = await supaClient.storage.from('avatars').upload(filename, file, { upsert: true });
         if (error) throw error;
-        const { data: urlData } = supaClient.storage.from('avatars').getPublicUrl(data.path);
-        avatarUrl = urlData.publicUrl;
+        avatarUrl = supaClient.storage.from('avatars').getPublicUrl(data.path).data.publicUrl;
       } else {
         avatarUrl = State.pendingAvatar;
       }
-    } else if (State.pendingAvatar === null && State.editingCharId) {
-      avatarUrl = null;
     }
 
     const payload = {
       name,
-      base_age: baseAge,
-      city_id: cityId ? parseInt(cityId) : null,
-      description: description || null,
-      ...(State.pendingAvatar !== undefined && { avatar_url: avatarUrl })
+      base_age:    ageVal !== '' ? parseInt(ageVal) : null,
+      city_id:     cityIdVal ? parseInt(cityIdVal) : null,
+      description: desc || null,
     };
+    if (State.pendingAvatar !== undefined) payload.avatar_url = avatarUrl;
 
     if (State.editingCharId) {
       const { error } = await supaClient.from('characters').update(payload).eq('id', State.editingCharId);
@@ -163,7 +184,6 @@ async function saveCharacter() {
     renderCharactersTab();
     if (State.selectedCity) renderGeoDetail();
   } catch (e) {
-    console.error('Save character failed:', e);
     showToast('保存失败: ' + e.message);
   }
 }
@@ -179,7 +199,6 @@ async function deleteCharacter() {
     renderCharactersTab();
     if (State.selectedCity) renderGeoDetail();
   } catch (e) {
-    console.error('Delete character failed:', e);
     showToast('删除失败: ' + e.message);
   }
 }

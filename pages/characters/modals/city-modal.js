@@ -6,6 +6,7 @@ import { closeModal } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
 import { renderGeoTree } from '../geo-tree.js';
 import { renderGeoDetail } from '../geo-detail.js';
+import { initTlSelect } from './character-modal.js';
 
 const PRESETS = [
   { title: '概述',     ph: '城市总体介绍...',           oldKey: 'overview'  },
@@ -56,10 +57,7 @@ function _buildHTML(city, sections, preselectedCountryId) {
     .filter(p => !usedTitles.has(p.title))
     .map(p => '<button class="cm-tag" data-title="' + escHtml(p.title) + '" data-ph="' + escHtml(p.ph) + '">' + escHtml(p.title) + '</button>')
     .join('');
-  const countryOptions = '<option value="">无</option>' +
-    State.allCountries.map(c =>
-      '<option value="' + c.id + '" ' + ((city && city.country_id === c.id) || preselectedCountryId === c.id ? 'selected' : '') + '>' + escHtml(c.name) + '</option>'
-    ).join('');
+  const selCountryId = city ? String(city.country_id || '') : (preselectedCountryId ? String(preselectedCountryId) : '');
   const del = city ? 'inline-flex' : 'none';
   const secRows = sections.map(_rowHTML).join('');
   const presets = presetBtns || '<span class="cm-tags-empty">所有预设已添加</span>';
@@ -69,7 +67,8 @@ function _buildHTML(city, sections, preselectedCountryId) {
     '<label>名称</label>' +
     '<input id="cm-city-name" type="text" value="' + escHtml(city ? city.name || '' : '') + '"/>' +
     '<label>所属国家</label>' +
-    '<select id="cm-city-country">' + countryOptions + '</select>' +
+    '<div class="tl-select" id="cm-city-country-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div>' +
+    '<input type="hidden" id="cm-city-country" data-init="' + escHtml(selCountryId) + '" value="' + escHtml(selCountryId) + '"/>' +
     '<div class="cm-sec-hdr"><span>内容小节</span><span class="cm-hint">点 ✏️ 展开编辑；拖 ⠿ 可排序</span></div>' +
     '<div class="cm-tags" id="cm-city-tags">' + presets + '</div>' +
     '<div class="cm-custom-row">' +
@@ -119,6 +118,18 @@ function _rowHTML(sec) {
 }
 
 function _bindEvents(modal) {
+  // 初始化国家自定义下拉
+  const countryWrap = modal.querySelector('#cm-city-country-select');
+  if (countryWrap) {
+    if (countryWrap._cleanupTlSelect) countryWrap._cleanupTlSelect();
+    const countryOpts = [{ value: '', label: '无' }].concat(
+      State.allCountries.map(function(c) { return { value: String(c.id), label: c.name }; })
+    );
+    const hiddenCountry = modal.querySelector('#cm-city-country');
+    const initCountryVal = hiddenCountry ? hiddenCountry.getAttribute('data-init') || '' : '';
+    initTlSelect(countryWrap, countryOpts, initCountryVal, null);
+  }
+
   modal.querySelector('#cm-city-cancel')?.addEventListener('click', () => closeModal(modal));
   modal.querySelector('#cm-city-delete')?.addEventListener('click', _deleteCity);
   modal.querySelector('#cm-city-save')?.addEventListener('click', _saveCity);
