@@ -102,7 +102,7 @@ function buildHTML() {
     <h2 id="char-modal-title">编辑人物</h2>
     <label>名字</label><input id="char-name" type="text"/>
     <label>年龄</label><input id="char-age" type="number" min="0" placeholder="0"/>
-    <label>所属城市</label><select id="char-city"><option value="">无</option></select>
+    <label>所属城市</label><div class="tl-select" id="char-city-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-city"/>
     <label>描述</label><textarea id="char-desc" rows="3"></textarea>
     <label>头像</label>
     <div style="display:flex;gap:12px;margin-bottom:16px">
@@ -317,7 +317,7 @@ function buildHTML() {
 .cm-row-dragging{opacity:0.4;border:2px dashed var(--accent)}
 .cm-row-drag-over{border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,131,247,0.25)}
 /* ── 모달 공통 ── */
-.modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:8px}
+.tl-select{position:relative;width:100%;margin-bottom:14px}.tl-select-trigger{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;font-size:13px;transition:border-color 0.2s,box-shadow 0.2s;user-select:none}.tl-select-trigger:hover{border-color:rgba(124,131,247,0.5)}.tl-select.open .tl-select-trigger{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,247,0.12)}.tl-select-arrow{font-size:10px;color:var(--muted);transition:transform 0.2s;flex-shrink:0}.tl-select.open .tl-select-arrow{transform:rotate(180deg)}.tl-select-val{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-select-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.3);z-index:200;max-height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(124,131,247,0.2) transparent}.tl-select.open .tl-select-dropdown{display:block}.tl-select-opt{padding:8px 12px;font-size:13px;cursor:pointer;transition:background 0.12s;border-radius:4px;margin:2px 4px}.tl-select-opt:hover{background:rgba(124,131,247,0.1)}.tl-select-opt.selected{color:var(--accent);font-weight:500;background:rgba(124,131,247,0.08)}.modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:8px}
 .modal-actions-right{display:flex;gap:8px}
 .modal-btn{flex:1;min-width:80px}
 .modal-btn-delete{min-width:60px}
