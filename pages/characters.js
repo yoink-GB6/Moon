@@ -293,7 +293,7 @@ function buildHTML() {
 .cm-custom-row{display:flex;gap:8px;margin-bottom:12px}
 .cm-custom-row input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none}
 .cm-custom-row input:focus{border-color:var(--accent)}
-.cm-list{display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;padding-right:2px}
+.cm-list{display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;padding-right:2px;scrollbar-width:thin;scrollbar-color:rgba(124,131,247,0.2) transparent}.cm-list::-webkit-scrollbar{width:4px}.cm-list::-webkit-scrollbar-track{background:transparent}.cm-list::-webkit-scrollbar-thumb{background:rgba(124,131,247,0.2);border-radius:2px}
 /* 折叠态（默认） */
 .cm-row{border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color 0.15s,box-shadow 0.15s}
 .cm-row:hover{border-color:rgba(124,131,247,0.3)}
