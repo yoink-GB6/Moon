@@ -22,7 +22,7 @@ const PRESETS = [
 
 export function setupCountryModal() {
   const modal = State.pageContainer.querySelector('#country-modal');
-  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
+  modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(modal); });
 }
 
 export function openCountryModal(country) {
@@ -41,6 +41,8 @@ export function openCountryModal(country) {
   setTimeout(function() { const n = modal.querySelector('#cm-name'); if (n) n.focus(); }, 100);
 }
 
+// ── 构建 HTML ────────────────────────────────────────────────
+
 function _buildHTML(country, sections) {
   const usedTitles = new Set(sections.map(function(s) { return s.title; }));
   const presetBtns = PRESETS
@@ -48,16 +50,16 @@ function _buildHTML(country, sections) {
     .map(function(p) {
       return '<button class="cm-tag" data-title="' + escHtml(p.title) + '" data-ph="' + escHtml(p.ph) + '">' + escHtml(p.title) + '</button>';
     }).join('');
-  const del    = country ? 'inline-flex' : 'none';
-  const title  = country ? '编辑国家 / 势力' : '新建国家 / 势力';
-  const nameV  = escHtml(country ? country.name || '' : '');
+  const del     = country ? 'inline-flex' : 'none';
+  const heading = country ? '编辑国家 / 势力' : '新建国家 / 势力';
+  const nameV   = escHtml(country ? country.name || '' : '');
   const presets = presetBtns || '<span class="cm-tags-empty">所有预设已添加</span>';
-  const secRows = sections.map(_rowHTML).join('');
+  const secRows = sections.map(function(s) { return _rowHTML(s, false); }).join('');
 
-  return '<h2>' + title + '</h2>' +
+  return '<h2>' + heading + '</h2>' +
     '<label>名称</label>' +
     '<input id="cm-name" type="text" value="' + nameV + '"/>' +
-    '<div class="cm-sec-hdr"><span>内容小节</span><span class="cm-hint">点 ✏️ 展开编辑；拖 ⠿ 可排序</span></div>' +
+    '<div class="cm-sec-hdr"><span>内容小节</span><span class="cm-hint">✏️ 展开编辑 · ＋子小节 · ⠿ 拖拽排序</span></div>' +
     '<div class="cm-tags" id="cm-tags">' + presets + '</div>' +
     '<div class="cm-custom-row">' +
       '<input type="text" id="cm-custom" placeholder="自定义小节标题..." maxlength="30" autocomplete="off"/>' +
@@ -73,34 +75,42 @@ function _buildHTML(country, sections) {
     '</div>';
 }
 
-function _rowHTML(sec) {
-  const found  = PRESETS.find(function(p) { return p.title === sec.title; });
-  const ph     = found ? found.ph : '在此填写内容...';
-  const content    = sec.content || '';
+// isChild: 子小节（缩进样式，无子级嵌套，无拖拽）
+function _rowHTML(sec, isChild) {
+  const found    = PRESETS.find(function(p) { return p.title === sec.title; });
+  const ph       = found ? found.ph : '在此填写内容...';
+  const content  = sec.content || '';
+  const children = (!isChild && sec.children) ? sec.children : [];
   const hasContent = content.trim().length > 0;
-  const preview    = hasContent
+  const preview  = hasContent
     ? escHtml(content.trim().slice(0, 60)) + (content.trim().length > 60 ? '…' : '')
     : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
+  const childClass = isChild ? ' cm-row-child' : '';
+  const childRows  = children.map(function(c) { return _rowHTML(c, true); }).join('');
 
-  return '<div class="cm-row" draggable="false">' +
+  return '<div class="cm-row' + childClass + '" draggable="false">' +
     '<div class="cm-row-collapsed">' +
-      '<span class="cm-row-grip" title="拖拽排序">⠿</span>' +
+      (!isChild ? '<span class="cm-row-grip" title="拖拽排序">⠿</span>' : '<span class="cm-row-grip cm-row-grip-child"></span>') +
       '<div class="cm-row-summary">' +
         '<span class="cm-row-label">' + escHtml(sec.title || '未命名') + '</span>' +
         '<span class="cm-row-preview">' + preview + '</span>' +
       '</div>' +
-      '<button class="cm-row-edit" title="编辑此小节">✏️</button>' +
-      '<button class="cm-row-del"  title="删除此小节">✕</button>' +
+      '<button class="cm-row-edit" title="编辑">✏️</button>' +
+      '<button class="cm-row-del"  title="删除">✕</button>' +
     '</div>' +
     '<div class="cm-row-expanded" style="display:none">' +
       '<div class="cm-row-expanded-hdr">' +
         '<input class="cm-row-title" type="text" value="' + escHtml(sec.title || '') + '" placeholder="小节标题" maxlength="30"/>' +
+        (!isChild ? '<button class="cm-row-add-child">＋ 子小节</button>' : '') +
         '<button class="cm-row-collapse">▲ 收起</button>' +
       '</div>' +
-      '<textarea class="cm-row-body" rows="5" placeholder="' + escHtml(ph) + '">' + escHtml(content) + '</textarea>' +
+      '<textarea class="cm-row-body" rows="4" placeholder="' + escHtml(ph) + '">' + escHtml(content) + '</textarea>' +
+      (!isChild ? '<div class="cm-row-children">' + childRows + '</div>' : '') +
     '</div>' +
   '</div>';
 }
+
+// ── 事件绑定 ─────────────────────────────────────────────────
 
 function _bindEvents(modal) {
   modal.querySelector('#cm-cancel')?.addEventListener('click', function() { closeModal(modal); });
@@ -110,7 +120,7 @@ function _bindEvents(modal) {
   modal.querySelector('#cm-tags')?.addEventListener('click', function(e) {
     const btn = e.target.closest('.cm-tag');
     if (!btn) return;
-    _appendRow(modal, btn.dataset.title, '', btn.dataset.ph, '#cm-list', '#cm-tags');
+    _appendRow(modal.querySelector('#cm-list'), btn.dataset.title, '', btn.dataset.ph, false);
     btn.remove();
     const tags = modal.querySelector('#cm-tags');
     if (!tags.querySelector('.cm-tag')) tags.innerHTML = '<span class="cm-tags-empty">所有预设已添加</span>';
@@ -120,7 +130,7 @@ function _bindEvents(modal) {
   function doAdd() {
     const t = ci.value.trim();
     if (!t) { ci.focus(); return; }
-    _appendRow(modal, t, '', '', '#cm-list', '#cm-tags');
+    _appendRow(modal.querySelector('#cm-list'), t, '', '', false);
     ci.value = ''; ci.focus();
   }
   modal.querySelector('#cm-custom-add')?.addEventListener('click', doAdd);
@@ -130,14 +140,25 @@ function _bindEvents(modal) {
   list?.addEventListener('click', function(e) {
     const row = e.target.closest('.cm-row');
     if (!row) return;
-    if (e.target.closest('.cm-row-edit'))     { _expandRow(row); return; }
-    if (e.target.closest('.cm-row-collapse')) { _collapseRow(row); return; }
+    if (e.target.closest('.cm-row-edit'))      { _expandRow(row); return; }
+    if (e.target.closest('.cm-row-collapse'))  { _collapseRow(row); return; }
+    if (e.target.closest('.cm-row-add-child')) {
+      e.stopPropagation();
+      // 确保是顶级行
+      if (row.classList.contains('cm-row-child')) return;
+      // 展开父行以便看到子小节
+      if (row.querySelector('.cm-row-expanded').style.display === 'none') _expandRow(row);
+      const childrenEl = row.querySelector('.cm-row-children');
+      if (childrenEl) _appendRow(childrenEl, '', '', '', true);
+      return;
+    }
     if (e.target.closest('.cm-row-del')) {
+      const isChild = row.classList.contains('cm-row-child');
       const titleEl = row.querySelector('.cm-row-title');
       const labelEl = row.querySelector('.cm-row-label');
-      const title   = (titleEl ? titleEl.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '');
+      const t = (titleEl ? titleEl.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '');
       row.remove();
-      _restorePresetTag(modal, title, '#cm-tags', PRESETS);
+      if (!isChild) _restorePresetTag(modal, t);
     }
   });
 
@@ -156,30 +177,28 @@ function _collapseRow(row) {
   const bodyInput  = row.querySelector('.cm-row-body');
   const title   = titleInput ? titleInput.value.trim() : '';
   const content = bodyInput  ? bodyInput.value.trim()  : '';
-  const label   = row.querySelector('.cm-row-label');
-  const preview = row.querySelector('.cm-row-preview');
-  if (label)   label.textContent = title || '未命名';
+  const label   = row.querySelector('.cm-row-collapsed .cm-row-label');
+  const preview = row.querySelector('.cm-row-collapsed .cm-row-preview');
+  if (label) label.textContent = title || '未命名';
   if (preview) {
-    if (content) {
-      preview.innerHTML = escHtml(content.slice(0, 60)) + (content.length > 60 ? '…' : '');
-    } else {
-      preview.innerHTML = '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
-    }
+    preview.innerHTML = content
+      ? escHtml(content.slice(0, 60)) + (content.length > 60 ? '…' : '')
+      : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
   }
   row.querySelector('.cm-row-collapsed').style.display = '';
   row.querySelector('.cm-row-expanded').style.display  = 'none';
 }
 
-function _restorePresetTag(modal, title, tagsSelector, presetList) {
-  const preset = presetList.find(function(p) { return p.title === title; });
+function _restorePresetTag(modal, title) {
+  const preset = PRESETS.find(function(p) { return p.title === title; });
   if (!preset) return;
-  const tags = modal.querySelector(tagsSelector);
+  const tags = modal.querySelector('#cm-tags');
   if (!tags) return;
   const empty = tags.querySelector('.cm-tags-empty');
   if (empty) empty.remove();
   if (!tags.querySelector('[data-title="' + title + '"]')) {
     const tag = document.createElement('button');
-    tag.className     = 'cm-tag';
+    tag.className = 'cm-tag';
     tag.dataset.title = preset.title;
     tag.dataset.ph    = preset.ph;
     tag.textContent   = preset.title;
@@ -187,78 +206,87 @@ function _restorePresetTag(modal, title, tagsSelector, presetList) {
   }
 }
 
-function _appendRow(modal, title, content, ph, listSel, tagsSel) {
-  const list = modal.querySelector(listSel);
-  if (!list) return;
+function _appendRow(container, title, content, ph, isChild) {
+  if (!container) return;
   const tmp = document.createElement('div');
-  tmp.innerHTML = _rowHTML({ title: title, content: content || '' });
+  tmp.innerHTML = _rowHTML({ title: title, content: content || '', children: [] }, isChild);
   const row = tmp.firstElementChild;
-  if (ph) { const body = row.querySelector('.cm-row-body'); if (body) body.placeholder = ph; }
-  list.appendChild(row);
-  _bindDragSort(list);
+  if (ph) { const body = row.querySelector('textarea'); if (body) body.placeholder = ph; }
+  container.appendChild(row);
+  if (!isChild) _bindDragSort(container);
   _expandRow(row);
 }
+
+// ── 拖拽排序（仅顶级） ─────────────────────────────────────
 
 function _bindDragSort(list) {
   if (!list) return;
   let dragging = null;
-
-  list.querySelectorAll('.cm-row').forEach(function(row) {
-    const grip = row.querySelector('.cm-row-grip');
+  Array.from(list.children).forEach(function(row) {
+    if (!row.classList.contains('cm-row') || row.classList.contains('cm-row-child')) return;
+    const grip = row.querySelector('.cm-row-collapsed .cm-row-grip');
     if (!grip) return;
     grip.addEventListener('mousedown', function() { row.draggable = true; });
     grip.addEventListener('mouseup',   function() { row.draggable = false; });
     row.addEventListener('dragstart', function(e) {
-      dragging = row;
-      row.classList.add('cm-row-dragging');
-      e.dataTransfer.effectAllowed = 'move';
+      dragging = row; row.classList.add('cm-row-dragging');
+      e.dataTransfer.effectAllowed = 'move'; e.stopPropagation();
     });
     row.addEventListener('dragend', function() {
-      dragging = null;
-      row.classList.remove('cm-row-dragging');
-      row.draggable = false;
-      list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
+      dragging = null; row.classList.remove('cm-row-dragging'); row.draggable = false;
+      Array.from(list.children).forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
     });
     row.addEventListener('dragover', function(e) {
-      e.preventDefault();
+      e.preventDefault(); e.stopPropagation();
       if (!dragging || dragging === row) return;
-      list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
+      Array.from(list.children).forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
       row.classList.add('cm-row-drag-over');
       const rect = row.getBoundingClientRect();
-      if (e.clientY < rect.top + rect.height / 2) {
-        list.insertBefore(dragging, row);
-      } else {
-        list.insertBefore(dragging, row.nextSibling);
-      }
+      list.insertBefore(dragging, e.clientY < rect.top + rect.height / 2 ? row : row.nextSibling);
     });
     row.addEventListener('dragleave', function() { row.classList.remove('cm-row-drag-over'); });
-    row.addEventListener('drop', function(e) { e.preventDefault(); row.classList.remove('cm-row-drag-over'); });
+    row.addEventListener('drop', function(e) { e.preventDefault(); e.stopPropagation(); row.classList.remove('cm-row-drag-over'); });
   });
 }
 
-function _collectSections(modal, listSel) {
+// ── 收集数据（递归） ──────────────────────────────────────────
+
+function _collectFromContainer(container, isChild) {
   const out = [];
-  modal.querySelectorAll(listSel + ' .cm-row').forEach(function(row) {
+  Array.from(container.children).forEach(function(row) {
+    if (!row.classList.contains('cm-row')) return;
     const titleInput = row.querySelector('.cm-row-title');
-    const labelEl    = row.querySelector('.cm-row-label');
+    const labelEl    = row.querySelector('.cm-row-collapsed .cm-row-label');
     const bodyInput  = row.querySelector('.cm-row-body');
     const title   = (titleInput ? titleInput.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '') || '';
     const content = bodyInput ? bodyInput.value.trim() : '';
-    if (title || content) out.push({ title: title, content: content });
+    const sec = { title: title, content: content };
+    if (!isChild) {
+      const childrenEl = row.querySelector('.cm-row-children');
+      if (childrenEl) {
+        const ch = _collectFromContainer(childrenEl, true);
+        if (ch.length) sec.children = ch;
+      }
+    }
+    if (title || content) out.push(sec);
   });
   return out;
 }
 
+function _collectSections(modal) {
+  const list = modal.querySelector('#cm-list');
+  return list ? _collectFromContainer(list, false) : [];
+}
+
+// ── 保存 / 删除 ───────────────────────────────────────────────
+
 async function _saveCountry() {
   const modal = State.pageContainer.querySelector('#country-modal');
-  const nameEl = modal.querySelector('#cm-name');
-  const name   = nameEl ? nameEl.value.trim() : '';
+  const name  = modal.querySelector('#cm-name') ? modal.querySelector('#cm-name').value.trim() : '';
   if (!name) return showToast('请输入名称');
-
-  const sections    = _collectSections(modal, '#cm-list');
+  const sections    = _collectSections(modal);
   const description = sections.length ? JSON.stringify(sections) : null;
   const payload     = { name: name, description: description };
-
   try {
     if (State.editingCountryId) {
       const result = await supaClient.from('countries').update(payload).eq('id', State.editingCountryId).select().single();
