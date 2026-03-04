@@ -45,9 +45,6 @@ function buildHTML() {
 
     <div class="intro-content" id="tab-characters">
       <div class="intro-header">
-        <div style="display:flex;align-items:center;gap:10px">
-          <button class="btn bn" id="chars-filter-clear" style="display:none;font-size:12px;padding:4px 10px">✕ 清除筛选</button>
-        </div>
         <button class="btn bp" id="chars-add-btn" style="display:none">＋ 新建</button>
       </div>
       <div class="intro-grid" id="chars-grid"></div>
@@ -74,7 +71,10 @@ function buildHTML() {
     <!-- 人物标签页 -->
     <div id="panel-chars-body" class="panel-body-section">
       <div class="panel-search-box">
-        <input type="text" id="chars-panel-search" placeholder="输入名字搜索..." autocomplete="off"/>
+        <div class="panel-search-wrap">
+          <input type="text" id="chars-panel-search" placeholder="输入名字搜索..." autocomplete="off"/>
+          <button id="chars-search-clear" class="panel-search-clear" title="清除">✕</button>
+        </div>
       </div>
       <div id="chars-panel-list" class="tl-clist"></div>
     </div>
@@ -175,7 +175,7 @@ function buildHTML() {
 .intro-avatar img{width:100%;height:100%;object-fit:cover}
 /* ── 地理布局 ── */
 .geo-layout{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;flex:1}
-.geo-main{flex:1;overflow-y:auto;padding:24px}
+.geo-main{flex:1;overflow-y:auto;padding:24px;scrollbar-width:thin;scrollbar-color:rgba(124,131,247,0.2) transparent}.geo-main::-webkit-scrollbar{width:4px}.geo-main::-webkit-scrollbar-track{background:transparent}.geo-main::-webkit-scrollbar-thumb{background:rgba(124,131,247,0.2);border-radius:2px}
 /* ── 右侧面板 ── */
 .tl-panel{width:260px;flex-shrink:0;background:var(--bg);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width 0.28s ease}
 .tl-panel.collapsed{width:0}
@@ -183,8 +183,11 @@ function buildHTML() {
 .map-panel-hdr:hover{background:rgba(124,131,247,0.06)}
 .panel-body-section{display:flex;flex-direction:column;flex:1;overflow:hidden}
 .panel-search-box{padding:10px 12px;flex-shrink:0;border-bottom:1px solid var(--border)}
-.panel-search-box input{width:100%;padding:7px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none;transition:border-color 0.2s}
-.panel-search-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,247,0.12)}
+.panel-search-wrap{position:relative;display:flex;align-items:center}
+.panel-search-wrap input{width:100%;padding:7px 28px 7px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none;transition:border-color 0.2s}
+.panel-search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,247,0.12)}
+.panel-search-clear{position:absolute;right:7px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;line-height:1;display:none;transition:color 0.15s}
+.panel-search-clear:hover{color:var(--text)}
 /* 面板展开按钮 */
 .panel-expand-trigger{display:none;flex-shrink:0;align-self:center;width:32px;height:32px;border-radius:50%;background:rgba(20,21,40,0.85);border:1.5px solid rgba(124,131,247,0.5);color:var(--accent);font-size:12px;cursor:pointer;margin-left:6px;z-index:10;align-items:center;justify-content:center}
 .panel-expand-trigger.visible{display:flex}
@@ -323,7 +326,7 @@ function bindControls() {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
 
-  const clearBtn = container.querySelector('#chars-filter-clear');
+  const clearBtn = container.querySelector('#chars-search-clear');
   if (clearBtn) clearBtn.addEventListener('click', () => _filterCharGrid(null));
 
   bindCharactersTab();
@@ -353,8 +356,23 @@ function bindSidePanel() {
 
   // 人物搜索
   const searchInput = container.querySelector('#chars-panel-search');
+  const searchClear  = container.querySelector('#chars-search-clear');
   if (searchInput) {
-    searchInput.addEventListener('input', (e) => renderPanelList(e.target.value.trim().toLowerCase()));
+    searchInput.addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      if (searchClear) searchClear.style.display = q ? 'block' : 'none';
+      // 清空筛选（如果有）
+      _filterCharGrid(null);
+      renderPanelList(q);
+    });
+  }
+  if (searchClear) {
+    searchClear.addEventListener('click', () => {
+      if (searchInput) { searchInput.value = ''; searchInput.focus(); }
+      searchClear.style.display = 'none';
+      _filterCharGrid(null);
+      renderPanelList('');
+    });
   }
 }
 
@@ -365,7 +383,7 @@ function switchTab(tabName) {
   State.setCurrentTab(tabName);
 
   // 人物筛选 reset
-  const clearBtn = container.querySelector('#chars-filter-clear');
+  const clearBtn = container.querySelector('#chars-search-clear');
   if (clearBtn) clearBtn.style.display = 'none';
   container.querySelectorAll('#chars-panel-list .tl-ci').forEach(el => el.classList.remove('active-item'));
 
@@ -463,7 +481,7 @@ function _renderCharPanel(list, query) {
 
 function _filterCharGrid(charId) {
   const container = State.pageContainer;
-  const clearBtn  = container.querySelector('#chars-filter-clear');
+  const clearBtn  = container.querySelector('#chars-search-clear');
 
   if (charId == null) {
     if (clearBtn) clearBtn.style.display = 'none';
@@ -472,7 +490,7 @@ function _filterCharGrid(charId) {
     return;
   }
 
-  if (clearBtn) clearBtn.style.display = 'inline-flex';
+  if (clearBtn) clearBtn.style.display = 'block';
   const char = State.allChars.find(function(c) { return c.id === charId; });
   if (!char) return;
   const grid = container.querySelector('#chars-grid');
