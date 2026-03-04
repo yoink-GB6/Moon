@@ -37,11 +37,12 @@ export function unmount() {
 function buildHTML() {
   return `
 <div class="intro-body">
+  <div class="intro-tabs">
+    <button class="intro-tab active" data-tab="characters"><span class="tab-icon">👥</span><span class="tab-label">人物介绍</span></button>
+    <button class="intro-tab" data-tab="geography"><span class="tab-icon">🏛️</span><span class="tab-label">国家及势力</span></button>
+  </div>
+  <div class="intro-row">
   <div class="intro-main">
-    <div class="intro-tabs">
-      <button class="intro-tab active" data-tab="characters"><span class="tab-icon">👥</span><span class="tab-label">人物介绍</span></button>
-      <button class="intro-tab" data-tab="geography"><span class="tab-icon">🏛️</span><span class="tab-label">国家及势力</span></button>
-    </div>
 
     <div class="intro-content" id="tab-characters">
       <div class="intro-header">
@@ -56,7 +57,7 @@ function buildHTML() {
       </div>
       <button id="add-country-btn" style="display:none">＋ 新建国家</button>
     </div>
-  </div>
+  </div><!-- /intro-main -->
 
   <!-- 右侧面板展开按钮（panel外，不受overflow:hidden影响）-->
   <button id="chars-panel-expand" class="panel-expand-trigger" title="展开面板">▶</button>
@@ -93,8 +94,9 @@ function buildHTML() {
       </div>
       <div id="geo-tree-list" class="geo-tree-list"></div>
     </div>
-  </div>
-</div>
+  </div><!-- /tl-panel -->
+  </div><!-- /intro-row -->
+</div><!-- /intro-body -->
 
 <!-- 人物模态框 -->
 <div id="char-modal" class="tl-modal-overlay">
@@ -158,9 +160,9 @@ function buildHTML() {
 
 <style>
 /* ── 整体布局 ── */
-.intro-body{height:100%;width:100%;display:flex;overflow:hidden}
-.intro-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.intro-tabs{display:flex;gap:0;padding:0;border-bottom:2px solid var(--border);flex-shrink:0}
+.intro-body{height:100%;width:100%;display:flex;flex-direction:column;overflow:hidden}
+.intro-row{flex:1;display:flex;overflow:hidden}.intro-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.intro-tabs{display:flex;gap:0;padding:0;flex-shrink:0;border-bottom:2px solid var(--border);width:100%}
 .intro-tab{display:flex;align-items:center;gap:8px;padding:10px 20px;border:none;background:transparent;color:var(--muted);cursor:pointer;position:relative;transition:all 0.2s}
 .intro-tab:hover{color:var(--text);background:rgba(124,131,247,0.05)}
 .intro-tab.active{color:var(--accent)}
