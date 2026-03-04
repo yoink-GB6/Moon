@@ -2,6 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>hello~</title>
@@ -602,6 +605,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
 <div id="toast"></div>
 
 <script type="module">
+const _V = Date.now(); // 缓存破坏版本号，每次加载页面时生成
 import { showToast, initSidebar, closeSidebar } from './core/ui.js';
 import { isEditor, tryUnlock, lock, onAuthChange } from './core/auth.js';
 
@@ -612,37 +616,37 @@ const ROUTES = [
     id: 'home',
     label: '🏠 主页',
     icon: '🏠',
-    loader: () => import('./pages/home.js'),
+    loader: () => import('./pages/home.js?v='+_V),
   },
   {
     id: 'characters',
     label: '👥 世界观及人物',
     icon: '👥',
-    loader: () => import('./pages/characters.js'),
+    loader: () => import('./pages/characters.js?v='+_V),
   },
   {
     id: 'library',
     label: '📋 指令集',
     icon: '📋',
-    loader: () => import('./pages/library.js'),
+    loader: () => import('./pages/library.js?v='+_V),
   },
   {
     id: 'timeline',
     label: '⏱ 时间轴',
     icon: '⏱',
-    loader: () => import('./pages/timeline.js'),
+    loader: () => import('./pages/timeline.js?v='+_V),
   },
   {
     id: 'map',
     label: '🗺 地图',
     icon: '🗺',
-    loader: () => import('./pages/map.js'),
+    loader: () => import('./pages/map.js?v='+_V),
   },
   {
     id: 'relationships',
     label: '🕸 关系图谱',
     icon: '🕸',
-    loader: () => import('./pages/relationships.js'),
+    loader: () => import('./pages/relationships.js?v='+_V),
   },
   // 未来在这里添加更多页面：
   // { id: 'gallery', label: '🖼 图库', icon: '🖼', loader: () => import('./pages/gallery.js'), placeholder: true },
@@ -746,15 +750,12 @@ window.closePwModal = function() {
 };
 window.submitPw = async function() {
   const pw = document.getElementById('pw-input').value;
-  const encoder = new TextEncoder();
-  const data = encoder.encode(pw);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashHex = Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, '0')).join('');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
   if (hashHex === window.EDIT_PASSWORD_HASH) {
-    window.EDIT_PASSWORD = pw; // 临时供auth.js校验
+    window.EDIT_PASSWORD = pw;
     tryUnlock(pw);
-    delete window.EDIT_PASSWORD; // 校验后立即清除
+    delete window.EDIT_PASSWORD;
     window.closePwModal();
     showToast('✅ 已解锁编辑模式');
   } else {
