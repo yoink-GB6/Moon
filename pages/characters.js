@@ -261,14 +261,31 @@ function buildHTML() {
 .cm-custom-row{display:flex;gap:8px;margin-bottom:12px}
 .cm-custom-row input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none}
 .cm-custom-row input:focus{border-color:var(--accent)}
-.cm-list{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;padding-right:2px}
-.cm-row{border:1px solid var(--border);border-radius:8px;overflow:hidden}
-.cm-row-hdr{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(124,131,247,0.04);border-bottom:1px solid var(--border)}
-.cm-row-grip{color:var(--muted);font-size:14px;flex-shrink:0}
-.cm-row-title{flex:1;border:none;background:transparent;color:var(--text);font-size:13px;font-weight:500;outline:none;padding:0}
-.cm-row-del{flex-shrink:0;padding:2px 6px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;border-radius:4px;transition:color 0.15s,background 0.15s}
+.cm-list{display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;padding-right:2px}
+/* 折叠态（默认） */
+.cm-row{border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color 0.15s,box-shadow 0.15s}
+.cm-row:hover{border-color:rgba(124,131,247,0.3)}
+.cm-row-collapsed{display:flex;align-items:center;gap:8px;padding:9px 10px;min-height:42px}
+.cm-row-grip{color:var(--muted);font-size:15px;flex-shrink:0;cursor:grab;padding:2px 4px;border-radius:4px;transition:color 0.15s,background 0.15s;user-select:none}
+.cm-row-grip:hover{color:var(--accent);background:rgba(124,131,247,0.1)}
+.cm-row-grip:active{cursor:grabbing}
+.cm-row-summary{flex:1;min-width:0;overflow:hidden}
+.cm-row-label{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm-row-preview{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.cm-row-edit{flex-shrink:0;padding:3px 7px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;border-radius:5px;transition:all 0.15s}
+.cm-row-edit:hover{border-color:var(--accent);color:var(--accent);background:rgba(124,131,247,0.08)}
+.cm-row-del{flex-shrink:0;padding:3px 7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;border-radius:5px;transition:color 0.15s,background 0.15s}
 .cm-row-del:hover{color:#e05c5c;background:rgba(224,92,92,0.1)}
-.cm-row textarea{width:100%;box-sizing:border-box;padding:8px 10px;border:none;background:transparent;color:var(--text);font-size:13px;line-height:1.5;resize:vertical;min-height:60px;outline:none;font-family:inherit}
+/* 展开态 */
+.cm-row-expanded{display:flex;flex-direction:column;border-top:1px solid var(--border)}
+.cm-row-expanded-hdr{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(124,131,247,0.04);border-bottom:1px solid var(--border)}
+.cm-row-title{flex:1;border:none;background:transparent;color:var(--text);font-size:13px;font-weight:500;outline:none;padding:0}
+.cm-row-collapse{flex-shrink:0;padding:3px 8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:11px;border-radius:5px;transition:all 0.15s;white-space:nowrap}
+.cm-row-collapse:hover{border-color:var(--accent);color:var(--accent)}
+.cm-row-expanded textarea{width:100%;box-sizing:border-box;padding:10px 12px;border:none;background:transparent;color:var(--text);font-size:13px;line-height:1.6;resize:vertical;min-height:80px;outline:none;font-family:inherit}
+/* 拖拽中 */
+.cm-row-dragging{opacity:0.4;border:2px dashed var(--accent)}
+.cm-row-drag-over{border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,131,247,0.25)}
 /* ── 모달 공통 ── */
 .modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:8px}
 .modal-actions-right{display:flex;gap:8px}
