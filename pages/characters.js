@@ -1,6 +1,4 @@
 // pages/characters.js
-// 主入口文件 - 协调所有模块
-
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { escHtml } from '../core/ui.js';
 import * as State from './characters/state.js';
@@ -18,19 +16,12 @@ import { setupLandmarkModal } from './characters/modals/landmark-modal.js';
 export async function mount(container) {
   State.setPageContainer(container);
   container.innerHTML = buildHTML();
-
   setupCharModal();
   setupCountryModal();
   setupCityModal();
   setupLandmarkModal();
-
   bindControls();
-
-  onAuthChange(() => {
-    updateUI();
-    renderCurrentTab();
-  });
-
+  onAuthChange(() => updateUI());
   await loadAllData();
   renderCurrentTab();
   subscribeRealtime(() => renderCurrentTab());
@@ -41,74 +32,67 @@ export function unmount() {
   unsubscribeRealtime();
 }
 
+// ── HTML ──────────────────────────────────────────────────────
+
 function buildHTML() {
   return `
-<div class="intro-page">
-  <div class="intro-tabs">
-    <button class="intro-tab active" data-tab="characters">
-      <span class="tab-icon">👥</span>
-      <span class="tab-label">人物介绍</span>
-    </button>
-    <button class="intro-tab" data-tab="geography">
-      <span class="tab-icon">🏛️</span>
-      <span class="tab-label">国家及势力</span>
-    </button>
-  </div>
-
-  <div class="intro-body">
-    <!-- 主内容区 -->
-    <div class="intro-main">
-      <div class="intro-content" id="tab-characters">
-        <div class="intro-header">
-          <div style="display:flex;align-items:center;gap:10px">
-            <button class="btn bn" id="chars-filter-clear" style="display:none;font-size:12px;padding:4px 10px">✕ 清除筛选</button>
-          </div>
-          <button class="btn bp" id="chars-add-btn" style="display:none">＋ 新建</button>
-        </div>
-        <div class="intro-grid" id="chars-grid"></div>
-      </div>
-
-      <div class="intro-content geo-layout" id="tab-geography" style="display:none">
-        <div class="geo-main">
-          <div id="geo-detail-view" class="geo-detail"></div>
-        </div>
-        <!-- 隐藏的代理按钮，由面板内按钮触发 -->
-        <button id="add-country-btn" style="display:none">＋ 新建国家</button>
-      </div>
+<div class="intro-body">
+  <div class="intro-main">
+    <div class="intro-tabs">
+      <button class="intro-tab active" data-tab="characters"><span class="tab-icon">👥</span><span class="tab-label">人物介绍</span></button>
+      <button class="intro-tab" data-tab="geography"><span class="tab-icon">🏛️</span><span class="tab-label">国家及势力</span></button>
     </div>
 
-    <!-- 右侧面板展开按钮（在panel外，不受overflow:hidden影响）-->
-    <button id="chars-panel-expand" class="panel-expand-trigger" title="展开面板">▶</button>
-    <!-- 右侧面板：人物页=搜索人物，地理页=搜索地名 -->
-    <div id="chars-panel" class="tl-panel">
-      <div class="map-panel-hdr" id="chars-panel-toggle">
-        <span id="chars-panel-title">👥 人物列表</span>
-        <span id="chars-panel-chevron">◀</span>
-      </div>
-      <div id="panel-chars-body" class="panel-body-section">
-        <div class="panel-search-box">
-          <input type="text" id="chars-panel-search" placeholder="输入名字搜索..." autocomplete="off"/>
+    <div class="intro-content" id="tab-characters">
+      <div class="intro-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <h2 style="margin:0">👥 人物介绍</h2>
+          <button class="btn bn" id="chars-filter-clear" style="display:none;font-size:12px;padding:4px 10px">✕ 清除筛选</button>
         </div>
-        <div id="chars-panel-list" class="tl-clist"></div>
+        <button class="btn bp" id="chars-add-btn" style="display:none">＋ 新建</button>
       </div>
-      <!-- 地理页：搜索框+下拉结果+三级树 -->
-      <div id="panel-geo-body" class="panel-body-section" style="display:none">
-        <!-- 搜索区 -->
-        <div class="geo-panel-search-box">
-          <div class="geo-panel-search-wrap">
-            <span class="geo-panel-search-icon">🔍</span>
-            <input type="text" id="geo-panel-search" placeholder="搜索国家、城市、地标..." autocomplete="off"/>
-          </div>
-          <!-- 搜索结果下拉 -->
-          <div id="geo-panel-results" class="geo-panel-results"></div>
-        </div>
-        <!-- 新建按钮 -->
-        <div class="geo-panel-add">
-          <button class="btn bn" id="panel-add-country-btn" style="display:none">＋ 新建国家</button>
-        </div>
-        <!-- 树形结构 -->
-        <div id="geo-tree-list" class="geo-tree-list"></div>
+      <div class="intro-grid" id="chars-grid"></div>
+    </div>
+
+    <div class="intro-content geo-layout" id="tab-geography" style="display:none">
+      <div class="geo-main">
+        <div id="geo-detail-view" class="geo-detail"></div>
       </div>
+      <button id="add-country-btn" style="display:none">＋ 新建国家</button>
+    </div>
+  </div>
+
+  <!-- 右侧面板展开按钮（panel外，不受overflow:hidden影响）-->
+  <button id="chars-panel-expand" class="panel-expand-trigger" title="展开面板">▶</button>
+
+  <!-- 右侧面板 -->
+  <div id="chars-panel" class="tl-panel">
+    <div class="map-panel-hdr" id="chars-panel-toggle">
+      <span id="chars-panel-title">👥 人物列表</span>
+      <span id="chars-panel-chevron">◀</span>
+    </div>
+
+    <!-- 人物标签页 -->
+    <div id="panel-chars-body" class="panel-body-section">
+      <div class="panel-search-box">
+        <input type="text" id="chars-panel-search" placeholder="输入名字搜索..." autocomplete="off"/>
+      </div>
+      <div id="chars-panel-list" class="tl-clist"></div>
+    </div>
+
+    <!-- 地理标签页：搜索框+下拉结果+三级树 -->
+    <div id="panel-geo-body" class="panel-body-section" style="display:none">
+      <div class="geo-panel-search-box">
+        <div class="geo-panel-search-wrap">
+          <span class="geo-panel-search-icon">🔍</span>
+          <input type="text" id="geo-panel-search" placeholder="搜索国家、城市、地标..." autocomplete="off"/>
+        </div>
+        <div id="geo-panel-results" class="geo-panel-results"></div>
+      </div>
+      <div class="geo-panel-add">
+        <button class="btn bn" id="panel-add-country-btn" style="display:none">＋ 新建国家</button>
+      </div>
+      <div id="geo-tree-list" class="geo-tree-list"></div>
     </div>
   </div>
 </div>
@@ -117,31 +101,23 @@ function buildHTML() {
 <div id="char-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:500px" onmousedown="event.stopPropagation()">
     <h2 id="char-modal-title">编辑人物</h2>
-    <label>名字</label>
-    <input id="char-name" type="text"/>
-    <label>年龄</label>
-    <input id="char-age" type="number" min="0" max="999" placeholder="年龄"/>
-    <label>所属城市</label>
-    <div class="modal-select-wrap">
-      <select id="char-city"><option value="">无</option></select>
-      <span class="modal-select-arrow">▼</span>
-    </div>
-    <label>描述</label>
-    <textarea id="char-desc" rows="3"></textarea>
+    <label>名字</label><input id="char-name" type="text"/>
+    <label>年龄</label><input id="char-age" type="number" min="0" placeholder="0"/>
+    <label>所属城市</label><select id="char-city"><option value="">无</option></select>
+    <label>描述</label><textarea id="char-desc" rows="3"></textarea>
     <label>头像</label>
-    <div class="avatar-row">
-      <div id="char-avatar-preview" class="avatar-preview">
+    <div style="display:flex;gap:12px;margin-bottom:16px">
+      <div id="char-avatar-preview" style="width:80px;height:80px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:600;overflow:hidden">
         <span id="char-avatar-letter">?</span>
       </div>
-      <div class="avatar-btns">
+      <div style="display:flex;flex-direction:column;gap:8px">
         <button class="btn bn" id="char-upload-btn">📁 上传</button>
         <button class="btn bn" id="char-url-btn">🔗 URL</button>
       </div>
       <input type="file" id="char-file-input" accept="image/*" style="display:none"/>
-    </div>
-    <div id="char-url-row" class="url-input-row" style="display:none">
-      <span class="url-input-icon">🔗</span>
-      <input id="char-url-input" type="url" placeholder="粘贴图片链接 https://..."/>
+      <div id="char-url-row" style="display:none;margin-top:8px;flex:1">
+        <input id="char-url-input" type="url" placeholder="https://..." style="width:100%"/>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn br modal-btn-delete" id="char-delete-btn" style="display:none">删除</button>
@@ -153,32 +129,21 @@ function buildHTML() {
   </div>
 </div>
 
-<!-- 国家模态框 -->
+<!-- 国家模态框（内容由 country-modal.js 动态填充）-->
 <div id="country-modal" class="tl-modal-overlay">
-  <div class="tl-modal country-modal-inner" style="max-width:560px" onmousedown="event.stopPropagation()">
-    <!-- 内容由 country-modal.js 动态填充 -->
-  </div>
+  <div class="tl-modal country-modal-inner" style="max-width:560px" onmousedown="event.stopPropagation()"></div>
 </div>
 
 <!-- 城市模态框 -->
 <div id="city-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:500px" onmousedown="event.stopPropagation()">
     <h2 id="city-modal-title">编辑城市</h2>
-    <label>名称</label>
-    <input id="city-name" type="text"/>
-    <label>所属国家</label>
-    <div class="modal-select-wrap">
-      <select id="city-country"><option value="">无</option></select>
-      <span class="modal-select-arrow">▼</span>
-    </div>
-    <label>概述</label>
-    <textarea id="city-overview" rows="2" placeholder="城市总体介绍..."></textarea>
-    <label>地理位置</label>
-    <textarea id="city-geography" rows="2" placeholder="地理坐标、地形特征..."></textarea>
-    <label>气候</label>
-    <textarea id="city-climate" rows="2" placeholder="气候类型、季节特点..."></textarea>
-    <label>城市结构</label>
-    <textarea id="city-structure" rows="2" placeholder="城区划分、建筑风格..."></textarea>
+    <label>名称</label><input id="city-name" type="text"/>
+    <label>所属国家</label><select id="city-country"><option value="">无</option></select>
+    <label>概述</label><textarea id="city-overview" rows="2" placeholder="城市总体介绍..."></textarea>
+    <label>地理位置</label><textarea id="city-geography" rows="2" placeholder="地理坐标、地形特征..."></textarea>
+    <label>气候</label><textarea id="city-climate" rows="2" placeholder="气候类型、季节特点..."></textarea>
+    <label>城市结构</label><textarea id="city-structure" rows="2" placeholder="城区划分、建筑风格..."></textarea>
     <div class="modal-actions">
       <button class="btn br modal-btn-delete" id="city-delete-btn" style="display:none">删除</button>
       <div class="modal-actions-right">
@@ -193,10 +158,8 @@ function buildHTML() {
 <div id="landmark-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:500px" onmousedown="event.stopPropagation()">
     <h2 id="landmark-modal-title">编辑地标</h2>
-    <label>名称</label>
-    <input id="landmark-name" type="text"/>
-    <label>描述</label>
-    <textarea id="landmark-desc" rows="3" placeholder="地标详细介绍..."></textarea>
+    <label>名称</label><input id="landmark-name" type="text"/>
+    <label>描述</label><textarea id="landmark-desc" rows="3" placeholder="地标详细介绍..."></textarea>
     <div class="modal-actions">
       <button class="btn br modal-btn-delete" id="landmark-delete-btn" style="display:none">删除</button>
       <div class="modal-actions-right">
@@ -208,26 +171,49 @@ function buildHTML() {
 </div>
 
 <style>
-/* ===== 页面结构 ===== */
-.intro-page{height:100%;display:flex;flex-direction:column;overflow:hidden}
-.intro-tabs{display:flex;gap:4px;padding:16px 20px 0 20px;border-bottom:2px solid var(--border);flex-shrink:0}
+/* ── 整体布局 ── */
+.intro-body{height:100%;display:flex;overflow:hidden}
+.intro-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.intro-tabs{display:flex;gap:4px;padding:16px 20px 0;border-bottom:2px solid var(--border);flex-shrink:0}
 .intro-tab{display:flex;align-items:center;gap:8px;padding:12px 24px;border:none;background:transparent;color:var(--muted);cursor:pointer;position:relative;transition:all 0.2s}
 .intro-tab:hover{color:var(--text);background:rgba(124,131,247,0.05)}
 .intro-tab.active{color:var(--accent)}
 .intro-tab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--accent)}
-.intro-body{flex:1;display:flex;overflow:hidden}
-.intro-main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .intro-content{flex:1;overflow-y:auto;padding:20px}
-.intro-header{display:flex;justify-content:space-between;margin-bottom:20px;align-items:center}
+.intro-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+/* ── 人物卡片 ── */
 .intro-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
 .intro-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all 0.2s}
 .intro-card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.08);border-color:var(--accent)}
 .intro-avatar{width:60px;height:60px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:600;overflow:hidden;flex-shrink:0}
 .intro-avatar img{width:100%;height:100%;object-fit:cover}
-
-/* ===== 地理布局 ===== */
+/* ── 地理布局 ── */
 .geo-layout{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;flex:1}
-/* 面板内地理搜索 */
+.geo-main{flex:1;overflow-y:auto;padding:24px}
+/* ── 右侧面板 ── */
+.tl-panel{width:260px;flex-shrink:0;background:var(--bg);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width 0.28s ease}
+.tl-panel.collapsed{width:0}
+.map-panel-hdr{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border-bottom:1px solid var(--border);flex-shrink:0;user-select:none;font-weight:600;font-size:13px}
+.map-panel-hdr:hover{background:rgba(124,131,247,0.06)}
+.panel-body-section{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.panel-search-box{padding:10px 12px;flex-shrink:0;border-bottom:1px solid var(--border)}
+.panel-search-box input{width:100%;padding:7px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none;transition:border-color 0.2s}
+.panel-search-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,247,0.12)}
+/* 面板展开按钮 */
+.panel-expand-trigger{display:none;flex-shrink:0;align-self:center;width:32px;height:32px;border-radius:50%;background:rgba(20,21,40,0.85);border:1.5px solid rgba(124,131,247,0.5);color:var(--accent);font-size:12px;cursor:pointer;margin-left:6px;z-index:10;align-items:center;justify-content:center}
+.panel-expand-trigger.visible{display:flex}
+.panel-expand-trigger:hover{background:rgba(124,131,247,0.18);border-color:var(--accent)}
+/* ── 人物列表 ── */
+.tl-clist{flex:1;overflow-y:auto;padding:6px}
+.tl-ci{display:flex;align-items:center;gap:10px;padding:9px 10px;margin:2px 0;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all 0.15s}
+.tl-ci:hover{background:rgba(124,131,247,0.08);border-color:rgba(124,131,247,0.2)}
+.tl-ci.active-item{background:rgba(124,131,247,0.12);border-color:var(--accent)}
+.tl-ci-av{width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;overflow:hidden}
+.tl-ci-info{flex:1;min-width:0}
+.tl-cname{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-cmeta{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-empty{padding:20px;text-align:center;color:var(--muted);font-size:13px}
+/* ── 地理搜索面板 ── */
 .geo-panel-search-box{padding:10px 12px 6px;flex-shrink:0}
 .geo-panel-search-wrap{position:relative}
 .geo-panel-search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;opacity:0.45;pointer-events:none}
@@ -244,30 +230,30 @@ function buildHTML() {
 .geo-panel-results-empty{padding:16px;text-align:center;color:var(--muted);font-size:12px}
 .geo-panel-add{padding:2px 12px 6px;flex-shrink:0}
 .geo-panel-add .btn{width:100%;font-size:12px;padding:5px}
-.panel-body-section{display:flex;flex-direction:column;flex:1;overflow:hidden}
-.geo-main{flex:1;overflow-y:auto;padding:24px}
-.panel-body-section{display:flex;flex-direction:column;flex:1;overflow:hidden}
-.geo-tree-list{flex:1;overflow-y:auto;padding:6px}
+/* ── 地理树 ── */
 .geo-tree-list{flex:1;overflow-y:auto;padding:8px}
 .geo-tree-item{padding:8px 12px;margin:2px 0;cursor:pointer;border-radius:6px;user-select:none;display:flex;justify-content:space-between;align-items:center}
 .geo-tree-item:hover{background:rgba(124,131,247,0.08)}
 .geo-tree-item.active{background:rgba(124,131,247,0.12);color:var(--accent)}
 .geo-tree-city{margin-left:20px;font-size:13px}
-.geo-tree-landmark{margin-left:40px;font-size:12px;color:var(--muted)}
-.geo-tree-landmark:hover{color:var(--text)}
-.geo-tree-landmark-empty{margin-left:48px;font-size:12px;color:var(--muted);padding:4px 0;opacity:0.6}
-.geo-tree-toggle{display:inline-block;width:16px;text-align:center;margin-right:4px;cursor:pointer;font-size:10px;opacity:0.7}
+.geo-tree-toggle{display:inline-block;width:16px;text-align:center;margin-right:4px}
 .geo-tree-actions{opacity:0;display:flex;gap:4px}
 .geo-tree-item:hover .geo-tree-actions{opacity:1}
 .geo-tree-btn{padding:2px 6px;font-size:11px;background:var(--accent);color:white;border:none;border-radius:4px;cursor:pointer}
+/* ── 地理详情 ── */
 .geo-detail h2{margin:0 0 24px 0;display:flex;justify-content:space-between;align-items:center}
+.geo-detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.geo-detail-header h2{margin:0}
 .geo-detail-section{margin-bottom:24px}
 .geo-detail-section h3{font-size:16px;margin:0 0 12px 0;color:var(--accent);display:flex;justify-content:space-between;align-items:center}
 .geo-detail-value{font-size:14px;line-height:1.6}
-/* 国家详情：标题+编辑按钮行 */
-.geo-detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.geo-detail-header h2{margin:0}
-/* 折叠小节卡片 */
+.geo-landmark-item,.geo-person-item{padding:12px;margin:8px 0;background:var(--bg);border:1px solid var(--border);border-radius:8px;display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer}
+.geo-landmark-item:hover,.geo-person-item:hover{border-color:var(--accent)}
+.geo-landmark-name{font-weight:600;margin-bottom:4px}
+.geo-item-actions{opacity:0;display:flex;gap:4px}
+.geo-landmark-item:hover .geo-item-actions,.geo-person-item:hover .geo-item-actions{opacity:1}
+.geo-empty{text-align:center;padding:40px;color:var(--muted)}
+/* ── 折叠小节卡片 ── */
 .geo-section-card{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;transition:border-color 0.2s}
 .geo-section-card:hover{border-color:rgba(124,131,247,0.35)}
 .geo-section-toggle{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;cursor:pointer;user-select:none;background:rgba(124,131,247,0.04);transition:background 0.15s}
@@ -278,7 +264,7 @@ function buildHTML() {
 .geo-section-body{display:none;padding:12px 16px;border-top:1px solid var(--border)}
 .geo-section-card.open .geo-section-body{display:block}
 .geo-section-content{font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text)}
-/* 国家编辑模态框内样式 */
+/* ── 国家编辑模态框 ── */
 .cm-sec-hdr{display:flex;align-items:baseline;gap:10px;margin:16px 0 6px}
 .cm-sec-hdr span:first-child{font-size:13px;font-weight:600}
 .cm-hint{font-size:11px;color:var(--muted)}
@@ -292,163 +278,22 @@ function buildHTML() {
 .cm-list{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;padding-right:2px}
 .cm-row{border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .cm-row-hdr{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(124,131,247,0.04);border-bottom:1px solid var(--border)}
-.cm-row-grip{color:var(--muted);font-size:14px;cursor:grab;flex-shrink:0}
+.cm-row-grip{color:var(--muted);font-size:14px;flex-shrink:0}
 .cm-row-title{flex:1;border:none;background:transparent;color:var(--text);font-size:13px;font-weight:500;outline:none;padding:0}
 .cm-row-del{flex-shrink:0;padding:2px 6px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;border-radius:4px;transition:color 0.15s,background 0.15s}
 .cm-row-del:hover{color:#e05c5c;background:rgba(224,92,92,0.1)}
 .cm-row textarea{width:100%;box-sizing:border-box;padding:8px 10px;border:none;background:transparent;color:var(--text);font-size:13px;line-height:1.5;resize:vertical;min-height:60px;outline:none;font-family:inherit}
-.geo-landmark-item,.geo-person-item{padding:12px;margin:8px 0;background:var(--bg);border:1px solid var(--border);border-radius:8px;display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer}
-.geo-landmark-item:hover,.geo-person-item:hover{border-color:var(--accent)}
-.geo-landmark-name{font-weight:600;margin-bottom:4px}
-.geo-item-actions{opacity:0;display:flex;gap:4px}
-.geo-landmark-item:hover .geo-item-actions,.geo-person-item:hover .geo-item-actions{opacity:1}
-.geo-empty{text-align:center;padding:40px;color:var(--muted)}
-@media (max-width:1024px){.geo-layout{flex-direction:column}.geo-sidebar{width:100%;max-height:300px}}
-
-/* ===== 右侧面板（timeline 风格）===== */
-.tl-panel{
-  width:260px;flex-shrink:0;
-  background:var(--bg);
-  border-left:1px solid var(--border);
-  display:flex;flex-direction:column;
-  overflow:hidden;
-  transition:width 0.28s ease;
-}
-.tl-panel.collapsed{width:0;border-left:none}
-/* 展开按钮位于panel外部，不受overflow:hidden裁剪 */
-.panel-expand-trigger{
-  display:none;
-  flex-shrink:0;
-  align-self:center;
-  width:32px;height:32px;border-radius:50%;
-  background:rgba(20,21,40,0.85);
-  border:1.5px solid rgba(124,131,247,0.5);
-  color:var(--accent);font-size:12px;
-  cursor:pointer;
-  align-items:center;justify-content:center;
-  margin-left:6px;
-  transition:background 0.2s,border-color 0.2s,box-shadow 0.2s;
-  z-index:10;
-}
-.panel-expand-trigger:hover{
-  background:rgba(124,131,247,0.18);
-  border-color:var(--accent);
-  box-shadow:0 0 8px rgba(124,131,247,0.3);
-}
-.panel-expand-trigger.visible{display:flex}
-.map-panel-hdr{
-  padding:14px 16px;
-  border-bottom:1px solid var(--border);
-  display:flex;justify-content:space-between;align-items:center;
-  cursor:pointer;user-select:none;
-  font-size:13px;font-weight:600;flex-shrink:0;
-  white-space:nowrap;overflow:hidden;
-}
-.map-panel-hdr:hover{background:rgba(124,131,247,0.05)}
-.panel-search-box{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
-.panel-search-box input{
-  width:100%;padding:8px 12px;
-  border:1px solid var(--border);border-radius:6px;
-  font-size:13px;background:var(--bg);color:var(--text);
-  outline:none;transition:border-color 0.2s;box-sizing:border-box;
-}
-.panel-search-box input:focus{border-color:var(--accent)}
-.tl-clist{flex:1;overflow-y:auto;padding:8px}
-.tl-ci{
-  display:flex;align-items:center;gap:10px;
-  padding:9px 10px;margin:3px 0;border-radius:8px;
-  cursor:pointer;border:1px solid transparent;
-  transition:background 0.15s,border-color 0.15s;
-}
-.tl-ci:hover{background:rgba(124,131,247,0.08);border-color:rgba(124,131,247,0.2)}
-.tl-ci-av{
-  width:34px;height:34px;border-radius:50%;flex-shrink:0;
-  background:var(--accent);color:white;
-  display:flex;align-items:center;justify-content:center;
-  font-size:14px;font-weight:600;overflow:hidden;
-}
-.tl-ci-info{flex:1;min-width:0}
-.tl-cname{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tl-cmeta{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.geo-search-item{padding:9px 10px;margin:3px 0;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid transparent;transition:background 0.15s,border-color 0.15s}
-.geo-search-item:hover{background:rgba(124,131,247,0.08);border-color:rgba(124,131,247,0.2)}
-.geo-search-path{font-size:11px;color:var(--muted);margin-top:2px}
-.tl-empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:13px;line-height:1.6}
-
-/* ===== 模态框：自定义 Select ===== */
-.modal-select-wrap{position:relative;margin-bottom:16px}
-.modal-select-wrap select{
-  width:100%;padding:9px 36px 9px 12px;
-  border:1px solid var(--border);border-radius:8px;
-  background:var(--bg2, var(--bg));color:var(--text);
-  font-size:14px;appearance:none;-webkit-appearance:none;
-  cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;outline:none;
-}
-.modal-select-wrap select:hover{border-color:var(--accent)}
-.modal-select-wrap select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,247,0.15)}
-.modal-select-arrow{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted);pointer-events:none}
-
-/* ===== 模态框：头像区域 ===== */
-.avatar-row{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-.avatar-preview{
-  width:80px;height:80px;border-radius:50%;
-  background:var(--accent);color:white;
-  display:flex;align-items:center;justify-content:center;
-  font-size:32px;font-weight:600;overflow:hidden;flex-shrink:0;
-  background-size:cover;background-position:center;
-}
-.avatar-btns{display:flex;flex-direction:column;gap:8px}
-
-/* ===== 模态框：URL 输入框 ===== */
-.url-input-row{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 14px;border:1px solid var(--border);border-radius:8px;
-  background:var(--bg2, var(--bg));margin-bottom:16px;
-  transition:border-color 0.2s,box-shadow 0.2s;
-}
-.url-input-row:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,247,0.15)}
-.url-input-icon{font-size:15px;flex-shrink:0;opacity:0.6}
-.url-input-row input{flex:1;border:none;background:transparent;color:var(--text);font-size:13px;outline:none}
-.url-input-row input::placeholder{color:var(--muted)}
-
-/* ===== 模态框：按钮区域（删除左 / 保存+取消右）===== */
-.modal-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:20px}
-.modal-actions-right{display:flex;gap:8px;margin-left:auto}
-.modal-btn{min-width:88px}
-.modal-btn-delete{min-width:88px}
-
-/* national section editor */
-.section-editor-hdr{display:flex;align-items:baseline;justify-content:space-between;margin:16px 0 6px}
-.section-editor-label{font-size:13px;font-weight:600}
-.section-editor-hint{font-size:11px;color:var(--muted)}
-.preset-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:20px}
-.preset-tag{padding:4px 10px;font-size:12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:border-color 0.15s,background 0.15s}
-.preset-tag:hover{border-color:var(--accent);background:rgba(124,131,247,0.08);color:var(--accent)}
-.preset-empty{font-size:12px;color:var(--muted);opacity:0.6;padding:2px 0}
-.custom-add-row{display:flex;gap:8px;margin-bottom:10px}
-.custom-add-row input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none}
-.custom-add-row input:focus{border-color:var(--accent)}
-.sections-list{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;padding-right:2px}
-.section-row{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:rgba(124,131,247,0.03)}
-.section-row-hdr{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(124,131,247,0.06);border-bottom:1px solid var(--border)}
-.section-title-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:13px;font-weight:500}
-.section-remove-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:4px;line-height:1;transition:color 0.15s}
-.section-remove-btn:hover{color:#e06c75}
-.section-content{width:100%;box-sizing:border-box;padding:8px 10px;border:none;background:transparent;color:var(--text);font-size:13px;line-height:1.55;resize:vertical;outline:none;font-family:inherit;min-height:68px}
-
-/* collapsible section cards */
-.geo-collapse-card{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;transition:box-shadow 0.2s}
-.geo-collapse-card:hover{box-shadow:0 2px 10px rgba(0,0,0,0.15)}
-.geo-collapse-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;cursor:pointer;user-select:none;background:rgba(124,131,247,0.04);transition:background 0.15s}
-.geo-collapse-hdr:hover{background:rgba(124,131,247,0.09)}
-.geo-collapse-title{font-size:13px;font-weight:600;color:var(--text)}
-.geo-collapse-arrow{font-size:11px;color:var(--muted);transition:transform 0.22s ease;display:inline-block}
-.geo-collapse-card.open .geo-collapse-arrow{transform:rotate(180deg)}
-.geo-collapse-body{display:none;padding:12px 16px;font-size:13px;line-height:1.7;color:var(--text);white-space:pre-wrap;border-top:1px solid var(--border)}
-.geo-collapse-card.open .geo-collapse-body{display:block}
+/* ── 모달 공통 ── */
+.modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:8px}
+.modal-actions-right{display:flex;gap:8px}
+.modal-btn{flex:1;min-width:80px}
+.modal-btn-delete{min-width:60px}
+@media (max-width:1024px){.geo-layout{flex-direction:column}}
 </style>
-  `;
+`;
 }
+
+// ── 컨트롤 바인딩 ──────────────────────────────────────────────
 
 function bindControls() {
   const container = State.pageContainer;
@@ -457,21 +302,48 @@ function bindControls() {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
 
-  // 清除人物筛选按钮
   const clearBtn = container.querySelector('#chars-filter-clear');
-  if (clearBtn) {
-    clearBtn.addEventListener('click', () => _filterCharGrid(null));
-  }
+  if (clearBtn) clearBtn.addEventListener('click', () => _filterCharGrid(null));
 
   bindCharactersTab();
   bindSidePanel();
 }
 
+function bindSidePanel() {
+  const container = State.pageContainer;
+  const panel     = container.querySelector('#chars-panel');
+  const toggle    = container.querySelector('#chars-panel-toggle');
+  const chevron   = container.querySelector('#chars-panel-chevron');
+  const expandBtn = container.querySelector('#chars-panel-expand');
+
+  function collapsePanel() {
+    panel.classList.add('collapsed');
+    if (chevron) chevron.textContent = '▶';
+    if (expandBtn) expandBtn.classList.add('visible');
+  }
+  function expandPanel() {
+    panel.classList.remove('collapsed');
+    if (chevron) chevron.textContent = '◀';
+    if (expandBtn) expandBtn.classList.remove('visible');
+  }
+
+  if (toggle) toggle.addEventListener('click', () => panel.classList.contains('collapsed') ? expandPanel() : collapsePanel());
+  if (expandBtn) expandBtn.addEventListener('click', expandPanel);
+
+  // 人物搜索
+  const searchInput = container.querySelector('#chars-panel-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => renderPanelList(e.target.value.trim().toLowerCase()));
+  }
+}
+
+// ── 탭 전환 ────────────────────────────────────────────────────
+
 function switchTab(tabName) {
   const container = State.pageContainer;
   State.setCurrentTab(tabName);
 
-  // 切换 tab 时重置人物筛选
+  // 人物筛选 reset
   const clearBtn = container.querySelector('#chars-filter-clear');
   if (clearBtn) clearBtn.style.display = 'none';
   container.querySelectorAll('#chars-panel-list .tl-ci').forEach(el => el.classList.remove('active-item'));
@@ -481,37 +353,50 @@ function switchTab(tabName) {
   });
 
   const charsContent = container.querySelector('#tab-characters');
-  const geoContent = container.querySelector('#tab-geography');
-  if (charsContent) charsContent.style.display = tabName === 'characters' ? 'block' : 'none';
-  if (geoContent) geoContent.style.display = tabName === 'geography' ? 'flex' : 'none';
+  const geoContent   = container.querySelector('#tab-geography');
+  if (charsContent) charsContent.style.display = tabName === 'characters' ? 'block'  : 'none';
+  if (geoContent)   geoContent.style.display   = tabName === 'geography'  ? 'flex'   : 'none';
 
   syncPanelHeader(tabName);
   renderCurrentTab();
 }
 
 function syncPanelHeader(tabName) {
-  const container = State.pageContainer;
-  const title = container.querySelector('#chars-panel-title');
-  const charsBody = container.querySelector('#panel-chars-body');
-  const geoBody = container.querySelector('#panel-geo-body');
-  const input = container.querySelector('#chars-panel-search');
+  const container  = State.pageContainer;
+  const title      = container.querySelector('#chars-panel-title');
+  const charsBody  = container.querySelector('#panel-chars-body');
+  const geoBody    = container.querySelector('#panel-geo-body');
+  const searchInput = container.querySelector('#chars-panel-search');
 
   if (tabName === 'characters') {
-    if (title) title.textContent = '👥 人物列表';
-    if (charsBody) charsBody.style.display = 'flex';
-    if (geoBody) geoBody.style.display = 'none';
-    if (input) input.value = '';
+    if (title)      title.textContent = '👥 人物列表';
+    if (charsBody)  charsBody.style.display = 'flex';
+    if (geoBody)    geoBody.style.display   = 'none';
+    if (searchInput) searchInput.value = '';
     renderPanelList('');
   } else {
-    if (title) title.textContent = '🗺️ 地理结构';
+    if (title)     title.textContent = '🗺️ 地理结构';
     if (charsBody) charsBody.style.display = 'none';
-    if (geoBody) geoBody.style.display = 'flex';
+    if (geoBody)   geoBody.style.display   = 'flex';
   }
 }
 
-function bindSidePanel() {
+function renderCurrentTab() {
   const container = State.pageContainer;
-  const panel = container.querySelector('#chars-panel');
+  if (State.currentTab === 'characters') {
+    renderCharactersTab();
+    const searchInput = container.querySelector('#chars-panel-search');
+    renderPanelList(searchInput?.value?.trim().toLowerCase() || '');
+  } else if (State.currentTab === 'geography') {
+    initGeographyTab();
+    renderGeoTree();
+    _bindGeoSearch();
+    _bindPanelAddCountry();
+  }
+}
+
+// ── 인물 패널 ──────────────────────────────────────────────────
+
 export function renderPanelList(query) {
   const container = State.pageContainer;
   const list = container.querySelector('#chars-panel-list');
@@ -530,61 +415,49 @@ function _renderCharPanel(list, query) {
   }
 
   list.innerHTML = chars.map(function(c) {
-    const city = State.allCities.find(function(ci) { return ci.id === c.city_id; });
+    const city    = State.allCities.find(function(ci) { return ci.id === c.city_id; });
     const country = city ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null;
     const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
-    const ageStr = (c.base_age != null && c.base_age !== '') ? String(c.base_age) : '';
-    const meta = [ageStr ? ageStr + '岁' : '', location].filter(Boolean).join(' · ');
-
+    const ageStr   = (c.base_age != null && c.base_age !== '') ? String(c.base_age) : '';
+    const meta     = [ageStr ? ageStr + '岁' : '', location].filter(Boolean).join(' · ');
     const av = c.avatar_url
       ? '<div class="tl-ci-av"><img src="' + escHtml(c.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div>'
       : '<div class="tl-ci-av">' + escHtml(c.name.charAt(0).toUpperCase()) + '</div>';
-
     return '<div class="tl-ci" data-char-id="' + c.id + '">' +
-      av +
-      '<div class="tl-ci-info">' +
+      av + '<div class="tl-ci-info">' +
         '<div class="tl-cname">' + escHtml(c.name) + '</div>' +
         (meta ? '<div class="tl-cmeta">' + escHtml(meta) + '</div>' : '') +
-      '</div>' +
-    '</div>';
+      '</div></div>';
   }).join('');
 
   list.querySelectorAll('.tl-ci[data-char-id]').forEach(function(item) {
     item.addEventListener('click', function() {
       const id = parseInt(item.dataset.charId);
-      // 高亮选中
       list.querySelectorAll('.tl-ci').forEach(function(el) { el.classList.remove('active-item'); });
       item.classList.add('active-item');
-      // 主区域只显示该人物
       _filterCharGrid(id);
     });
   });
 }
 
-/** 筛选主区域只展示指定人物卡片，传 null 恢复全部 */
 function _filterCharGrid(charId) {
   const container = State.pageContainer;
-  const clearBtn = container.querySelector('#chars-filter-clear');
+  const clearBtn  = container.querySelector('#chars-filter-clear');
 
   if (charId == null) {
-    // 恢复全部
     if (clearBtn) clearBtn.style.display = 'none';
-    container.querySelectorAll('#chars-panel-list .tl-ci').forEach(function(el) {
-      el.classList.remove('active-item');
-    });
+    container.querySelectorAll('#chars-panel-list .tl-ci').forEach(function(el) { el.classList.remove('active-item'); });
     renderCharactersTab();
     return;
   }
 
   if (clearBtn) clearBtn.style.display = 'inline-flex';
-
   const char = State.allChars.find(function(c) { return c.id === charId; });
   if (!char) return;
-
   const grid = container.querySelector('#chars-grid');
   if (!grid) return;
 
-  const city = State.allCities.find(function(ci) { return ci.id === char.city_id; });
+  const city    = State.allCities.find(function(ci) { return ci.id === char.city_id; });
   const country = city ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null;
   const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
   const hasAge = char.base_age != null && char.base_age !== '';
@@ -609,29 +482,15 @@ function _filterCharGrid(charId) {
     if (card) card.addEventListener('click', function() { openCharModal(char); });
   }
 }
-  if (State.currentTab === 'characters') {
-    renderCharactersTab();
-    const searchInput = container.querySelector('#chars-panel-search');
-    renderPanelList(searchInput?.value?.trim().toLowerCase() || '');
-  } else if (State.currentTab === 'geography') {
-    initGeographyTab();
-    renderGeoTree();
-    _bindGeoSearch();
-    _bindPanelAddCountry();
-  }
-}
 
-/**
- * 绑定右侧面板地理搜索框
- * 输入时实时搜索，结果以下拉列表展示；选中后主区域跳转对应详情
- */
+// ── 지리 검색 ──────────────────────────────────────────────────
+
 function _bindGeoSearch() {
   const container = State.pageContainer;
-  const input = container.querySelector('#geo-panel-search');
+  const input   = container.querySelector('#geo-panel-search');
   const results = container.querySelector('#geo-panel-results');
   if (!input || !results) return;
 
-  // 防重复绑定
   const freshInput = input.cloneNode(true);
   input.parentNode.replaceChild(freshInput, input);
 
@@ -640,52 +499,27 @@ function _bindGeoSearch() {
 
   function buildResults(query) {
     const q = query.trim().toLowerCase();
-    if (!q) {
-      results.classList.remove('open');
-      results.innerHTML = '';
-      currentHits = [];
-      return;
-    }
+    if (!q) { results.classList.remove('open'); results.innerHTML = ''; currentHits = []; return; }
 
     const hits = [];
-
-    // 搜索国家/势力
-    State.allCountries
-      .filter(co => co.name.toLowerCase().includes(q))
-      .forEach(co => hits.push({
-        type: 'country', icon: '🏛️',
-        label: co.name, path: '',
-        obj: co
-      }));
-
-    // 搜索城市
-    State.allCities
-      .filter(ci => ci.name.toLowerCase().includes(q))
+    State.allCountries.filter(co => co.name.toLowerCase().includes(q))
+      .forEach(co => hits.push({ type: 'country', icon: '🏛️', label: co.name, path: '', obj: co }));
+    State.allCities.filter(ci => ci.name.toLowerCase().includes(q))
       .forEach(ci => {
         const country = State.allCountries.find(co => co.id === ci.country_id);
-        hits.push({
-          type: 'city', icon: '🏙️',
-          label: ci.name, path: country ? country.name : '',
-          obj: ci, parentCountry: country
-        });
+        hits.push({ type: 'city', icon: '🏙️', label: ci.name, path: country ? country.name : '', obj: ci, parentCountry: country });
       });
-
-    // 搜索地标
-    State.allLandmarks
-      .filter(lm => lm.name.toLowerCase().includes(q))
+    State.allLandmarks.filter(lm => lm.name.toLowerCase().includes(q))
       .forEach(lm => {
-        const city = State.allCities.find(ci => ci.id === lm.city_id);
+        const city    = State.allCities.find(ci => ci.id === lm.city_id);
         const country = city ? State.allCountries.find(co => co.id === city.country_id) : null;
-        const path = [country && country.name, city && city.name].filter(Boolean).join(' › ');
-        hits.push({
-          type: 'landmark', icon: '🏛',
-          label: lm.name, path,
-          obj: lm, parentCity: city, parentCountry: country
-        });
+        hits.push({ type: 'landmark', icon: '🏛', label: lm.name,
+          path: [country && country.name, city && city.name].filter(Boolean).join(' › '),
+          obj: lm, parentCity: city, parentCountry: country });
       });
 
     currentHits = hits;
-    focusedIdx = -1;
+    focusedIdx  = -1;
 
     if (!hits.length) {
       results.innerHTML = '<div class="geo-panel-results-empty">无匹配结果</div>';
@@ -693,19 +527,18 @@ function _bindGeoSearch() {
       return;
     }
 
-    results.innerHTML = hits.map((h, i) =>
-      '<div class="geo-panel-result-item" data-idx="' + i + '">' +
+    results.innerHTML = hits.map(function(h, i) {
+      return '<div class="geo-panel-result-item" data-idx="' + i + '">' +
         '<span class="geo-panel-result-icon">' + h.icon + '</span>' +
         '<span class="geo-panel-result-name">' + escHtml(h.label) + '</span>' +
         (h.path ? '<span class="geo-panel-result-path">' + escHtml(h.path) + '</span>' : '') +
-      '</div>'
-    ).join('');
+      '</div>';
+    }).join('');
     results.classList.add('open');
 
-    // 绑定点击选中
     results.querySelectorAll('.geo-panel-result-item').forEach(function(el, i) {
       el.addEventListener('mousedown', function(e) {
-        e.preventDefault(); // 防止 input blur 先触发，导致下拉关闭
+        e.preventDefault();
         selectHit(currentHits[i]);
         freshInput.value = '';
         results.classList.remove('open');
@@ -718,77 +551,37 @@ function _bindGeoSearch() {
   function selectHit(hit) {
     if (!hit) return;
     if (hit.type === 'country') {
-      State.setSelectedCountry(hit.obj);
-      State.setSelectedCity(null);
+      State.setSelectedCountry(hit.obj); State.setSelectedCity(null);
       if (!State.expandedCountries.has(hit.obj.id)) State.toggleCountryExpanded(hit.obj.id);
-
     } else if (hit.type === 'city') {
       State.setSelectedCity(hit.obj);
-      if (hit.parentCountry) {
-        State.setSelectedCountry(hit.parentCountry);
-        if (!State.expandedCountries.has(hit.parentCountry.id))
-          State.toggleCountryExpanded(hit.parentCountry.id);
-      }
-      if (State.expandedCities && !State.expandedCities.has(hit.obj.id))
-        State.toggleCityExpanded && State.toggleCityExpanded(hit.obj.id);
-
+      if (hit.parentCountry) { State.setSelectedCountry(hit.parentCountry); if (!State.expandedCountries.has(hit.parentCountry.id)) State.toggleCountryExpanded(hit.parentCountry.id); }
+      if (State.expandedCities && !State.expandedCities.has(hit.obj.id)) State.toggleCityExpanded && State.toggleCityExpanded(hit.obj.id);
     } else if (hit.type === 'landmark') {
-      // 地标：跳到所在城市详情
       if (hit.parentCity) {
         State.setSelectedCity(hit.parentCity);
-        if (hit.parentCountry) {
-          State.setSelectedCountry(hit.parentCountry);
-          if (!State.expandedCountries.has(hit.parentCountry.id))
-            State.toggleCountryExpanded(hit.parentCountry.id);
-        }
-        if (State.expandedCities && !State.expandedCities.has(hit.parentCity.id))
-          State.toggleCityExpanded && State.toggleCityExpanded(hit.parentCity.id);
+        if (hit.parentCountry) { State.setSelectedCountry(hit.parentCountry); if (!State.expandedCountries.has(hit.parentCountry.id)) State.toggleCountryExpanded(hit.parentCountry.id); }
+        if (State.expandedCities && !State.expandedCities.has(hit.parentCity.id)) State.toggleCityExpanded && State.toggleCityExpanded(hit.parentCity.id);
       }
     }
     renderGeoDetail();
     renderGeoTree();
   }
 
-  // 输入事件
-  freshInput.addEventListener('input', function(e) {
-    buildResults(e.target.value);
-  });
-
-  // 键盘导航：上/下/回车/Esc
+  freshInput.addEventListener('input', function(e) { buildResults(e.target.value); });
   freshInput.addEventListener('keydown', function(e) {
     const items = results.querySelectorAll('.geo-panel-result-item');
     if (!items.length) return;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      focusedIdx = Math.min(focusedIdx + 1, items.length - 1);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      focusedIdx = Math.max(focusedIdx - 1, 0);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (focusedIdx >= 0 && currentHits[focusedIdx]) {
-        selectHit(currentHits[focusedIdx]);
-        freshInput.value = '';
-        results.classList.remove('open');
-        results.innerHTML = '';
-        currentHits = [];
-      }
-      return;
-    } else if (e.key === 'Escape') {
-      results.classList.remove('open');
-      return;
-    }
+    if      (e.key === 'ArrowDown')  { e.preventDefault(); focusedIdx = Math.min(focusedIdx + 1, items.length - 1); }
+    else if (e.key === 'ArrowUp')    { e.preventDefault(); focusedIdx = Math.max(focusedIdx - 1, 0); }
+    else if (e.key === 'Enter' && focusedIdx >= 0) { e.preventDefault(); items[focusedIdx].dispatchEvent(new MouseEvent('mousedown')); return; }
+    else if (e.key === 'Escape')     { results.classList.remove('open'); return; }
     items.forEach(function(el, i) { el.classList.toggle('focused', i === focusedIdx); });
     if (focusedIdx >= 0) items[focusedIdx].scrollIntoView({ block: 'nearest' });
   });
-
-  // 失焦时关闭（setTimeout 确保 mousedown 先执行完）
-  freshInput.addEventListener('blur', function() {
-    setTimeout(function() { results.classList.remove('open'); }, 160);
-  });
+  freshInput.addEventListener('blur', function() { setTimeout(function() { results.classList.remove('open'); }, 160); });
 }
 
-/** 面板内「新建国家」按钮代理 */
 function _bindPanelAddCountry() {
   const container = State.pageContainer;
   const btn = container.querySelector('#panel-add-country-btn');
@@ -797,178 +590,18 @@ function _bindPanelAddCountry() {
   btn.parentNode.replaceChild(fresh, btn);
   fresh.style.display = isEditor() ? 'block' : 'none';
   fresh.addEventListener('click', function() {
-    container.querySelector('#add-country-btn') && container.querySelector('#add-country-btn').click();
-  });
-}
-  let currentHits = [];
-
-  function buildResults(query) {
-    const q = query.trim().toLowerCase();
-    if (!q) {
-      results.classList.remove('open');
-      results.innerHTML = '';
-      currentHits = [];
-      return;
-    }
-
-    const hits = [];
-
-    // 搜索国家/势力
-    State.allCountries
-      .filter(co => co.name.toLowerCase().includes(q))
-      .forEach(co => hits.push({
-        type: 'country', icon: '🏛️',
-        label: co.name, path: '',
-        obj: co
-      }));
-
-    // 搜索城市
-    State.allCities
-      .filter(ci => ci.name.toLowerCase().includes(q))
-      .forEach(ci => {
-        const country = State.allCountries.find(co => co.id === ci.country_id);
-        hits.push({
-          type: 'city', icon: '🏙️',
-          label: ci.name, path: country ? country.name : '',
-          obj: ci, parentCountry: country
-        });
-      });
-
-    // 搜索地标
-    State.allLandmarks
-      .filter(lm => lm.name.toLowerCase().includes(q))
-      .forEach(lm => {
-        const city = State.allCities.find(ci => ci.id === lm.city_id);
-        const country = city ? State.allCountries.find(co => co.id === city.country_id) : null;
-        const path = [country && country.name, city && city.name].filter(Boolean).join(' › ');
-        hits.push({
-          type: 'landmark', icon: '🏛',
-          label: lm.name, path,
-          obj: lm, parentCity: city, parentCountry: country
-        });
-      });
-
-    currentHits = hits;
-    focusedIdx = -1;
-
-    if (!hits.length) {
-      results.innerHTML = '<div class="geo-panel-results-empty">无匹配结果</div>';
-      results.classList.add('open');
-      return;
-    }
-
-    results.innerHTML = hits.map((h, i) =>
-      '<div class="geo-panel-result-item" data-idx="' + i + '">' +
-        '<span class="geo-panel-result-icon">' + h.icon + '</span>' +
-        '<span class="geo-panel-result-name">' + escHtml(h.label) + '</span>' +
-        (h.path ? '<span class="geo-panel-result-path">' + escHtml(h.path) + '</span>' : '') +
-      '</div>'
-    ).join('');
-    results.classList.add('open');
-
-    // 绑定点击选中
-    results.querySelectorAll('.geo-panel-result-item').forEach(function(el, i) {
-      el.addEventListener('mousedown', function(e) {
-        e.preventDefault(); // 防止 input blur 先触发，导致下拉关闭
-        selectHit(currentHits[i]);
-        freshInput.value = '';
-        results.classList.remove('open');
-        results.innerHTML = '';
-        currentHits = [];
-      });
-    });
-  }
-
-  function selectHit(hit) {
-    if (!hit) return;
-    if (hit.type === 'country') {
-      State.setSelectedCountry(hit.obj);
-      State.setSelectedCity(null);
-      if (!State.expandedCountries.has(hit.obj.id)) State.toggleCountryExpanded(hit.obj.id);
-
-    } else if (hit.type === 'city') {
-      State.setSelectedCity(hit.obj);
-      if (hit.parentCountry) {
-        State.setSelectedCountry(hit.parentCountry);
-        if (!State.expandedCountries.has(hit.parentCountry.id))
-          State.toggleCountryExpanded(hit.parentCountry.id);
-      }
-      if (State.expandedCities && !State.expandedCities.has(hit.obj.id))
-        State.toggleCityExpanded && State.toggleCityExpanded(hit.obj.id);
-
-    } else if (hit.type === 'landmark') {
-      // 地标：跳到所在城市详情
-      if (hit.parentCity) {
-        State.setSelectedCity(hit.parentCity);
-        if (hit.parentCountry) {
-          State.setSelectedCountry(hit.parentCountry);
-          if (!State.expandedCountries.has(hit.parentCountry.id))
-            State.toggleCountryExpanded(hit.parentCountry.id);
-        }
-        if (State.expandedCities && !State.expandedCities.has(hit.parentCity.id))
-          State.toggleCityExpanded && State.toggleCityExpanded(hit.parentCity.id);
-      }
-    }
-    renderGeoDetail();
-    renderGeoTree();
-  }
-
-  // 输入事件
-  freshInput.addEventListener('input', function(e) {
-    buildResults(e.target.value);
-  });
-
-  // 键盘导航：上/下/回车/Esc
-  freshInput.addEventListener('keydown', function(e) {
-    const items = results.querySelectorAll('.geo-panel-result-item');
-    if (!items.length) return;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      focusedIdx = Math.min(focusedIdx + 1, items.length - 1);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      focusedIdx = Math.max(focusedIdx - 1, 0);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (focusedIdx >= 0 && currentHits[focusedIdx]) {
-        selectHit(currentHits[focusedIdx]);
-        freshInput.value = '';
-        results.classList.remove('open');
-        results.innerHTML = '';
-        currentHits = [];
-      }
-      return;
-    } else if (e.key === 'Escape') {
-      results.classList.remove('open');
-      return;
-    }
-    items.forEach(function(el, i) { el.classList.toggle('focused', i === focusedIdx); });
-    if (focusedIdx >= 0) items[focusedIdx].scrollIntoView({ block: 'nearest' });
-  });
-
-  // 失焦时关闭（setTimeout 确保 mousedown 先执行完）
-  freshInput.addEventListener('blur', function() {
-    setTimeout(function() { results.classList.remove('open'); }, 160);
+    const proxy = container.querySelector('#add-country-btn');
+    if (proxy) proxy.click();
   });
 }
 
-/** 面板内「新建国家」按钮代理 */
-function _bindPanelAddCountry() {
-  const container = State.pageContainer;
-  const btn = container.querySelector('#panel-add-country-btn');
-  if (!btn) return;
-  const fresh = btn.cloneNode(true);
-  btn.parentNode.replaceChild(fresh, btn);
-  fresh.style.display = isEditor() ? 'block' : 'none';
-  fresh.addEventListener('click', function() {
-    container.querySelector('#add-country-btn') && container.querySelector('#add-country-btn').click();
-  });
-}
+// ── UI 업데이트 ────────────────────────────────────────────────
+
 function updateUI() {
   const container = State.pageContainer;
   const editor = isEditor();
-  container.querySelector('#chars-add-btn').style.display = editor ? 'block' : 'none';
-  // add-country-btn 保持隐藏，由 panel-add-country-btn 代理触发
+  const addBtn = container.querySelector('#chars-add-btn');
+  if (addBtn) addBtn.style.display = editor ? 'block' : 'none';
   const addCountryBtn = container.querySelector('#add-country-btn');
   if (addCountryBtn) addCountryBtn.style.display = 'none';
   const panelAddBtn = container.querySelector('#panel-add-country-btn');
