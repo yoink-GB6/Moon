@@ -10,7 +10,7 @@
 <script>
   window.SUPABASE_URL  = 'https://hrgottdtlnihablruxtr.supabase.co';
   window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhyZ290dGR0bG5paGFibHJ1eHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMTcxOTAsImV4cCI6MjA4Njg5MzE5MH0.6Ng0E96W8VLnATqWgc_o7xVKCrzlewn0J-ba2ChpcE4';
-  window.EDIT_PASSWORD = 'pgzjtfslm';
+  window.EDIT_PASSWORD_HASH = 'd9c6f9f83c0c015389bc595511f19d6ed5f1c11f4d9a318de4765a91e49aebc5';
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -183,12 +183,6 @@ input:focus,textarea:focus{border-color:var(--accent)}
 }
 .toast-item.show{opacity:1}
 
-/* ── Readonly banner ── */
-#readonly-banner{
-  display:none;background:rgba(124,131,247,.08);border-bottom:1px solid rgba(124,131,247,.18);
-  padding:5px 16px;font-size:12px;color:var(--muted);text-align:center;flex-shrink:0;
-}
-#readonly-banner.show{display:block}
 
 /* ════════════════════════════════════════
    Password modal
@@ -578,7 +572,6 @@ input:focus,textarea:focus{border-color:var(--accent)}
         <!-- Nav items injected by router -->
       </nav>
       <div id="sidebar-footer">
-        只读模式，点击右上角解锁编辑
       </div>
     </div>
 
@@ -587,7 +580,6 @@ input:focus,textarea:focus{border-color:var(--accent)}
 
     <!-- Main area -->
     <div id="main-content">
-      <div id="readonly-banner" class="show">👁 只读模式 — 点击右上角「🔒 编辑」输入密码</div>
       <div id="page-root" style="flex:1;overflow:hidden;display:flex;flex-direction:column"></div>
     </div>
   </div>
@@ -735,7 +727,7 @@ onAuthChange(editor => {
     btn.textContent = '🔒 编辑';
     btn.classList.remove('unlocked');
     banner.classList.add('show');
-    footer.textContent = '只读模式，点击右上角解锁编辑';
+    footer.textContent = '';
   }
 });
 
@@ -752,9 +744,17 @@ window.closePwModal = function() {
   document.getElementById('pw-error').style.display = 'none';
   document.getElementById('pw-input').value = '';
 };
-window.submitPw = function() {
+window.submitPw = async function() {
   const pw = document.getElementById('pw-input').value;
-  if (tryUnlock(pw)) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(pw);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashHex = Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+  if (hashHex === window.EDIT_PASSWORD_HASH) {
+    window.EDIT_PASSWORD = pw; // 临时供auth.js校验
+    tryUnlock(pw);
+    delete window.EDIT_PASSWORD; // 校验后立即清除
     window.closePwModal();
     showToast('✅ 已解锁编辑模式');
   } else {
