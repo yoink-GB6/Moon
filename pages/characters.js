@@ -158,24 +158,24 @@ function buildHTML() {
 
 <style>
 /* ── 整体布局 ── */
-.intro-body{height:100%;display:flex;overflow:hidden}
+.intro-body{height:100%;width:100%;display:flex;overflow:hidden}
 .intro-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .intro-tabs{display:flex;gap:0;padding:0;border-bottom:2px solid var(--border);flex-shrink:0}
 .intro-tab{display:flex;align-items:center;gap:8px;padding:10px 20px;border:none;background:transparent;color:var(--muted);cursor:pointer;position:relative;transition:all 0.2s}
 .intro-tab:hover{color:var(--text);background:rgba(124,131,247,0.05)}
 .intro-tab.active{color:var(--accent)}
 .intro-tab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--accent)}
-.intro-content{flex:1;overflow-y:auto;padding:20px}
-.intro-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.intro-content{flex:1;overflow-y:auto;padding:24px 32px}
+.intro-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;max-width:1100px;margin-left:auto;margin-right:auto}
 /* ── 人物卡片 ── */
-.intro-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.intro-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;max-width:1100px;margin:0 auto}
 .intro-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all 0.2s}
 .intro-card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.08);border-color:var(--accent)}
 .intro-avatar{width:60px;height:60px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:600;overflow:hidden;flex-shrink:0}
 .intro-avatar img{width:100%;height:100%;object-fit:cover}
 /* ── 地理布局 ── */
 .geo-layout{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;flex:1}
-.geo-main{flex:1;overflow-y:auto;padding:24px;scrollbar-width:thin;scrollbar-color:rgba(124,131,247,0.2) transparent}.geo-main::-webkit-scrollbar{width:4px}.geo-main::-webkit-scrollbar-track{background:transparent}.geo-main::-webkit-scrollbar-thumb{background:rgba(124,131,247,0.2);border-radius:2px}
+.geo-main{flex:1;overflow-y:auto;padding:24px 32px;scrollbar-width:thin;scrollbar-color:rgba(124,131,247,0.2) transparent}.geo-main::-webkit-scrollbar{width:4px}.geo-main::-webkit-scrollbar-track{background:transparent}.geo-main::-webkit-scrollbar-thumb{background:rgba(124,131,247,0.2);border-radius:2px}
 /* ── 右侧面板 ── */
 .tl-panel{width:260px;flex-shrink:0;background:var(--bg);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width 0.28s ease}
 .tl-panel.collapsed{width:0}
@@ -248,7 +248,7 @@ function buildHTML() {
 .gt-empty-lm{font-size:11px;color:var(--muted);padding:3px 8px 3px 40px;font-style:italic}
 .gt-group-label{font-size:11px;color:var(--muted);padding:8px 8px 2px;letter-spacing:0.05em}
 /* ── 地理详情 ── */
-.geo-detail h2{margin:0 0 24px 0;display:flex;justify-content:space-between;align-items:center}
+.geo-detail{max-width:800px;margin:0 auto}.geo-detail h2{margin:0 0 24px 0;display:flex;justify-content:space-between;align-items:center}
 .geo-detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 .geo-detail-header h2{margin:0}
 .geo-detail-section{margin-bottom:24px}
