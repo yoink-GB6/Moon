@@ -191,9 +191,9 @@ function buildHTML() {
 .panel-search-clear{position:absolute;right:7px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;line-height:1;display:none;transition:color 0.15s}
 .panel-search-clear:hover{color:var(--text)}
 /* 面板展开按钮 */
-.panel-expand-trigger{display:none;flex-shrink:0;align-self:center;width:32px;height:32px;border-radius:50%;background:rgba(20,21,40,0.85);border:1.5px solid rgba(124,131,247,0.5);color:var(--accent);font-size:12px;cursor:pointer;margin-left:6px;z-index:10;align-items:center;justify-content:center}
-.panel-expand-trigger.visible{display:flex}
-.panel-expand-trigger:hover{background:rgba(124,131,247,0.18);border-color:var(--accent)}
+.panel-expand-trigger{display:none;position:fixed;right:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:var(--panel);border:1px solid var(--accent);color:var(--accent);font-size:16px;cursor:pointer;z-index:200;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.5);transition:all 0.2s;opacity:0;pointer-events:none}
+.panel-expand-trigger.visible{display:flex;opacity:1;pointer-events:auto}
+.panel-expand-trigger:hover{background:var(--accent);color:#fff;transform:translateY(-50%) scale(1.1)}
 /* ── 人物列表 ── */
 .tl-clist{flex:1;overflow-y:auto;padding:6px}
 .tl-ci{display:flex;align-items:center;gap:10px;padding:9px 10px;margin:2px 0;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all 0.15s}
