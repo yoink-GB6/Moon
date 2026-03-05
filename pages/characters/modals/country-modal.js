@@ -101,7 +101,7 @@ function _rowHTML(sec, isChild) {
     '<div class="cm-row-expanded" style="display:none">' +
       '<div class="cm-row-expanded-hdr">' +
         '<input class="cm-row-title" type="text" value="' + escHtml(sec.title || '') + '" placeholder="小节标题" maxlength="30"/>' +
-        (!isChild ? '<button class="cm-row-add-child">＋ 子小节</button>' : '') +
+        (!isChild ? '<button class="cm-row-collapse cm-row-add-child">＋ 子小节</button>' : '') +
         '<button class="cm-row-collapse">▲ 收起</button>' +
       '</div>' +
       '<textarea class="cm-row-body" rows="4" placeholder="' + escHtml(ph) + '">' + escHtml(content) + '</textarea>' +
