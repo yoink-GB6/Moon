@@ -319,8 +319,8 @@ function buildHTML() {
 .cm-row-expanded{display:flex;flex-direction:column;border-top:1px solid var(--border)}
 .cm-row-expanded-hdr{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(124,131,247,0.04);border-bottom:1px solid var(--border)}
 .cm-row-title{flex:1;border:none;background:transparent;color:var(--text);font-size:13px;font-weight:500;outline:none;padding:0}
-.cm-row-collapse{flex-shrink:0;padding:3px 8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:11px;border-radius:5px;transition:all 0.15s;white-space:nowrap}
-.cm-row-collapse:hover{border-color:var(--accent);color:var(--accent)}
+.cm-row-collapse,.cm-row-add-child{flex-shrink:0;padding:3px 8px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:11px;border-radius:4px;transition:all 0.15s;white-space:nowrap}
+.cm-row-collapse:hover,.cm-row-add-child:hover{color:var(--accent);background:rgba(124,131,247,0.08)}
 .cm-row-expanded textarea{width:100%;box-sizing:border-box;padding:10px 12px;border:none;background:transparent;color:var(--text);font-size:13px;line-height:1.6;resize:vertical;min-height:80px;outline:none;font-family:inherit}
 /* 拖拽中 */
 .cm-row-dragging{opacity:0.4;border:2px dashed var(--accent)}
