@@ -288,7 +288,7 @@ function buildHTML() {
 .geo-section-card.open .geo-section-arrow{transform:rotate(0deg)}
 .geo-section-body{display:none;padding:12px 16px;border-top:1px solid var(--border)}
 .geo-section-card.open .geo-section-body{display:block}
-.geo-section-content{font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text)}
+.geo-section-content{font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text)}.geo-section-children{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,131,247,0.1)}.geo-section-child{border:1px solid rgba(124,131,247,0.18);border-left:3px solid rgba(124,131,247,0.45);border-radius:7px;overflow:hidden;background:rgba(124,131,247,0.02);transition:border-color 0.15s}.geo-section-child:hover{border-color:rgba(124,131,247,0.4);border-left-color:var(--accent)}.geo-section-child-toggle{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;user-select:none;transition:background 0.15s}.geo-section-child-toggle:hover{background:rgba(124,131,247,0.06)}.geo-section-child.open .geo-section-child-toggle{background:rgba(124,131,247,0.05)}.geo-section-child-title{font-size:12px;font-weight:600;color:rgba(200,202,255,0.85)}.geo-section-child-body{display:none;padding:8px 12px 10px;border-top:1px solid rgba(124,131,247,0.1)}.geo-section-child.open .geo-section-child-body{display:block}.geo-section-child .geo-section-content{font-size:12.5px;color:rgba(232,234,237,0.85)}
 /* ── 国家编辑模态框 ── */
 .cm-sec-hdr{display:flex;align-items:baseline;gap:10px;margin:16px 0 6px}
 .cm-sec-hdr span:first-child{font-size:13px;font-weight:600}
