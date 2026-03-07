@@ -33,29 +33,39 @@ function _isJSON(str) {
   try { return Array.isArray(JSON.parse(str)); } catch (_) { return false; }
 }
 
+// 递归渲染子节点（depth 1/2/3），和顶级 card 同款折叠样式
+function _childHTML(node, depth) {
+  const indent = depth > 1 ? 'margin-left:' + ((depth-1)*12) + 'px;' : '';
+  const childrenHTML = (node.children && node.children.length && depth < 3)
+    ? '<div style="margin-top:6px">' + node.children.map(function(gc) { return _childHTML(gc, depth+1); }).join('') + '</div>'
+    : '';
+  return '<div class="geo-section-card geo-child-card" style="' + indent + 'margin-bottom:6px">' +
+    '<div class="geo-section-toggle">' +
+      '<span class="geo-section-title" style="font-size:' + (14 - depth) + 'px">' + escHtml(node.title) + '</span>' +
+      '<span class="geo-section-arrow">▼</span>' +
+    '</div>' +
+    '<div class="geo-section-body">' +
+      (node.content ? '<div class="geo-section-content">' + escHtml(node.content) + '</div>' : '') +
+      childrenHTML +
+    '</div>' +
+  '</div>';
+}
+
 function _sectionsHTML(sections) {
   if (!sections.length) return '';
   return sections.map(function(s) {
     const childrenHTML = (s.children && s.children.length)
       ? '<div class="geo-section-children">' +
-          s.children.map(function(c) {
-            return '<div class="geo-section-child">' +
-              '<div class="geo-section-child-toggle">' +
-                '<span class="geo-section-child-title">' + escHtml(c.title) + '</span>' +
-                '<span class="geo-section-arrow" style="font-size:9px">\u25bc</span>' +
-              '</div>' +
-              '<div class="geo-section-child-body"><div class="geo-section-content">' + escHtml(c.content || '') + '</div></div>' +
-            '</div>';
-          }).join('') +
+          s.children.map(function(c) { return _childHTML(c, 1); }).join('') +
         '</div>'
       : '';
     return '<div class="geo-section-card">' +
       '<div class="geo-section-toggle">' +
         '<span class="geo-section-title">' + escHtml(s.title) + '</span>' +
-        '<span class="geo-section-arrow">\u25bc</span>' +
+        '<span class="geo-section-arrow">▼</span>' +
       '</div>' +
       '<div class="geo-section-body">' +
-        '<div class="geo-section-content">' + escHtml(s.content || '') + '</div>' +
+        (s.content ? '<div class="geo-section-content">' + escHtml(s.content) + '</div>' : '') +
         childrenHTML +
       '</div>' +
     '</div>';
@@ -64,12 +74,9 @@ function _sectionsHTML(sections) {
 
 function _bindSectionToggles(detail) {
   detail.querySelectorAll('.geo-section-toggle').forEach(function(t) {
-    t.addEventListener('click', function() { t.closest('.geo-section-card').classList.toggle('open'); });
-  });
-  detail.querySelectorAll('.geo-c-toggle').forEach(function(t) {
     t.addEventListener('click', function(e) {
       e.stopPropagation();
-      t.closest('.geo-c-node').classList.toggle('open');
+      t.closest('.geo-section-card').classList.toggle('open');
     });
   });
 }
