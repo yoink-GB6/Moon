@@ -78,21 +78,19 @@ function _sectionsHTML(sections) {
 }
 
 function _bindSectionToggles(detail) {
-  // 先把所有 body 强制隐藏（包括子 card）
+  // toggle 和 body 是兄弟节点：div.card > div.toggle + div.body
+  // 先全部隐藏
   detail.querySelectorAll('.geo-section-body').forEach(function(b) {
     b.style.display = 'none';
   });
-  detail.querySelectorAll('.geo-section-arrow').forEach(function(a) {
-    a.style.transform = 'rotate(-90deg)';
-  });
 
   detail.querySelectorAll('.geo-section-toggle').forEach(function(t) {
+    // body 紧跟在 toggle 后面
+    const body  = t.nextElementSibling;
+    const arrow = t.querySelector('.geo-section-arrow');
+    if (!body || !body.classList.contains('geo-section-body')) return;
     t.addEventListener('click', function(e) {
       e.stopPropagation();
-      const card = t.parentElement; // toggle 的直接父就是 card
-      const body = card.querySelector(':scope > .geo-section-body');
-      const arrow = t.querySelector('.geo-section-arrow');
-      if (!body) return;
       const isOpen = body.style.display !== 'none';
       body.style.display = isOpen ? 'none' : 'block';
       if (arrow) arrow.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
