@@ -94,16 +94,37 @@ export function openCharModal(char) {
   container.querySelector('#char-age').value  = (char && char.base_age != null) ? char.base_age : '';
   container.querySelector('#char-desc').value = char ? char.description || '' : '';
 
-  // 初始化城市自定义下拉
-  const cityOptions = [{ value: '', label: '无' }].concat(
-    State.allCities.map(function(c) {
-      const country = State.allCountries.find(function(co) { return co.id === c.country_id; });
-      return { value: String(c.id), label: country ? country.name + ' - ' + c.name : c.name };
-    })
+  // 推算当前人物所属国家
+  const initCity    = char && char.city_id ? State.allCities.find(function(c) { return c.id === char.city_id; }) : null;
+  const initCountry = initCity ? initCity.country_id : (char && char.country_id ? char.country_id : null);
+
+  // 国家下拉
+  const countryOptions = [{ value: '', label: '无' }].concat(
+    State.allCountries.map(function(co) { return { value: String(co.id), label: co.name }; })
   );
-  const cityWrap = container.querySelector('#char-city-select');
-  if (cityWrap._cleanupTlSelect) cityWrap._cleanupTlSelect();
-  initTlSelect(cityWrap, cityOptions, char && char.city_id ? String(char.city_id) : '', null);
+  const countryWrap = container.querySelector('#char-country-select');
+  if (countryWrap._cleanupTlSelect) countryWrap._cleanupTlSelect();
+
+  // 城市下拉（根据国家过滤）
+  function refreshCitySelect(countryId) {
+    const filtered = countryId
+      ? State.allCities.filter(function(c) { return String(c.country_id) === String(countryId); })
+      : State.allCities;
+    const cityOptions = [{ value: '', label: '无' }].concat(
+      filtered.map(function(c) { return { value: String(c.id), label: c.name }; })
+    );
+    const cityWrap = container.querySelector('#char-city-select');
+    if (cityWrap._cleanupTlSelect) cityWrap._cleanupTlSelect();
+    // 如果当前选中城市不在新列表里就清空
+    const curCityId = container.querySelector('#char-city').value;
+    const keep = cityOptions.find(function(o) { return o.value === curCityId; });
+    initTlSelect(cityWrap, cityOptions, keep ? curCityId : '', null);
+  }
+
+  initTlSelect(countryWrap, countryOptions, initCountry ? String(initCountry) : '', function(val) {
+    refreshCitySelect(val);
+  });
+  refreshCitySelect(initCountry ? String(initCountry) : '');
 
   updateAvatarPreview(char ? char.avatar_url : null, container, char ? char.name : '');
   container.querySelector('#char-delete-btn').style.display = char ? 'block' : 'none';

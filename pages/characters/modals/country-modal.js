@@ -20,67 +20,108 @@ const PRESETS = [
   { title: '与他国关系', ph: '外交关系、盟友、敌对势力...' },
 ];
 
-// ── Markdown 解析：sections JSON → markdown 文本 ─────────────
-// 格式：顶级内容直接写，# 子小节，## 子子小节
-function sectionsToMarkdown(sections) {
-  if (!sections || !sections.length) return '';
-  return sections.map(function(sec) {
-    let out = '=== ' + (sec.title || '') + ' ===\n';
-    if (sec.content) out += sec.content + '\n';
-    if (sec.children && sec.children.length) {
-      sec.children.forEach(function(child) {
-        out += '\n# ' + (child.title || '') + '\n';
-        if (child.content) out += child.content + '\n';
-        if (child.children && child.children.length) {
-          child.children.forEach(function(gc) {
-            out += '\n## ' + (gc.title || '') + '\n';
-            if (gc.content) out += gc.content + '\n';
-          });
-        }
-      });
-    }
-    return out;
-  }).join('\n---\n\n');
-}
+// ── markdown 解析 ─────────────────────────────────────────────
+// textarea 内容 → children 数组（支持 # ## ###）
+// 无 # 开头的内容归入 section.content（顶级正文）
+export function mdToChildren(text) {
+  if (!text || !text.trim()) return { content: '', children: [] };
+  const lines = text.split('\n');
+  let topContent = '';
+  const children = [];
+  let cur = null;       // 当前 # 节点
+  let cur2 = null;      // 当前 ## 节点
+  let cur3 = null;      // 当前 ### 节点
 
-// ── Markdown → sections JSON ──────────────────────────────────
-function markdownToSections(text) {
-  const sections = [];
-  // 用 === 标题 === 分割顶级小节
-  const secBlocks = text.split(/^===[ \t]*(.+?)[ \t]*===$/m);
-  // secBlocks: [前缀, title1, body1, title2, body2, ...]
-  for (let i = 1; i < secBlocks.length; i += 2) {
-    const title = secBlocks[i].trim();
-    const body  = (secBlocks[i + 1] || '').trimStart();
-    if (!title) continue;
-    const sec = { title: title, content: '', children: [] };
-    // 在 body 里用 # 分割子小节
-    const childBlocks = body.split(/^#[ \t]+(.+)$/m);
-    // childBlocks[0] 是顶级内容
-    sec.content = childBlocks[0].trimEnd();
-    for (let j = 1; j < childBlocks.length; j += 2) {
-      const childTitle = childBlocks[j].trim();
-      const childBody  = (childBlocks[j + 1] || '').trimStart();
-      if (!childTitle) continue;
-      const child = { title: childTitle, content: '', children: [] };
-      // ## 分割子子小节
-      const gcBlocks = childBody.split(/^##[ \t]+(.+)$/m);
-      child.content = gcBlocks[0].trimEnd();
-      for (let k = 1; k < gcBlocks.length; k += 2) {
-        const gcTitle = gcBlocks[k].trim();
-        const gcBody  = (gcBlocks[k + 1] || '').trimEnd();
-        if (gcTitle) child.children.push({ title: gcTitle, content: gcBody });
-      }
-      if (!child.children.length) delete child.children;
-      sec.children.push(child);
+  function flushCur3() {
+    if (cur3) {
+      if (cur2) cur2.children.push(cur3);
+      else if (cur) cur.children.push(cur3);
+      cur3 = null;
     }
-    if (!sec.children.length) delete sec.children;
-    sections.push(sec);
   }
-  return sections;
+  function flushCur2() {
+    flushCur3();
+    if (cur2) {
+      if (cur) cur.children.push(cur2);
+      cur2 = null;
+    }
+  }
+  function flushCur() {
+    flushCur2();
+    if (cur) { children.push(cur); cur = null; }
+  }
+
+  for (const line of lines) {
+    const h3 = line.match(/^###[ \t]+(.+)/);
+    const h2 = !h3 && line.match(/^##[ \t]+(.+)/);
+    const h1 = !h3 && !h2 && line.match(/^#[ \t]+(.+)/);
+
+    if (h1) {
+      flushCur();
+      cur = { title: h1[1].trim(), content: '', children: [] };
+    } else if (h2) {
+      flushCur2();
+      cur2 = { title: h2[1].trim(), content: '', children: [] };
+    } else if (h3) {
+      flushCur3();
+      cur3 = { title: h3[1].trim(), content: '' };
+    } else {
+      const target = cur3 || cur2 || cur;
+      if (target) {
+        target.content += (target.content ? '\n' : '') + line;
+      } else {
+        topContent += (topContent ? '\n' : '') + line;
+      }
+    }
+  }
+  flushCur();
+
+  // 清理尾部空行
+  function trimContent(obj) {
+    if (obj.content) obj.content = obj.content.trimEnd();
+    if (obj.children) obj.children.forEach(trimContent);
+  }
+  children.forEach(trimContent);
+  topContent = topContent.trimEnd();
+
+  // 删除空 children 数组
+  function cleanChildren(obj) {
+    if (obj.children) {
+      obj.children.forEach(cleanChildren);
+      if (!obj.children.length) delete obj.children;
+    }
+  }
+  children.forEach(cleanChildren);
+
+  return { content: topContent, children: children.length ? children : undefined };
 }
 
-// ── setupCountryModal ─────────────────────────────────────────
+// section → textarea 文本（只含子层内容，不含顶级标题）
+export function childrenToMd(sec) {
+  let out = sec.content || '';
+  if (sec.children && sec.children.length) {
+    sec.children.forEach(function(c) {
+      if (out) out += '\n\n';
+      out += '# ' + c.title;
+      if (c.content) out += '\n' + c.content;
+      if (c.children && c.children.length) {
+        c.children.forEach(function(gc) {
+          out += '\n\n## ' + gc.title;
+          if (gc.content) out += '\n' + gc.content;
+          if (gc.children && gc.children.length) {
+            gc.children.forEach(function(ggc) {
+              out += '\n\n### ' + ggc.title;
+              if (ggc.content) out += '\n' + ggc.content;
+            });
+          }
+        });
+      }
+    });
+  }
+  return out;
+}
+
+// ── setup / open ──────────────────────────────────────────────
 
 export function setupCountryModal() {
   const modal = State.pageContainer.querySelector('#country-modal');
@@ -103,34 +144,34 @@ export function openCountryModal(country) {
   setTimeout(function() { const n = modal.querySelector('#cm-name'); if (n) n.focus(); }, 100);
 }
 
-// ── 构建 HTML ─────────────────────────────────────────────────
+// ── HTML ──────────────────────────────────────────────────────
 
 function _buildHTML(country, sections) {
   const usedTitles = new Set(sections.map(function(s) { return s.title; }));
   const presetBtns = PRESETS
     .filter(function(p) { return !usedTitles.has(p.title); })
     .map(function(p) {
-      return '<button class="cm-tag" data-title="' + escHtml(p.title) + '">' + escHtml(p.title) + '</button>';
+      return '<button class="cm-tag" data-title="' + escHtml(p.title) + '" data-ph="' + escHtml(p.ph) + '">' + escHtml(p.title) + '</button>';
     }).join('');
   const del     = country ? 'inline-flex' : 'none';
   const heading = country ? '编辑国家 / 势力' : '新建国家 / 势力';
   const nameV   = escHtml(country ? country.name || '' : '');
   const presets = presetBtns || '<span class="cm-tags-empty">所有预设已添加</span>';
-  // 每个小节渲染为一个独立的 markdown 编辑块
-  const secCards = sections.map(function(sec, idx) { return _secCardHTML(sec, idx); }).join('');
+  const secRows = sections.map(function(s) { return _rowHTML(s); }).join('');
 
   return '<h2>' + heading + '</h2>' +
     '<label>名称</label>' +
     '<input id="cm-name" type="text" value="' + nameV + '"/>' +
-    '<div class="cm-sec-hdr"><span>内容小节</span>' +
-      '<span class="cm-hint"># 子小节 &nbsp;## 子子小节</span>' +
+    '<div class="cm-sec-hdr">' +
+      '<span>内容小节</span>' +
+      '<span class="cm-hint">拖 ⠿ 排序 · 展开后用 # ## ### 写子小节</span>' +
     '</div>' +
     '<div class="cm-tags" id="cm-tags">' + presets + '</div>' +
     '<div class="cm-custom-row">' +
       '<input type="text" id="cm-custom" placeholder="自定义小节标题..." maxlength="30" autocomplete="off"/>' +
       '<button class="btn bn" id="cm-custom-add">＋ 添加</button>' +
     '</div>' +
-    '<div id="cm-list" class="cm-list cm-md-list">' + secCards + '</div>' +
+    '<div id="cm-list" class="cm-list">' + secRows + '</div>' +
     '<div class="modal-actions">' +
       '<button class="btn br modal-btn-delete" id="cm-delete" style="display:' + del + '">删除</button>' +
       '<div class="modal-actions-right">' +
@@ -140,41 +181,40 @@ function _buildHTML(country, sections) {
     '</div>';
 }
 
-// 单个小节卡片：标题行 + markdown textarea（默认折叠）
-function _secCardHTML(sec, idx) {
-  const mdContent = _secToMd(sec);
-  const preview = mdContent.trim().slice(0, 50) || '暂无内容';
-  return '<div class="cm-md-card" data-idx="' + idx + '">' +
-    '<div class="cm-md-hdr">' +
-      '<span class="cm-row-grip">⠿</span>' +
-      '<span class="cm-md-title">' + escHtml(sec.title || '未命名') + '</span>' +
-      '<span class="cm-md-preview">' + escHtml(preview.replace(/\n/g,' ')) + '</span>' +
-      '<button class="cm-md-edit">✏️</button>' +
-      '<button class="cm-md-del">✕</button>' +
+function _rowHTML(sec) {
+  const mdText  = childrenToMd(sec);
+  const ph      = PRESETS.find(function(p) { return p.title === sec.title; })?.ph || '在此填写内容...
+
+# 子小节标题
+内容
+
+## 更深一层';
+  const preview = mdText.trim().replace(/\n/g, ' ').slice(0, 55) || '暂无内容';
+  const previewHTML = mdText.trim()
+    ? escHtml(preview) + (mdText.trim().length > 55 ? '…' : '')
+    : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
+
+  return '<div class="cm-row" draggable="false">' +
+    // 折叠态
+    '<div class="cm-row-collapsed">' +
+      '<span class="cm-row-grip" title="拖拽排序">⠿</span>' +
+      '<div class="cm-row-summary">' +
+        '<span class="cm-row-label">' + escHtml(sec.title || '未命名') + '</span>' +
+        '<span class="cm-row-preview">' + previewHTML + '</span>' +
+      '</div>' +
+      '<button class="cm-row-edit" title="编辑">✏️</button>' +
+      '<button class="cm-row-del" title="删除">✕</button>' +
     '</div>' +
-    '<div class="cm-md-body" style="display:none">' +
-      '<div class="cm-md-guide">用 <code>#</code> 开头写子小节标题，<code>##</code> 写子子小节标题</div>' +
-      '<textarea class="cm-md-ta" rows="8" placeholder="在此输入内容...\n\n# 子小节标题\n子小节内容\n\n## 子子小节标题\n内容">' + escHtml(mdContent) + '</textarea>' +
+    // 展开态：textarea + 提示
+    '<div class="cm-row-expanded" style="display:none">' +
+      '<div class="cm-row-expanded-hdr">' +
+        '<input class="cm-row-title" type="text" value="' + escHtml(sec.title || '') + '" placeholder="小节标题" maxlength="30"/>' +
+        '<button class="cm-row-collapse">▲ 收起</button>' +
+      '</div>' +
+      '<div class="cm-md-guide"># 子小节 &nbsp; ## 子子小节 &nbsp; ### 三级</div>' +
+      '<textarea class="cm-row-body" rows="6" placeholder="' + escHtml(ph) + '">' + escHtml(mdText) + '</textarea>' +
     '</div>' +
   '</div>';
-}
-
-// section → markdown 文本（不含顶级 === 标题行，只含内容和子小节）
-function _secToMd(sec) {
-  let out = sec.content || '';
-  if (sec.children && sec.children.length) {
-    sec.children.forEach(function(child) {
-      out += (out ? '\n\n' : '') + '# ' + (child.title || '');
-      if (child.content) out += '\n' + child.content;
-      if (child.children && child.children.length) {
-        child.children.forEach(function(gc) {
-          out += '\n\n## ' + (gc.title || '');
-          if (gc.content) out += '\n' + gc.content;
-        });
-      }
-    });
-  }
-  return out;
 }
 
 // ── 事件绑定 ─────────────────────────────────────────────────
@@ -184,71 +224,66 @@ function _bindEvents(modal) {
   modal.querySelector('#cm-delete')?.addEventListener('click', _deleteCountry);
   modal.querySelector('#cm-save')?.addEventListener('click', _saveCountry);
 
-  // 预设标签
   modal.querySelector('#cm-tags')?.addEventListener('click', function(e) {
     const btn = e.target.closest('.cm-tag');
     if (!btn) return;
-    _appendCard(modal, btn.dataset.title, '');
+    _appendRow(modal.querySelector('#cm-list'), btn.dataset.title, '', btn.dataset.ph);
     btn.remove();
     const tags = modal.querySelector('#cm-tags');
     if (!tags.querySelector('.cm-tag')) tags.innerHTML = '<span class="cm-tags-empty">所有预设已添加</span>';
   });
 
-  // 自定义添加
   const ci = modal.querySelector('#cm-custom');
   function doAdd() {
     const t = ci.value.trim();
     if (!t) { ci.focus(); return; }
-    _appendCard(modal, t, '');
+    _appendRow(modal.querySelector('#cm-list'), t, '', '');
     ci.value = ''; ci.focus();
   }
   modal.querySelector('#cm-custom-add')?.addEventListener('click', doAdd);
   ci?.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
 
-  // 列表事件委托
   const list = modal.querySelector('#cm-list');
   list?.addEventListener('click', function(e) {
-    const card = e.target.closest('.cm-md-card');
-    if (!card) return;
-    if (e.target.closest('.cm-md-edit')) {
-      _toggleCard(card);
-      return;
-    }
-    if (e.target.closest('.cm-md-del')) {
-      const title = card.querySelector('.cm-md-title')?.textContent.trim() || '';
-      card.remove();
-      _restorePresetTag(modal, title);
-      return;
-    }
-    // 点标题行也展开
-    if (e.target.closest('.cm-md-hdr') && !e.target.closest('button')) {
-      _toggleCard(card);
-    }
-  });
-
-  // textarea 更新标题预览
-  list?.addEventListener('input', function(e) {
-    if (!e.target.classList.contains('cm-md-ta')) return;
-    const card = e.target.closest('.cm-md-card');
-    const preview = card.querySelector('.cm-md-preview');
-    if (preview) {
-      const txt = e.target.value.replace(/\n/g, ' ').trim().slice(0, 50);
-      preview.textContent = txt || '暂无内容';
+    const row = e.target.closest('.cm-row');
+    if (!row) return;
+    if (e.target.closest('.cm-row-edit'))     { _expandRow(row); return; }
+    if (e.target.closest('.cm-row-collapse')) { _collapseRow(row); return; }
+    if (e.target.closest('.cm-row-del')) {
+      const titleEl = row.querySelector('.cm-row-title');
+      const labelEl = row.querySelector('.cm-row-label');
+      const t = (titleEl ? titleEl.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '');
+      row.remove();
+      _restorePresetTag(modal, t);
     }
   });
 
   _bindDragSort(list);
 }
 
-function _toggleCard(card) {
-  const body = card.querySelector('.cm-md-body');
-  const isOpen = body.style.display !== 'none';
-  body.style.display = isOpen ? 'none' : 'block';
-  card.classList.toggle('cm-md-open', !isOpen);
-  if (!isOpen) {
-    const ta = card.querySelector('.cm-md-ta');
-    if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+function _expandRow(row) {
+  row.querySelector('.cm-row-collapsed').style.display = 'none';
+  row.querySelector('.cm-row-expanded').style.display  = 'flex';
+  const ta = row.querySelector('.cm-row-body');
+  if (ta) ta.focus();
+}
+
+function _collapseRow(row) {
+  const titleInput = row.querySelector('.cm-row-title');
+  const bodyInput  = row.querySelector('.cm-row-body');
+  const title   = titleInput ? titleInput.value.trim() : '';
+  const content = bodyInput  ? bodyInput.value.trim()  : '';
+  const label   = row.querySelector('.cm-row-label');
+  const preview = row.querySelector('.cm-row-preview');
+  if (label) label.textContent = title || '未命名';
+  if (preview) {
+    const txt = content.replace(/\n/g, ' ').slice(0, 55);
+    preview.innerHTML = content
+      ? escHtml(txt) + (content.length > 55 ? '…' : '')
+      : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
   }
+  row.querySelector('.cm-row-collapsed').style.display = '';
+  row.querySelector('.cm-row-expanded').style.display  = 'none';
 }
 
 function _restorePresetTag(modal, title) {
@@ -262,21 +297,21 @@ function _restorePresetTag(modal, title) {
     const tag = document.createElement('button');
     tag.className = 'cm-tag';
     tag.dataset.title = preset.title;
-    tag.textContent = preset.title;
+    tag.dataset.ph    = preset.ph;
+    tag.textContent   = preset.title;
     tags.appendChild(tag);
   }
 }
 
-function _appendCard(modal, title, mdContent) {
-  const list = modal.querySelector('#cm-list');
+function _appendRow(list, title, content, ph) {
   if (!list) return;
-  const idx = list.querySelectorAll('.cm-md-card').length;
   const tmp = document.createElement('div');
-  tmp.innerHTML = _secCardHTML({ title: title, content: mdContent }, idx);
-  const card = tmp.firstElementChild;
-  list.appendChild(card);
+  tmp.innerHTML = _rowHTML({ title: title, content: content || '' });
+  const row = tmp.firstElementChild;
+  if (ph) { const ta = row.querySelector('.cm-row-body'); if (ta) ta.placeholder = ph; }
+  list.appendChild(row);
   _bindDragSort(list);
-  _toggleCard(card); // 新建默认展开
+  _expandRow(row);
 }
 
 // ── 拖拽排序 ─────────────────────────────────────────────────
@@ -284,67 +319,50 @@ function _appendCard(modal, title, mdContent) {
 function _bindDragSort(list) {
   if (!list) return;
   let dragging = null;
-  Array.from(list.children).forEach(function(card) {
-    if (!card.classList.contains('cm-md-card')) return;
-    const grip = card.querySelector('.cm-row-grip');
+  // 重新绑定所有行（先移除旧监听器用替换节点的方式不可行，直接用标记位跳过重复绑定）
+  Array.from(list.children).forEach(function(row) {
+    if (!row.classList.contains('cm-row') || row._dragBound) return;
+    row._dragBound = true;
+    const grip = row.querySelector('.cm-row-collapsed .cm-row-grip');
     if (!grip) return;
-    grip.addEventListener('mousedown', function() { card.draggable = true; });
-    grip.addEventListener('mouseup',   function() { card.draggable = false; });
-    card.addEventListener('dragstart', function(e) {
-      dragging = card; card.classList.add('cm-row-dragging');
+    grip.addEventListener('mousedown', function() { row.draggable = true; });
+    grip.addEventListener('mouseup',   function() { row.draggable = false; });
+    row.addEventListener('dragstart', function(e) {
+      dragging = row; row.classList.add('cm-row-dragging');
       e.dataTransfer.effectAllowed = 'move'; e.stopPropagation();
     });
-    card.addEventListener('dragend', function() {
-      dragging = null; card.classList.remove('cm-row-dragging'); card.draggable = false;
-      Array.from(list.children).forEach(function(c) { c.classList.remove('cm-row-drag-over'); });
+    row.addEventListener('dragend', function() {
+      dragging = null; row.classList.remove('cm-row-dragging'); row.draggable = false;
+      list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
     });
-    card.addEventListener('dragover', function(e) {
+    row.addEventListener('dragover', function(e) {
       e.preventDefault(); e.stopPropagation();
-      if (!dragging || dragging === card) return;
-      Array.from(list.children).forEach(function(c) { c.classList.remove('cm-row-drag-over'); });
-      card.classList.add('cm-row-drag-over');
-      const rect = card.getBoundingClientRect();
-      list.insertBefore(dragging, e.clientY < rect.top + rect.height / 2 ? card : card.nextSibling);
+      if (!dragging || dragging === row) return;
+      list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
+      row.classList.add('cm-row-drag-over');
+      const rect = row.getBoundingClientRect();
+      list.insertBefore(dragging, e.clientY < rect.top + rect.height / 2 ? row : row.nextSibling);
     });
-    card.addEventListener('dragleave', function() { card.classList.remove('cm-row-drag-over'); });
-    card.addEventListener('drop', function(e) { e.preventDefault(); e.stopPropagation(); card.classList.remove('cm-row-drag-over'); });
+    row.addEventListener('dragleave', function() { row.classList.remove('cm-row-drag-over'); });
+    row.addEventListener('drop', function(e) { e.preventDefault(); e.stopPropagation(); row.classList.remove('cm-row-drag-over'); });
   });
 }
 
 // ── 收集数据 ─────────────────────────────────────────────────
 
-// markdown 块 → section 对象
-function _mdBlockToSection(title, mdText) {
-  const sec = { title: title, content: '' };
-  const childBlocks = mdText.split(/^#[ \t]+(.+)$/m);
-  sec.content = childBlocks[0].trimEnd();
-  const children = [];
-  for (let j = 1; j < childBlocks.length; j += 2) {
-    const childTitle = childBlocks[j].trim();
-    const childBody  = childBlocks[j + 1] || '';
-    if (!childTitle) continue;
-    const child = { title: childTitle, content: '' };
-    const gcBlocks = childBody.split(/^##[ \t]+(.+)$/m);
-    child.content = gcBlocks[0].trimEnd();
-    const grandchildren = [];
-    for (let k = 1; k < gcBlocks.length; k += 2) {
-      const gcTitle = gcBlocks[k].trim();
-      const gcBody  = (gcBlocks[k + 1] || '').trimEnd();
-      if (gcTitle) grandchildren.push({ title: gcTitle, content: gcBody });
-    }
-    if (grandchildren.length) child.children = grandchildren;
-    children.push(child);
-  }
-  if (children.length) sec.children = children;
-  return sec;
-}
-
 function _collectSections(modal) {
   const out = [];
-  modal.querySelectorAll('.cm-md-card').forEach(function(card) {
-    const title = card.querySelector('.cm-md-title')?.textContent.trim() || '';
-    const mdText = card.querySelector('.cm-md-ta')?.value || '';
-    if (title) out.push(_mdBlockToSection(title, mdText));
+  modal.querySelectorAll('#cm-list .cm-row').forEach(function(row) {
+    const titleInput = row.querySelector('.cm-row-title');
+    const labelEl    = row.querySelector('.cm-row-label');
+    const bodyInput  = row.querySelector('.cm-row-body');
+    const title  = (titleInput ? titleInput.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '') || '';
+    const mdText = bodyInput ? bodyInput.value : '';
+    if (!title) return;
+    const parsed = mdToChildren(mdText);
+    const sec = { title: title, content: parsed.content };
+    if (parsed.children) sec.children = parsed.children;
+    out.push(sec);
   });
   return out;
 }
