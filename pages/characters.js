@@ -286,8 +286,8 @@ function buildHTML() {
 .geo-section-title{font-size:14px;font-weight:600}
 .geo-section-arrow{font-size:10px;color:var(--muted);transition:transform 0.22s;transform:rotate(-90deg)}
 .geo-section-card.open .geo-section-arrow{transform:rotate(0deg)}
-.geo-section-body{display:none!important;padding:12px 16px;border-top:1px solid var(--border)}
-.geo-section-card.open .geo-section-body{display:block!important}
+.geo-section-body{display:none;padding:12px 16px;border-top:1px solid var(--border)}
+.geo-section-card.open .geo-section-body{display:block}
 .geo-section-content{font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text)}.geo-section-children{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,131,247,0.1)}.geo-child-card .geo-section-title{font-size:13px}.geo-child-card .geo-section-content{font-size:12.5px;color:rgba(232,234,237,0.85)}
 /* ── 国家编辑模态框 ── */
 .cm-sec-hdr{display:flex;align-items:baseline;gap:10px;margin:16px 0 6px}
