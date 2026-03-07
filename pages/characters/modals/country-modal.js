@@ -183,12 +183,7 @@ function _buildHTML(country, sections) {
 
 function _rowHTML(sec) {
   const mdText  = childrenToMd(sec);
-  const ph      = PRESETS.find(function(p) { return p.title === sec.title; })?.ph || '在此填写内容...
-
-# 子小节标题
-内容
-
-## 更深一层';
+  const ph      = PRESETS.find(function(p) { return p.title === sec.title; })?.ph || '在此填写内容...\n\n# 子小节标题\n内容\n\n## 更深一层';
   const preview = mdText.trim().replace(/\n/g, ' ').slice(0, 55) || '暂无内容';
   const previewHTML = mdText.trim()
     ? escHtml(preview) + (mdText.trim().length > 55 ? '…' : '')
