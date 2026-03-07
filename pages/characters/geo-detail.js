@@ -2,7 +2,7 @@
 import { isEditor } from '../../core/auth.js';
 import { escHtml } from '../../core/ui.js';
 import * as State from './state.js';
-import { openCountryModal } from './modals/country-modal.js';
+import { openCountryModal, mdToChildren } from './modals/country-modal.js';
 import { openCityModal } from './modals/city-modal.js';
 import { openLandmarkModal } from './modals/landmark-modal.js';
 import { openCharModal } from './modals/character-modal.js';
@@ -54,9 +54,14 @@ function _childHTML(node, depth) {
 function _sectionsHTML(sections) {
   if (!sections.length) return '';
   return sections.map(function(s) {
-    const childrenHTML = (s.children && s.children.length)
+    // 兼容旧数据：若 content 里有 # 语法，解析成 children
+    const parsed   = mdToChildren(s.content || '');
+    const content  = parsed.content || '';
+    const children = (s.children && s.children.length) ? s.children
+                   : (parsed.children && parsed.children.length) ? parsed.children : [];
+    const childrenHTML = children.length
       ? '<div class="geo-section-children">' +
-          s.children.map(function(c) { return _childHTML(c, 1); }).join('') +
+          children.map(function(c) { return _childHTML(c, 1); }).join('') +
         '</div>'
       : '';
     return '<div class="geo-section-card">' +
@@ -65,7 +70,7 @@ function _sectionsHTML(sections) {
         '<span class="geo-section-arrow">▼</span>' +
       '</div>' +
       '<div class="geo-section-body">' +
-        (s.content ? '<div class="geo-section-content">' + escHtml(s.content) + '</div>' : '') +
+        (content ? '<div class="geo-section-content">' + escHtml(content) + '</div>' : '') +
         childrenHTML +
       '</div>' +
     '</div>';
