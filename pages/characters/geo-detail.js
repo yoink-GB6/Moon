@@ -78,10 +78,24 @@ function _sectionsHTML(sections) {
 }
 
 function _bindSectionToggles(detail) {
+  // 先把所有 body 强制隐藏（包括子 card）
+  detail.querySelectorAll('.geo-section-body').forEach(function(b) {
+    b.style.display = 'none';
+  });
+  detail.querySelectorAll('.geo-section-arrow').forEach(function(a) {
+    a.style.transform = 'rotate(-90deg)';
+  });
+
   detail.querySelectorAll('.geo-section-toggle').forEach(function(t) {
     t.addEventListener('click', function(e) {
       e.stopPropagation();
-      t.closest('.geo-section-card').classList.toggle('open');
+      const card = t.parentElement; // toggle 的直接父就是 card
+      const body = card.querySelector(':scope > .geo-section-body');
+      const arrow = t.querySelector('.geo-section-arrow');
+      if (!body) return;
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
+      if (arrow) arrow.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
     });
   });
 }
