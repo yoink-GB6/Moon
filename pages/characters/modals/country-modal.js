@@ -305,42 +305,54 @@ function _appendRow(list, title, content, ph) {
   const row = tmp.firstElementChild;
   if (ph) { const ta = row.querySelector('.cm-row-body'); if (ta) ta.placeholder = ph; }
   list.appendChild(row);
-  _bindDragSort(list);
   _expandRow(row);
 }
 
 // ── 拖拽排序 ─────────────────────────────────────────────────
 
 function _bindDragSort(list) {
-  if (!list) return;
+  if (!list || list._dragSortBound) return;
+  list._dragSortBound = true;
   let dragging = null;
-  // 重新绑定所有行（先移除旧监听器用替换节点的方式不可行，直接用标记位跳过重复绑定）
-  Array.from(list.children).forEach(function(row) {
-    if (!row.classList.contains('cm-row') || row._dragBound) return;
-    row._dragBound = true;
-    const grip = row.querySelector('.cm-row-collapsed .cm-row-grip');
+
+  // mousedown 在 grip 上 → 开启该行的 draggable
+  list.addEventListener('mousedown', function(e) {
+    const grip = e.target.closest('.cm-row-grip');
     if (!grip) return;
-    grip.addEventListener('mousedown', function() { row.draggable = true; });
-    grip.addEventListener('mouseup',   function() { row.draggable = false; });
-    row.addEventListener('dragstart', function(e) {
-      dragging = row; row.classList.add('cm-row-dragging');
-      e.dataTransfer.effectAllowed = 'move'; e.stopPropagation();
-    });
-    row.addEventListener('dragend', function() {
-      dragging = null; row.classList.remove('cm-row-dragging'); row.draggable = false;
-      list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
-    });
-    row.addEventListener('dragover', function(e) {
-      e.preventDefault(); e.stopPropagation();
-      if (!dragging || dragging === row) return;
-      list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
-      row.classList.add('cm-row-drag-over');
-      const rect = row.getBoundingClientRect();
-      list.insertBefore(dragging, e.clientY < rect.top + rect.height / 2 ? row : row.nextSibling);
-    });
-    row.addEventListener('dragleave', function() { row.classList.remove('cm-row-drag-over'); });
-    row.addEventListener('drop', function(e) { e.preventDefault(); e.stopPropagation(); row.classList.remove('cm-row-drag-over'); });
+    const row = grip.closest('.cm-row');
+    if (row && row.parentElement === list) row.draggable = true;
   });
+  list.addEventListener('mouseup', function() {
+    list.querySelectorAll('.cm-row').forEach(function(r) { r.draggable = false; });
+  });
+
+  list.addEventListener('dragstart', function(e) {
+    const row = e.target.closest('.cm-row');
+    if (!row || row.parentElement !== list) return;
+    dragging = row;
+    row.classList.add('cm-row-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  list.addEventListener('dragend', function() {
+    if (dragging) { dragging.classList.remove('cm-row-dragging'); dragging.draggable = false; }
+    dragging = null;
+    list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
+  });
+  list.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    const row = e.target.closest('.cm-row');
+    if (!row || row.parentElement !== list || !dragging || dragging === row) return;
+    list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
+    row.classList.add('cm-row-drag-over');
+    const rect = row.getBoundingClientRect();
+    list.insertBefore(dragging, e.clientY < rect.top + rect.height / 2 ? row : row.nextSibling);
+  });
+  list.addEventListener('dragleave', function(e) {
+    if (!list.contains(e.relatedTarget)) {
+      list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
+    }
+  });
+  list.addEventListener('drop', function(e) { e.preventDefault(); });
 }
 
 // ── 收集数据 ─────────────────────────────────────────────────
