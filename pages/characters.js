@@ -53,6 +53,7 @@ function buildHTML() {
 
     <div class="intro-content" id="tab-characters">
       <div class="intro-header">
+        <h2 style="margin:0">👥 人物介绍</h2>
         <button class="btn bp" id="chars-add-btn" style="display:none">＋ 新建</button>
       </div>
       <div class="intro-grid" id="chars-grid"></div>
@@ -106,12 +107,12 @@ function buildHTML() {
 </div><!-- /intro-body -->
 
 <!-- 人物模态框 -->
-<div id="char-modal" class="tl-modal-overlay">
+<div id="char-modal" class="tl-modal-overlay modal-center">
   <div class="tl-modal" style="max-width:500px" onmousedown="event.stopPropagation()">
     <h2 id="char-modal-title">编辑人物</h2>
     <label>名字</label><input id="char-name" type="text"/>
     <label>年龄</label><input id="char-age" type="number" min="0" placeholder="0"/>
-    <label>所属城市</label><div class="tl-select" id="char-city-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-city"/>
+    <label>所属国家 / 势力</label><div class="tl-select" id="char-country-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-country"/><label>所属城市</label><div class="tl-select" id="char-city-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-city"/>
     <label>描述</label><textarea id="char-desc" rows="3"></textarea>
     <label>头像</label>
     <div style="display:flex;gap:12px;margin-bottom:16px">
@@ -138,12 +139,12 @@ function buildHTML() {
 </div>
 
 <!-- 国家模态框（内容由 country-modal.js 动态填充）-->
-<div id="country-modal" class="tl-modal-overlay">
+<div id="country-modal" class="tl-modal-overlay modal-center">
   <div class="tl-modal country-modal-inner" style="max-width:560px" onmousedown="event.stopPropagation()"></div>
 </div>
 
 <!-- 城市模态框 -->
-<div id="city-modal" class="tl-modal-overlay">
+<div id="city-modal" class="tl-modal-overlay modal-center">
   <div class="tl-modal city-modal-inner" style="max-width:560px" onmousedown="event.stopPropagation()">
     <!-- 内容由 city-modal.js 动态填充 -->
   </div>
@@ -288,7 +289,7 @@ function buildHTML() {
 .geo-section-card.open .geo-section-arrow{transform:rotate(0deg)}
 .geo-section-body{display:none;padding:12px 16px;border-top:1px solid var(--border)}
 .geo-section-card.open .geo-section-body{display:block}
-.geo-section-content{font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text)}.geo-section-children{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,131,247,0.1)}.geo-section-child{border:1px solid rgba(124,131,247,0.18);border-left:3px solid rgba(124,131,247,0.45);border-radius:7px;overflow:hidden;background:rgba(124,131,247,0.02);transition:border-color 0.15s}.geo-section-child:hover{border-color:rgba(124,131,247,0.4);border-left-color:var(--accent)}.geo-section-child-toggle{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;user-select:none;transition:background 0.15s}.geo-section-child-toggle:hover{background:rgba(124,131,247,0.06)}.geo-section-child.open .geo-section-child-toggle{background:rgba(124,131,247,0.05)}.geo-section-child-title{font-size:12px;font-weight:600;color:rgba(200,202,255,0.85)}.geo-section-child-body{display:none;padding:8px 12px 10px;border-top:1px solid rgba(124,131,247,0.1)}.geo-section-child.open .geo-section-child-body{display:block}.geo-section-child .geo-section-content{font-size:12.5px;color:rgba(232,234,237,0.85)}
+.geo-section-content{font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text)}.geo-section-children{display:flex;flex-direction:column;gap:5px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,131,247,0.1)}.geo-c-children{display:flex;flex-direction:column;gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(124,131,247,0.07)}.geo-c-node{border-radius:6px;overflow:hidden;transition:border-color 0.15s}.geo-c1{border:1px solid rgba(124,131,247,0.2);border-left:3px solid rgba(124,131,247,0.5);background:rgba(124,131,247,0.02)}.geo-c1:hover{border-color:rgba(124,131,247,0.4);border-left-color:var(--accent)}.geo-c2{border:1px solid rgba(124,131,247,0.12);border-left:2px solid rgba(124,131,247,0.3);margin-left:8px;background:transparent}.geo-c2:hover{border-color:rgba(124,131,247,0.28)}.geo-c3{border-left:2px solid rgba(124,131,247,0.18);margin-left:14px;border-top:none;border-right:none;border-bottom:none;border-radius:0}.geo-c-toggle{display:flex;align-items:center;justify-content:space-between;padding:7px 11px;cursor:pointer;user-select:none;transition:background 0.15s}.geo-c-toggle:hover{background:rgba(124,131,247,0.06)}.geo-c-node.open > .geo-c-toggle{background:rgba(124,131,247,0.05)}.geo-c-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.geo-c-title-d1{font-size:12.5px;color:rgba(200,202,255,0.9)}.geo-c-title-d2{font-size:12px;color:rgba(200,202,255,0.75)}.geo-c-title-d3{font-size:11.5px;color:rgba(200,202,255,0.6)}.geo-c-body{display:none;padding:6px 11px 9px;border-top:1px solid rgba(124,131,247,0.08)}.geo-c-node.open > .geo-c-body{display:block}.geo-c-node .geo-section-content{font-size:12.5px;color:rgba(232,234,237,0.85)}
 /* ── 国家编辑模态框 ── */
 .cm-sec-hdr{display:flex;align-items:baseline;gap:10px;margin:16px 0 6px}
 .cm-sec-hdr span:first-child{font-size:13px;font-weight:600}
