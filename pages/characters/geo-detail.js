@@ -66,8 +66,11 @@ function _bindSectionToggles(detail) {
   detail.querySelectorAll('.geo-section-toggle').forEach(function(t) {
     t.addEventListener('click', function() { t.closest('.geo-section-card').classList.toggle('open'); });
   });
-  detail.querySelectorAll('.geo-section-child-toggle').forEach(function(t) {
-    t.addEventListener('click', function() { t.closest('.geo-section-child').classList.toggle('open'); });
+  detail.querySelectorAll('.geo-c-toggle').forEach(function(t) {
+    t.addEventListener('click', function(e) {
+      e.stopPropagation();
+      t.closest('.geo-c-node').classList.toggle('open');
+    });
   });
 }
 
@@ -209,7 +212,7 @@ function _openCharReadonly(char) {
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'char-readonly-modal';
-    overlay.className = 'tl-modal-overlay';
+    overlay.className = 'tl-modal-overlay modal-center';
     container.appendChild(overlay);
   }
 
