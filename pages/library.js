@@ -19,7 +19,7 @@ let unlockedKeys = new Set(); // Track unlocked privacy keys (resets on page ref
 
 // Library-specific edit mode (independent from global edit mode)
 let isLibraryEditable = false;
-const LIBRARY_PASSWORD = 'y';  // Simple password for library editing
+const LIBRARY_PASSWORD = 'edit123';  // Simple password for library editing
 
 export async function mount(container) {
   pageContainer = container;  // Save container reference
@@ -196,7 +196,7 @@ function buildHTML() {
 <div id="lib-password-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:400px" onmousedown="event.stopPropagation()">
     <h2>🔓 解锁指令编辑</h2>
-    <p style="color:#889;font-size:13px;margin-bottom:16px">裴公主今天发骚了吗？(y/n)</p>
+    <p style="color:#889;font-size:13px;margin-bottom:16px">输入密码以解锁指令编辑功能</p>
     
     <input 
       id="lib-password-input" 
@@ -629,152 +629,175 @@ function renderGrid(container) {
     </div>`;
   }).join('');
   
-  grid.querySelectorAll('.lib-item').forEach(card => {
-    let pressTimer = null;
-    let pressStart = 0;
-    let startX = 0;
-    let startY = 0;
-    let hasMoved = false;
-    let hasTriggered = false;  // Prevent double-trigger on mobile
-    
-    const startPress = (e) => {
-      pressStart = Date.now();
-      hasMoved = false;
-      hasTriggered = false;  // Reset flag
-      
-      // Record initial position
-      if (e.touches) {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-      } else {
-        startX = e.clientX;
-        startY = e.clientY;
-      }
-      
-      pressTimer = setTimeout(() => {
-        // Long press triggered (only if not moved)
-        if (!hasMoved) {
-          const id = parseInt(card.dataset.id);
-          const item = items.find(x => x.id === id);
-          if (item && !isLibraryEditor()) {
-            openPreviewModal(item);
-            hasTriggered = true;  // Mark as triggered
-          }
-        }
-      }, 500);
-    };
-    
-    const checkMovement = (e) => {
-      if (hasMoved) return;
-      
-      let currentX, currentY;
-      if (e.touches) {
-        currentX = e.touches[0].clientX;
-        currentY = e.touches[0].clientY;
-      } else {
-        currentX = e.clientX;
-        currentY = e.clientY;
-      }
-      
-      const deltaX = Math.abs(currentX - startX);
-      const deltaY = Math.abs(currentY - startY);
-      
-      // Only consider vertical scrolling (deltaY) to detect page scroll
-      // Increased threshold to 20px to allow small finger movement
-      if (deltaY > 20) {
-        hasMoved = true;
-        cancelPress();
-      }
-    };
-    
-    const cancelPress = () => {
-      if (pressTimer) {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-      }
-    };
-    
-    const handleInteraction = (e) => {
-      // Set flag FIRST to prevent any race condition
-      if (hasTriggered) {
-        console.log('[lib-item] BLOCKED double-trigger, eventType:', e.type);
-        return;
-      }
-      hasTriggered = true;  // Set immediately
-      
-      cancelPress();
-      
-      // If moved, don't trigger any action
-      if (hasMoved) {
-        return;
-      }
-      
-      const pressDuration = Date.now() - pressStart;
-      if (pressDuration >= 500) {
-        // Was a long press, don't trigger click action
-        e.preventDefault();
-        return;
-      }
-      
-      // Short click (and didn't move)
-      const id = parseInt(card.dataset.id);
-      const item = items.find(x => x.id === id);
-      if (!item) return;
-      
-      console.log('[lib-item] eventType:', e.type, 'hasTriggered:', hasTriggered, 'pressDuration:', pressDuration);
-      
-      if (isLibraryEditor()) {
-        openModal(item, pageContainer);
-      } else {
-        // Quick click: copy to clipboard (use decrypted content if available)
-        const contentToCopy = item.decryptedContent || item.content;
-        navigator.clipboard.writeText(contentToCopy).then(() => {
-          showToast('已复制到剪贴板');
-        }).catch(() => {
-          showToast('复制失败，请手动复制');
-        });
-      }
-    };
-    
-    // Mouse events (desktop)
-    card.addEventListener('mousedown', startPress);
-    card.addEventListener('mousemove', checkMovement);
-    card.addEventListener('mouseup', handleInteraction);
-    card.addEventListener('mouseleave', cancelPress);
-    
-    // Touch events (mobile)
-    // Don't use passive:true on touchstart/touchend so we can preventDefault
-    card.addEventListener('touchstart', (e) => {
-      startPress(e);
-    });
-    card.addEventListener('touchmove', checkMovement, { passive: true });  // Can be passive
-    card.addEventListener('touchend', (e) => {
-      e.preventDefault();  // Prevent synthetic click event
-      handleInteraction(e);
-    });
-    card.addEventListener('touchcancel', cancelPress);
-  });
+  // 使用事件委托绑定事件（解决页面切换后事件丢失问题）
+  bindGridItemEvents(grid);
+}
+
+// 使用事件委托处理卡片事件
+function bindGridItemEvents(grid) {
+  // 防止重复绑定
+  if (grid._itemEventsBound) return;
+  grid._itemEventsBound = true;
   
-  // Bind like areas (prevent event bubbling to card)
-  grid.querySelectorAll('.lib-item-like').forEach(likeArea => {
-    const handleLike = async (e) => {
-      e.stopPropagation();
+  // 长按状态管理
+  const pressState = {
+    timer: null,
+    start: 0,
+    startX: 0,
+    startY: 0,
+    moved: false,
+    triggered: false,
+    targetCard: null
+  };
+  
+  const resetPressState = () => {
+    if (pressState.timer) {
+      clearTimeout(pressState.timer);
+      pressState.timer = null;
+    }
+    pressState.moved = false;
+    pressState.triggered = false;
+    pressState.targetCard = null;
+  };
+  
+  const findCard = (element) => {
+    return element.closest('.lib-item');
+  };
+  
+  const startPress = (e) => {
+    const card = findCard(e.target);
+    if (!card) return;
+    
+    // 忽略点赞区域的点击
+    if (e.target.closest('.lib-item-like')) return;
+    
+    pressState.start = Date.now();
+    pressState.moved = false;
+    pressState.triggered = false;
+    pressState.targetCard = card;
+    
+    if (e.touches) {
+      pressState.startX = e.touches[0].clientX;
+      pressState.startY = e.touches[0].clientY;
+    } else {
+      pressState.startX = e.clientX;
+      pressState.startY = e.clientY;
+    }
+    
+    // 长按定时器
+    pressState.timer = setTimeout(() => {
+      if (!pressState.moved && pressState.targetCard) {
+        const id = parseInt(pressState.targetCard.dataset.id);
+        const item = items.find(x => x.id === id);
+        if (item && !isLibraryEditor()) {
+          openPreviewModal(item);
+          pressState.triggered = true;
+        }
+      }
+    }, 500);
+  };
+  
+  const checkMovement = (e) => {
+    if (pressState.moved || !pressState.targetCard) return;
+    
+    let currentX, currentY;
+    if (e.touches) {
+      currentX = e.touches[0].clientX;
+      currentY = e.touches[0].clientY;
+    } else {
+      currentX = e.clientX;
+      currentY = e.clientY;
+    }
+    
+    const deltaY = Math.abs(currentY - pressState.startY);
+    
+    // 检测到滚动
+    if (deltaY > 20) {
+      pressState.moved = true;
+      resetPressState();
+    }
+  };
+  
+  const handleInteraction = (e) => {
+    const card = findCard(e.target);
+    if (!card || card !== pressState.targetCard) {
+      resetPressState();
+      return;
+    }
+    
+    // 忽略点赞区域
+    if (e.target.closest('.lib-item-like')) {
+      resetPressState();
+      return;
+    }
+    
+    // 已经触发过长按
+    if (pressState.triggered) {
+      resetPressState();
+      return;
+    }
+    
+    const pressDuration = Date.now() - pressState.start;
+    const wasMoved = pressState.moved;
+    resetPressState();
+    
+    // 移动过或长按，不触发点击
+    if (wasMoved || pressDuration >= 500) {
+      if (pressDuration >= 500) e.preventDefault();
+      return;
+    }
+    
+    // 短按：复制或编辑
+    const id = parseInt(card.dataset.id);
+    const item = items.find(x => x.id === id);
+    if (!item) return;
+    
+    if (isLibraryEditor()) {
+      openModal(item, pageContainer);
+    } else {
+      // 非编辑模式：复制到剪贴板
+      const contentToCopy = item.decryptedContent || item.content;
+      navigator.clipboard.writeText(contentToCopy).then(() => {
+        showToast('已复制到剪贴板');
+      }).catch(() => {
+        showToast('复制失败，请手动复制');
+      });
+    }
+  };
+  
+  const handleLike = async (e) => {
+    const likeArea = e.target.closest('.lib-item-like');
+    if (!likeArea) return;
+    
+    e.stopPropagation();
+    e.preventDefault();
+    
+    const id = parseInt(likeArea.dataset.id);
+    await likeItem(id);
+  };
+  
+  // 事件监听器绑定到父容器（事件委托）
+  grid.addEventListener('mousedown', startPress);
+  grid.addEventListener('mousemove', checkMovement);
+  grid.addEventListener('mouseup', handleInteraction);
+  grid.addEventListener('mouseleave', resetPressState);
+  
+  grid.addEventListener('touchstart', startPress);
+  grid.addEventListener('touchmove', checkMovement, { passive: true });
+  grid.addEventListener('touchend', (e) => {
+    if (e.target.closest('.lib-item-like')) {
+      handleLike(e);
+    } else {
       e.preventDefault();
-      const id = parseInt(likeArea.dataset.id);
-      await likeItem(id);
-    };
-    
-    // Desktop
-    likeArea.addEventListener('mousedown', (e) => e.stopPropagation());
-    likeArea.addEventListener('mousemove', (e) => e.stopPropagation());
-    likeArea.addEventListener('click', handleLike);
-    
-    // Mobile - use touchend instead of click for better response
-    likeArea.addEventListener('touchstart', (e) => {
-      e.stopPropagation();
-    });
-    likeArea.addEventListener('touchmove', (e) => e.stopPropagation());
-    likeArea.addEventListener('touchend', handleLike);
+      handleInteraction(e);
+    }
+  });
+  grid.addEventListener('touchcancel', resetPressState);
+  
+  grid.addEventListener('click', (e) => {
+    if (e.target.closest('.lib-item-like')) {
+      handleLike(e);
+    }
   });
 }
 
