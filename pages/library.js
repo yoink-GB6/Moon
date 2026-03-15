@@ -19,7 +19,7 @@ let unlockedKeys = new Set(); // Track unlocked privacy keys (resets on page ref
 
 // Library-specific edit mode (independent from global edit mode)
 let isLibraryEditable = false;
-const LIBRARY_PASSWORD = 'edit123';  // Simple password for library editing
+const LIBRARY_PASSWORD = 'y';  // Simple password for library editing
 
 export async function mount(container) {
   pageContainer = container;  // Save container reference
@@ -196,7 +196,7 @@ function buildHTML() {
 <div id="lib-password-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:400px" onmousedown="event.stopPropagation()">
     <h2>🔓 解锁指令编辑</h2>
-    <p style="color:#889;font-size:13px;margin-bottom:16px">输入密码以解锁指令编辑功能</p>
+    <p style="color:#889;font-size:13px;margin-bottom:16px">裴献之是公主吗？(y/n)</p>
     
     <input 
       id="lib-password-input" 
