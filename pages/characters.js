@@ -13,6 +13,17 @@ import { setupCountryModal } from './characters/modals/country-modal.js';
 import { setupCityModal } from './characters/modals/city-modal.js';
 import { setupLandmarkModal } from './characters/modals/landmark-modal.js';
 
+function _parseCharSections(raw) {
+  if (!raw) return [];
+  try {
+    const p = JSON.parse(raw);
+    if (Array.isArray(p)) return p;
+    return [{ title: '个人简介', content: raw }];
+  } catch (_) {
+    return [{ title: '个人简介', content: raw }];
+  }
+}
+
 let _unsubAuth = null;
 let _dataLoaded = false;
 
@@ -112,7 +123,7 @@ function buildHTML() {
     <label>名字</label><input id="char-name" type="text"/>
     <label>年龄</label><input id="char-age" type="number" min="0" placeholder="0"/>
     <label>所属国家 / 势力</label><div class="tl-select" id="char-country-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-country"/><label>所属城市</label><div class="tl-select" id="char-city-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-city"/>
-    <label>描述</label><textarea id="char-desc" rows="3"></textarea>
+    <div id="char-sec-container"></div>
     <label>头像</label>
     <div style="display:flex;gap:12px;margin-bottom:16px">
       <div id="char-avatar-preview" style="width:80px;height:80px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:600;overflow:hidden">
@@ -532,8 +543,26 @@ function _filterCharGrid(charId) {
           (hasAge ? '<div style="font-size:12px;color:var(--muted)">年龄：' + escHtml(String(char.base_age)) + '</div>' : '') +
         '</div>' +
       '</div>' +
-      (char.description ? '<div style="font-size:13px;line-height:1.6">' + escHtml(char.description) + '</div>' : '') +
+      (_parseCharSections(char.description).map(function(s) {
+        return '<div class="geo-section-card char-section-card">' +
+          '<div class="geo-section-toggle">' +
+            '<span class="geo-section-title" style="font-size:13px">' + escHtml(s.title || '未命名') + '</span>' +
+            '<span class="geo-section-arrow">▼</span>' +
+          '</div>' +
+          '<div class="geo-section-body">' +
+            '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(s.content || '') + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('')) +
     '</div>';
+
+  // 绑定折叠事件
+  grid.querySelectorAll('.char-section-card .geo-section-toggle').forEach(function(t) {
+    t.addEventListener('click', function(e) {
+      e.stopPropagation();
+      t.parentElement.classList.toggle('open');
+    });
+  });
 
   if (isEditor()) {
     const card = grid.querySelector('.intro-card');
