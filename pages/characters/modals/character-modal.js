@@ -6,6 +6,193 @@ import { closeModal } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
 import { renderCharactersTab } from '../characters-tab.js';
 import { renderGeoDetail } from '../geo-detail.js';
+import { mdToChildren } from './country-modal.js';
+
+// ── 人物小节预设 ───────────────────────────────────────────────
+const CHAR_PRESETS = [
+  { title: '个人简介', ph: '出身背景、成长经历...' },
+  { title: '性格特点', ph: '性格、习惯、行为模式...' },
+  { title: '能力技能', ph: '战斗技能、特殊能力、专长...' },
+  { title: '人际关系', ph: '家人、盟友、对手、情感...' },
+  { title: '历史经历', ph: '重大事件、转折点、过去...' },
+  { title: '目标动机', ph: '追求的目标、内心动机...' },
+  { title: '外貌特征', ph: '外貌描述、着装风格...' },
+];
+
+// ── 解析 description 字段（JSON 数组 or 旧纯文本）────────────
+function _parseCharSections(raw) {
+  if (!raw) return [];
+  try {
+    const p = JSON.parse(raw);
+    if (Array.isArray(p)) return p;
+    return [{ title: '个人简介', content: raw }];
+  } catch (_) {
+    return [{ title: '个人简介', content: raw }];
+  }
+}
+
+// ── 小节行 HTML（复用 cm-row 体系）──────────────────────────
+function _charRowHTML(sec) {
+  const preset  = CHAR_PRESETS.find(function(p) { return p.title === sec.title; });
+  const ph      = preset ? preset.ph : '在此填写内容...';
+  const content = sec.content || '';
+  const hasContent = content.trim().length > 0;
+  const preview = hasContent
+    ? escHtml(content.trim().slice(0, 60)) + (content.trim().length > 60 ? '…' : '')
+    : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
+  return '<div class="cm-row" draggable="false">' +
+    '<div class="cm-row-collapsed">' +
+      '<span class="cm-row-grip" title="拖拽排序">⠿</span>' +
+      '<div class="cm-row-summary">' +
+        '<span class="cm-row-label">' + escHtml(sec.title || '未命名') + '</span>' +
+        '<span class="cm-row-preview">' + preview + '</span>' +
+      '</div>' +
+      '<button class="cm-row-edit" title="编辑此小节">✏️</button>' +
+      '<button class="cm-row-del"  title="删除此小节">✕</button>' +
+    '</div>' +
+    '<div class="cm-row-expanded" style="display:none">' +
+      '<div class="cm-row-expanded-hdr">' +
+        '<input class="cm-row-title" type="text" value="' + escHtml(sec.title || '') + '" placeholder="小节标题" maxlength="30"/>' +
+        '<button class="cm-row-collapse">▲ 收起</button>' +
+      '</div>' +
+      '<textarea class="cm-row-body" rows="5" placeholder="' + escHtml(ph) + '">' + escHtml(content) + '</textarea>' +
+    '</div>' +
+  '</div>';
+}
+
+function _expandCharRow(row) {
+  row.querySelector('.cm-row-collapsed').style.display = 'none';
+  row.querySelector('.cm-row-expanded').style.display  = 'flex';
+  const ta = row.querySelector('.cm-row-body');
+  if (ta) ta.focus();
+}
+
+function _collapseCharRow(row) {
+  const titleInput = row.querySelector('.cm-row-title');
+  const bodyInput  = row.querySelector('.cm-row-body');
+  const title   = titleInput ? titleInput.value.trim() : '';
+  const content = bodyInput  ? bodyInput.value.trim()  : '';
+  const label   = row.querySelector('.cm-row-label');
+  const preview = row.querySelector('.cm-row-preview');
+  if (label)   label.textContent = title || '未命名';
+  if (preview) {
+    preview.innerHTML = content
+      ? escHtml(content.slice(0, 60)) + (content.length > 60 ? '…' : '')
+      : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
+  }
+  row.querySelector('.cm-row-collapsed').style.display = '';
+  row.querySelector('.cm-row-expanded').style.display  = 'none';
+}
+
+function _restoreCharPresetTag(modal, title) {
+  const preset = CHAR_PRESETS.find(function(p) { return p.title === title; });
+  if (!preset) return;
+  const tags = modal.querySelector('#char-sec-tags');
+  if (!tags) return;
+  if (tags.querySelector('.cm-tags-empty')) tags.querySelector('.cm-tags-empty').remove();
+  if (!tags.querySelector('[data-title="' + title + '"]')) {
+    const tag = document.createElement('button');
+    tag.className    = 'cm-tag';
+    tag.dataset.title = preset.title;
+    tag.dataset.ph    = preset.ph;
+    tag.textContent   = preset.title;
+    tags.appendChild(tag);
+  }
+}
+
+function _appendCharRow(modal, title, content, ph) {
+  const list = modal.querySelector('#char-sec-list');
+  if (!list) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = _charRowHTML({ title, content: content || '' });
+  const row = tmp.firstElementChild;
+  if (ph) row.querySelector('.cm-row-body').placeholder = ph;
+  list.appendChild(row);
+  _bindCharDragSort(list);
+  _expandCharRow(row);
+}
+
+function _bindCharDragSort(list) {
+  if (!list) return;
+  let dragging = null;
+  list.querySelectorAll('.cm-row').forEach(function(row) {
+    const grip = row.querySelector('.cm-row-grip');
+    if (!grip) return;
+    grip.addEventListener('mousedown', function() { row.draggable = true; });
+    grip.addEventListener('mouseup',   function() { row.draggable = false; });
+    row.addEventListener('dragstart', function(e) {
+      dragging = row; row.classList.add('cm-row-dragging'); e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', function() {
+      dragging = null; row.classList.remove('cm-row-dragging'); row.draggable = false;
+      list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
+    });
+    row.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      if (!dragging || dragging === row) return;
+      list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
+      row.classList.add('cm-row-drag-over');
+      const rect = row.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) list.insertBefore(dragging, row);
+      else list.insertBefore(dragging, row.nextSibling);
+    });
+    row.addEventListener('dragleave', function() { row.classList.remove('cm-row-drag-over'); });
+    row.addEventListener('drop',      function(e) { e.preventDefault(); row.classList.remove('cm-row-drag-over'); });
+  });
+}
+
+function _collectCharSections(modal) {
+  const out = [];
+  modal.querySelectorAll('#char-sec-list .cm-row').forEach(function(row) {
+    const titleInput = row.querySelector('.cm-row-title');
+    const labelEl    = row.querySelector('.cm-row-label');
+    const bodyInput  = row.querySelector('.cm-row-body');
+    const title   = (titleInput ? titleInput.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '') || '';
+    const content = bodyInput ? bodyInput.value.trim() : '';
+    if (title || content) out.push({ title, content });
+  });
+  return out;
+}
+
+function _bindCharSectionEvents(modal) {
+  // 预设标签点击
+  modal.querySelector('#char-sec-tags')?.addEventListener('click', function(e) {
+    const btn = e.target.closest('.cm-tag');
+    if (!btn) return;
+    _appendCharRow(modal, btn.dataset.title, '', btn.dataset.ph);
+    btn.remove();
+    const tags = modal.querySelector('#char-sec-tags');
+    if (!tags.querySelector('.cm-tag')) tags.innerHTML = '<span class="cm-tags-empty">所有预设已添加</span>';
+  });
+
+  // 自定义小节
+  const ci = modal.querySelector('#char-sec-custom');
+  function doAdd() {
+    const t = ci ? ci.value.trim() : '';
+    if (!t) { if (ci) ci.focus(); return; }
+    _appendCharRow(modal, t, '');
+    if (ci) { ci.value = ''; ci.focus(); }
+  }
+  modal.querySelector('#char-sec-custom-add')?.addEventListener('click', doAdd);
+  ci?.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
+
+  // 列表内操作（展开/折叠/删除）
+  modal.querySelector('#char-sec-list')?.addEventListener('click', function(e) {
+    const row = e.target.closest('.cm-row');
+    if (!row) return;
+    if (e.target.closest('.cm-row-edit'))     { _expandCharRow(row); return; }
+    if (e.target.closest('.cm-row-collapse')) { _collapseCharRow(row); return; }
+    if (e.target.closest('.cm-row-del')) {
+      const titleInput = row.querySelector('.cm-row-title');
+      const labelEl    = row.querySelector('.cm-row-label');
+      const title = (titleInput ? titleInput.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '');
+      row.remove();
+      _restoreCharPresetTag(modal, title);
+    }
+  });
+
+  _bindCharDragSort(modal.querySelector('#char-sec-list'));
+}
 
 // ── 自定义下拉通用工具 ────────────────────────────────────────
 // options: [{ value, label }]，selectedValue: 当前选中值
@@ -92,7 +279,27 @@ export function openCharModal(char) {
   container.querySelector('#char-name').value = char ? char.name || '' : '';
   // 使用 base_age 字段
   container.querySelector('#char-age').value  = (char && char.base_age != null) ? char.base_age : '';
-  container.querySelector('#char-desc').value = char ? char.description || '' : '';
+  // ── 初始化小节编辑器 ──
+  const sections = _parseCharSections(char ? char.description : null);
+  const usedTitles = new Set(sections.map(function(s) { return s.title; }));
+  const presetBtns = CHAR_PRESETS
+    .filter(function(p) { return !usedTitles.has(p.title); })
+    .map(function(p) {
+      return '<button class="cm-tag" data-title="' + escHtml(p.title) + '" data-ph="' + escHtml(p.ph) + '">' + escHtml(p.title) + '</button>';
+    }).join('');
+
+  const secContainer = modal.querySelector('#char-sec-container');
+  if (secContainer) {
+    secContainer.innerHTML =
+      '<div class="cm-sec-hdr"><span>人物介绍</span><span class="cm-hint">点 ✏️ 展开编辑；拖 ⠿ 可排序</span></div>' +
+      '<div class="cm-tags" id="char-sec-tags">' + (presetBtns || '<span class="cm-tags-empty">所有预设已添加</span>') + '</div>' +
+      '<div class="cm-custom-row">' +
+        '<input type="text" id="char-sec-custom" placeholder="自定义小节标题..." maxlength="30" autocomplete="off"/>' +
+        '<button class="btn bn" id="char-sec-custom-add">＋ 添加</button>' +
+      '</div>' +
+      '<div id="char-sec-list" class="cm-list">' + sections.map(_charRowHTML).join('') + '</div>';
+    _bindCharSectionEvents(modal);
+  }
 
   // 推算当前人物所属国家
   const initCity    = char && char.city_id ? State.allCities.find(function(c) { return c.id === char.city_id; }) : null;
@@ -165,7 +372,9 @@ async function saveCharacter() {
 
   const ageVal    = container.querySelector('#char-age').value.trim();
   const cityIdVal = container.querySelector('#char-city').value; // hidden input
-  const desc      = container.querySelector('#char-desc').value.trim();
+  const modal     = container.querySelector('#char-modal');
+  const sections  = _collectCharSections(modal);
+  const desc      = sections.length ? JSON.stringify(sections) : null;
 
   try {
     let avatarUrl = null;
@@ -186,7 +395,7 @@ async function saveCharacter() {
       name,
       base_age:    ageVal !== '' ? parseInt(ageVal) : null,
       city_id:     cityIdVal ? parseInt(cityIdVal) : null,
-      description: desc || null,
+      description: desc,
     };
     if (State.pendingAvatar !== undefined) payload.avatar_url = avatarUrl;
 
