@@ -81,7 +81,7 @@ function _bindSectionToggles(detail) {
   detail.querySelectorAll('.geo-section-toggle').forEach(function(t) {
     t.addEventListener('click', function(e) {
       e.stopPropagation();
-      // 如果点击来自内部更深层的 toggle，不响应
+      // 只响应直接点到自己的 toggle，防止子 toggle 冒泡触发父级
       if (e.target.closest('.geo-section-toggle') !== t) return;
       const card = t.parentElement;
       card.classList.toggle('open');
@@ -221,6 +221,52 @@ function renderCityDetail(detail) {
 
 // ── 只读人物弹窗 ──────────────────────────────────────────────
 
+function _parseCharSections(raw) {
+  if (!raw) return [];
+  try {
+    const p = JSON.parse(raw);
+    if (Array.isArray(p)) return p;
+    return [{ title: '个人简介', content: raw }];
+  } catch (_) {
+    return [{ title: '个人简介', content: raw }];
+  }
+}
+
+function _charChildHTML(node, depth) {
+  const indent = depth > 1 ? 'margin-left:' + ((depth-1)*12) + 'px;' : '';
+  const kids = (node.children && node.children.length && depth < 3)
+    ? '<div style="margin-top:6px">' + node.children.map(function(gc){ return _charChildHTML(gc, depth+1); }).join('') + '</div>'
+    : '';
+  return '<div class="geo-section-card geo-child-card" style="' + indent + 'margin-bottom:6px">' +
+    '<div class="geo-section-toggle">' +
+      '<span class="geo-section-title" style="font-size:' + (13-depth) + 'px">' + escHtml(node.title||'') + '</span>' +
+      '<span class="geo-section-arrow">▼</span>' +
+    '</div>' +
+    '<div class="geo-section-body">' +
+      (node.content ? '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(node.content) + '</div>' : '') +
+      kids +
+    '</div>' +
+  '</div>';
+}
+
+function _charSectionsHTML(sections) {
+  return sections.map(function(s) {
+    const childrenHTML = (s.children && s.children.length)
+      ? '<div class="geo-section-children">' + s.children.map(function(c){ return _charChildHTML(c,1); }).join('') + '</div>'
+      : '';
+    return '<div class="geo-section-card">' +
+      '<div class="geo-section-toggle">' +
+        '<span class="geo-section-title" style="font-size:13px">' + escHtml(s.title||'未命名') + '</span>' +
+        '<span class="geo-section-arrow">▼</span>' +
+      '</div>' +
+      '<div class="geo-section-body">' +
+        (s.content ? '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(s.content) + '</div>' : '') +
+        childrenHTML +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
 function _openCharReadonly(char) {
   const container = State.pageContainer;
   let overlay = container.querySelector('#char-readonly-modal');
@@ -248,15 +294,27 @@ function _openCharReadonly(char) {
           (location ? '<div style="font-size:13px;color:var(--muted)">' + escHtml(location) + '</div>' : '') +
         '</div>' +
       '</div>' +
-      (char.description
-        ? '<div style="font-size:13px;line-height:1.75;white-space:pre-wrap">' + escHtml(char.description) + '</div>'
-        : '<div style="font-size:13px;color:var(--muted);font-style:italic">暂无介绍</div>') +
+      (function() {
+        const secs = _parseCharSections(char.description);
+        if (!secs.length) return '<div style="font-size:13px;color:var(--muted);font-style:italic">暂无介绍</div>';
+        return '<div id="char-ro-sections">' + _charSectionsHTML(secs) + '</div>';
+      })() +
       '<div style="margin-top:20px;text-align:right">' +
         '<button class="btn bn" id="char-readonly-close">关闭</button>' +
       '</div>' +
     '</div>';
 
   overlay.classList.add('show');
+
+  // 绑定折叠事件（防止子节点冒泡触发父节点）
+  overlay.querySelectorAll('.geo-section-toggle').forEach(function(t) {
+    t.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (e.target.closest('.geo-section-toggle') !== t) return;
+      t.parentElement.classList.toggle('open');
+    });
+  });
+
   overlay.querySelector('#char-readonly-close').addEventListener('click', function() {
     overlay.classList.remove('show');
   });
