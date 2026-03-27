@@ -6,7 +6,7 @@ import { closeModal } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
 import { renderCharactersTab } from '../characters-tab.js';
 import { renderGeoDetail } from '../geo-detail.js';
-import { mdToChildren } from './country-modal.js';
+import { mdToChildren, childrenToMd } from './country-modal.js';
 
 // ── 人物小节预设 ───────────────────────────────────────────────
 const CHAR_PRESETS = [
@@ -34,18 +34,18 @@ function _parseCharSections(raw) {
 // ── 小节行 HTML（复用 cm-row 体系）──────────────────────────
 function _charRowHTML(sec) {
   const preset  = CHAR_PRESETS.find(function(p) { return p.title === sec.title; });
-  const ph      = preset ? preset.ph : '在此填写内容...';
-  const content = sec.content || '';
-  const hasContent = content.trim().length > 0;
-  const preview = hasContent
-    ? escHtml(content.trim().slice(0, 60)) + (content.trim().length > 60 ? '…' : '')
+  const ph      = (preset ? preset.ph : '在此填写内容...') + '\n\n# 子小节标题\n内容\n\n## 更深一层';
+  const mdText  = childrenToMd(sec);   // 把 children 还原成 # ## 文本
+  const preview = mdText.trim().replace(/\n/g, ' ').slice(0, 60) || '';
+  const previewHTML = preview
+    ? escHtml(preview) + (mdText.trim().length > 60 ? '…' : '')
     : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
   return '<div class="cm-row" draggable="false">' +
     '<div class="cm-row-collapsed">' +
       '<span class="cm-row-grip" title="拖拽排序">⠿</span>' +
       '<div class="cm-row-summary">' +
         '<span class="cm-row-label">' + escHtml(sec.title || '未命名') + '</span>' +
-        '<span class="cm-row-preview">' + preview + '</span>' +
+        '<span class="cm-row-preview">' + previewHTML + '</span>' +
       '</div>' +
       '<button class="cm-row-edit" title="编辑此小节">✏️</button>' +
       '<button class="cm-row-del"  title="删除此小节">✕</button>' +
@@ -55,7 +55,8 @@ function _charRowHTML(sec) {
         '<input class="cm-row-title" type="text" value="' + escHtml(sec.title || '') + '" placeholder="小节标题" maxlength="30"/>' +
         '<button class="cm-row-collapse">▲ 收起</button>' +
       '</div>' +
-      '<textarea class="cm-row-body" rows="5" placeholder="' + escHtml(ph) + '">' + escHtml(content) + '</textarea>' +
+      '<div class="cm-md-guide"># 子小节 &nbsp; ## 子子小节 &nbsp; ### 三级</div>' +
+      '<textarea class="cm-row-body" rows="6" placeholder="' + escHtml(ph) + '">' + escHtml(mdText) + '</textarea>' +
     '</div>' +
   '</div>';
 }
@@ -71,13 +72,14 @@ function _collapseCharRow(row) {
   const titleInput = row.querySelector('.cm-row-title');
   const bodyInput  = row.querySelector('.cm-row-body');
   const title   = titleInput ? titleInput.value.trim() : '';
-  const content = bodyInput  ? bodyInput.value.trim()  : '';
+  const mdText  = bodyInput  ? bodyInput.value.trim()  : '';
   const label   = row.querySelector('.cm-row-label');
   const preview = row.querySelector('.cm-row-preview');
   if (label)   label.textContent = title || '未命名';
   if (preview) {
-    preview.innerHTML = content
-      ? escHtml(content.slice(0, 60)) + (content.length > 60 ? '…' : '')
+    const flat = mdText.replace(/\n/g, ' ').slice(0, 60);
+    preview.innerHTML = mdText
+      ? escHtml(flat) + (mdText.length > 60 ? '…' : '')
       : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
   }
   row.querySelector('.cm-row-collapsed').style.display = '';
@@ -147,9 +149,13 @@ function _collectCharSections(modal) {
     const titleInput = row.querySelector('.cm-row-title');
     const labelEl    = row.querySelector('.cm-row-label');
     const bodyInput  = row.querySelector('.cm-row-body');
-    const title   = (titleInput ? titleInput.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '') || '';
-    const content = bodyInput ? bodyInput.value.trim() : '';
-    if (title || content) out.push({ title, content });
+    const title  = (titleInput ? titleInput.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '') || '';
+    const mdText = bodyInput ? bodyInput.value : '';
+    if (!title) return;
+    const parsed = mdToChildren(mdText);
+    const sec = { title, content: parsed.content };
+    if (parsed.children && parsed.children.length) sec.children = parsed.children;
+    out.push(sec);
   });
   return out;
 }
