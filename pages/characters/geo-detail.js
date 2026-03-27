@@ -8,6 +8,18 @@ import { openLandmarkModal } from './modals/landmark-modal.js';
 import { openCharModal } from './modals/character-modal.js';
 import { renderGeoTree } from './geo-tree.js';
 
+// ── 解析人物 description ───────────────────────────────────────
+function _parseCharSections(raw) {
+  if (!raw) return [];
+  try {
+    const p = JSON.parse(raw);
+    if (Array.isArray(p)) return p;
+    return [{ title: '个人简介', content: raw }];
+  } catch (_) {
+    return [{ title: '个人简介', content: raw }];
+  }
+}
+
 export function renderGeoDetail() {
   const container = State.pageContainer;
   const detail    = container.querySelector('#geo-detail-view');
@@ -247,8 +259,18 @@ function _openCharReadonly(char) {
           (location ? '<div style="font-size:13px;color:var(--muted)">' + escHtml(location) + '</div>' : '') +
         '</div>' +
       '</div>' +
-      (char.description
-        ? '<div style="font-size:13px;line-height:1.75;white-space:pre-wrap">' + escHtml(char.description) + '</div>'
+      (_parseCharSections(char.description).length
+        ? '<div id="char-ro-sections">' + _parseCharSections(char.description).map(function(s) {
+            return '<div class="geo-section-card char-section-card">' +
+              '<div class="geo-section-toggle">' +
+                '<span class="geo-section-title" style="font-size:13px">' + escHtml(s.title || '未命名') + '</span>' +
+                '<span class="geo-section-arrow">▼</span>' +
+              '</div>' +
+              '<div class="geo-section-body">' +
+                '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(s.content || '') + '</div>' +
+              '</div>' +
+            '</div>';
+          }).join('') + '</div>'
         : '<div style="font-size:13px;color:var(--muted);font-style:italic">暂无介绍</div>') +
       '<div style="margin-top:20px;text-align:right">' +
         '<button class="btn bn" id="char-readonly-close">关闭</button>' +
@@ -256,6 +278,15 @@ function _openCharReadonly(char) {
     '</div>';
 
   overlay.classList.add('show');
+
+  // 绑定折叠小节事件
+  overlay.querySelectorAll('.char-section-card .geo-section-toggle').forEach(function(t) {
+    t.addEventListener('click', function(e) {
+      e.stopPropagation();
+      t.parentElement.classList.toggle('open');
+    });
+  });
+
   overlay.querySelector('#char-readonly-close').addEventListener('click', function() {
     overlay.classList.remove('show');
   });

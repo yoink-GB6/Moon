@@ -7,6 +7,43 @@ import * as State from './state.js';
 import { openCharModal } from './modals/character-modal.js';
 import { getLocationPath } from './utils.js';
 
+// ── 解析人物 description（JSON 数组 or 旧纯文本）────────────
+function _parseCharSections(raw) {
+  if (!raw) return [];
+  try {
+    const p = JSON.parse(raw);
+    if (Array.isArray(p)) return p;
+    return [{ title: '个人简介', content: raw }];
+  } catch (_) {
+    return [{ title: '个人简介', content: raw }];
+  }
+}
+
+// ── 渲染折叠小节 HTML（默认折叠）───────────────────────────
+function _sectionsHTML(sections) {
+  if (!sections.length) return '';
+  return sections.map(function(s) {
+    return '<div class="geo-section-card char-section-card">' +
+      '<div class="geo-section-toggle">' +
+        '<span class="geo-section-title" style="font-size:13px">' + escHtml(s.title || '未命名') + '</span>' +
+        '<span class="geo-section-arrow">▼</span>' +
+      '</div>' +
+      '<div class="geo-section-body">' +
+        '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(s.content || '') + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function _bindSectionToggles(container) {
+  container.querySelectorAll('.char-section-card .geo-section-toggle').forEach(function(t) {
+    t.addEventListener('click', function(e) {
+      e.stopPropagation();
+      t.parentElement.classList.toggle('open');
+    });
+  });
+}
+
 /**
  * 渲染人物标签页
  */
@@ -36,10 +73,13 @@ export function renderCharactersTab() {
             ${hasAge ? `<div style="font-size:12px;color:var(--muted)">年龄：${escHtml(String(char.base_age))}</div>` : ''}
           </div>
         </div>
-        ${char.description ? `<div style="font-size:13px;line-height:1.5;color:var(--text)">${escHtml(char.description)}</div>` : ''}
+        ${_sectionsHTML(_parseCharSections(char.description))}
       </div>
     `;
   }).join('');
+
+  // 绑定折叠事件
+  _bindSectionToggles(grid);
 
   // 绑定点击事件（编辑模式）
   if (isEditor()) {
