@@ -19,26 +19,52 @@ function _parseCharSections(raw) {
   }
 }
 
+// ── 渲染子节点 HTML（递归，depth 1/2/3）──────────────────────
+function _childHTML(node, depth) {
+  const indent = depth > 1 ? 'margin-left:' + ((depth - 1) * 12) + 'px;' : '';
+  const childrenHTML = (node.children && node.children.length && depth < 3)
+    ? '<div style="margin-top:6px">' + node.children.map(function(gc) { return _childHTML(gc, depth + 1); }).join('') + '</div>'
+    : '';
+  return '<div class="geo-section-card geo-child-card" style="' + indent + 'margin-bottom:6px">' +
+    '<div class="geo-section-toggle">' +
+      '<span class="geo-section-title" style="font-size:' + (14 - depth) + 'px">' + escHtml(node.title || '') + '</span>' +
+      '<span class="geo-section-arrow">▼</span>' +
+    '</div>' +
+    '<div class="geo-section-body">' +
+      (node.content ? '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(node.content) + '</div>' : '') +
+      childrenHTML +
+    '</div>' +
+  '</div>';
+}
+
 // ── 渲染折叠小节 HTML（默认折叠）───────────────────────────
 function _sectionsHTML(sections) {
   if (!sections.length) return '';
   return sections.map(function(s) {
+    const childrenHTML = (s.children && s.children.length)
+      ? '<div class="geo-section-children">' +
+          s.children.map(function(c) { return _childHTML(c, 1); }).join('') +
+        '</div>'
+      : '';
     return '<div class="geo-section-card char-section-card">' +
       '<div class="geo-section-toggle">' +
         '<span class="geo-section-title" style="font-size:13px">' + escHtml(s.title || '未命名') + '</span>' +
         '<span class="geo-section-arrow">▼</span>' +
       '</div>' +
       '<div class="geo-section-body">' +
-        '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(s.content || '') + '</div>' +
+        (s.content ? '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(s.content) + '</div>' : '') +
+        childrenHTML +
       '</div>' +
     '</div>';
   }).join('');
 }
 
 function _bindSectionToggles(container) {
-  container.querySelectorAll('.char-section-card .geo-section-toggle').forEach(function(t) {
+  // 绑定所有层级的 toggle，stopPropagation 防止子节点冒泡触发父节点
+  container.querySelectorAll('.geo-section-toggle').forEach(function(t) {
     t.addEventListener('click', function(e) {
       e.stopPropagation();
+      if (e.target.closest('.geo-section-toggle') !== t) return;
       t.parentElement.classList.toggle('open');
     });
   });

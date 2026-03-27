@@ -83,8 +83,7 @@ function _bindSectionToggles(detail) {
       e.stopPropagation();
       // 只响应直接点到自己的 toggle，防止子 toggle 冒泡触发父级
       if (e.target.closest('.geo-section-toggle') !== t) return;
-      const card = t.parentElement;
-      card.classList.toggle('open');
+      t.parentElement.classList.toggle('open');
     });
   });
 }
