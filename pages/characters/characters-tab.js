@@ -5,6 +5,7 @@ import { isEditor } from '../../core/auth.js';
 import { escHtml } from '../../core/ui.js';
 import * as State from './state.js';
 import { openCharModal } from './modals/character-modal.js';
+import { openCharReadonly } from './modals/char-readonly-modal.js';
 import { getLocationPath } from './utils.js';
 
 // ── 解析人物 description（JSON 数组 or 旧纯文本）────────────
@@ -21,18 +22,21 @@ function _parseCharSections(raw) {
 
 // ── 渲染子节点 HTML（递归，depth 1/2/3）──────────────────────
 function _childHTML(node, depth) {
-  const indent = depth > 1 ? 'margin-left:' + ((depth - 1) * 12) + 'px;' : '';
-  const childrenHTML = (node.children && node.children.length && depth < 3)
-    ? '<div style="margin-top:6px">' + node.children.map(function(gc) { return _childHTML(gc, depth + 1); }).join('') + '</div>'
+  if (depth > 1) {
+    const label = node.title ? '<strong>' + escHtml(node.title) + '</strong>' : '';
+    const text  = node.content ? escHtml(node.content) : '';
+    return '<div class="static-text-l3">' + (label && text ? label + '&ensp;' + text : label + text) + '</div>';
+  }
+  const kids = (node.children && node.children.length)
+    ? node.children.map(function(gc) { return _childHTML(gc, depth + 1); }).join('')
     : '';
-  return '<div class="geo-section-card geo-child-card" style="' + indent + 'margin-bottom:6px">' +
-    '<div class="geo-section-toggle">' +
-      '<span class="geo-section-title" style="font-size:' + (14 - depth) + 'px">' + escHtml(node.title || '') + '</span>' +
-      '<span class="geo-section-arrow">▼</span>' +
-    '</div>' +
-    '<div class="geo-section-body">' +
-      (node.content ? '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(node.content) + '</div>' : '') +
-      childrenHTML +
+  return '<div class="collapse-item">' +
+    '<div class="collapse-header">' + escHtml(node.title || '') + '</div>' +
+    '<div class="collapse-content">' +
+      '<div class="collapse-inner">' +
+        (node.content ? escHtml(node.content) : '') +
+        kids +
+      '</div>' +
     '</div>' +
   '</div>';
 }
@@ -42,32 +46,40 @@ function _sectionsHTML(sections) {
   if (!sections.length) return '';
   return sections.map(function(s) {
     const childrenHTML = (s.children && s.children.length)
-      ? '<div class="geo-section-children">' +
-          s.children.map(function(c) { return _childHTML(c, 1); }).join('') +
-        '</div>'
+      ? s.children.map(function(c) { return _childHTML(c, 1); }).join('')
       : '';
-    return '<div class="geo-section-card char-section-card">' +
-      '<div class="geo-section-toggle">' +
-        '<span class="geo-section-title" style="font-size:13px">' + escHtml(s.title || '未命名') + '</span>' +
-        '<span class="geo-section-arrow">▼</span>' +
-      '</div>' +
-      '<div class="geo-section-body">' +
-        (s.content ? '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(s.content) + '</div>' : '') +
+    return '<div class="h2-section">' +
+      '<div class="collapse-h2"><span>' + escHtml(s.title || '未命名') + '</span></div>' +
+      '<div class="h2-content">' +
+        (s.content ? '<div class="collapse-inner">' + escHtml(s.content) + '</div>' : '') +
         childrenHTML +
       '</div>' +
     '</div>';
   }).join('');
 }
 
-function _bindSectionToggles(container) {
-  // 绑定所有层级的 toggle，stopPropagation 防止子节点冒泡触发父节点
-  container.querySelectorAll('.geo-section-toggle').forEach(function(t) {
-    t.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (e.target.closest('.geo-section-toggle') !== t) return;
-      t.parentElement.classList.toggle('open');
+function _bindSectionToggles(_container) {
+  // 卡片视图中折叠栏不展开——所有点击一律冒泡到 .intro-card 处理器
+  // 编辑模式：打开编辑框；只读模式：打开只读弹窗并展开对应小节
+}
+
+// 计算 toggle 在卡片内的层级索引路径，供只读弹窗定位对应小节
+function _getTogglePath(toggle, cardEl) {
+  const section = toggle.closest('.h2-section, .collapse-item');
+  if (!section || !cardEl.contains(section)) return null;
+  const path = [];
+  let node = section;
+  while (node && cardEl.contains(node)) {
+    const parent = node.parentElement;
+    const siblings = Array.from(parent.children).filter(function(el) {
+      return el.classList.contains('h2-section') || el.classList.contains('collapse-item');
     });
-  });
+    path.unshift(siblings.indexOf(node));
+    const parentSection = parent.closest('.h2-section, .collapse-item');
+    if (!parentSection || !cardEl.contains(parentSection)) break;
+    node = parentSection;
+  }
+  return path;
 }
 
 /**
@@ -78,7 +90,7 @@ export function renderCharactersTab() {
   const grid = container.querySelector('#chars-grid');
 
   if (!State.allChars.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">暂无人物</div>';
+    grid.innerHTML = '<div class="intro-empty">暂无人物</div>';
     return;
   }
 
@@ -89,14 +101,14 @@ export function renderCharactersTab() {
 
     return `
       <div class="intro-card" data-id="${char.id}">
-        <div style="display:flex;gap:12px;margin-bottom:12px">
+        <div class="intro-card-header">
           <div class="intro-avatar">
             ${char.avatar_url ? `<img src="${escHtml(char.avatar_url)}"/>` : escHtml(char.name.charAt(0))}
           </div>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;margin-bottom:4px">${escHtml(char.name)}</div>
-            ${location !== '未知' ? `<div style="font-size:12px;color:var(--muted)">${escHtml(location)}</div>` : ''}
-            ${hasAge ? `<div style="font-size:12px;color:var(--muted)">年龄：${escHtml(String(char.base_age))}</div>` : ''}
+          <div class="intro-card-info">
+            <div class="intro-card-name">${escHtml(char.name)}</div>
+            ${location !== '未知' ? `<div class="intro-card-meta">${escHtml(location)}</div>` : ''}
+            ${hasAge ? `<div class="intro-card-meta">年龄：${escHtml(String(char.base_age))}</div>` : ''}
           </div>
         </div>
         ${_sectionsHTML(_parseCharSections(char.description))}
@@ -107,16 +119,25 @@ export function renderCharactersTab() {
   // 绑定折叠事件
   _bindSectionToggles(grid);
 
-  // 绑定点击事件（编辑模式）
-  if (isEditor()) {
-    grid.querySelectorAll('.intro-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const id = parseInt(card.dataset.id);
-        const char = State.allChars.find(c => c.id === id);
-        if (char) openCharModal(char);
-      });
+  // 绑定点击事件：编辑模式打开编辑框，只读模式打开介绍弹窗
+  grid.querySelectorAll('.intro-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      const id = parseInt(card.dataset.id);
+      const char = State.allChars.find(c => c.id === id);
+      if (!char) return;
+      if (isEditor()) {
+        openCharModal(char);
+      } else {
+        // 只读模式：若点击的是折叠栏，则带路径打开（自动展开对应小节）；否则正常打开
+        const toggle = e.target.closest('.collapse-h2, .collapse-header');
+        if (toggle && card.contains(toggle)) {
+          openCharReadonly(char, _getTogglePath(toggle, card));
+        } else {
+          openCharReadonly(char);
+        }
+      }
     });
-  }
+  });
 }
 
 /**

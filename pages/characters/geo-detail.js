@@ -6,6 +6,7 @@ import { openCountryModal, mdToChildren } from './modals/country-modal.js';
 import { openCityModal } from './modals/city-modal.js';
 import { openLandmarkModal } from './modals/landmark-modal.js';
 import { openCharModal } from './modals/character-modal.js';
+import { openCharReadonly } from './modals/char-readonly-modal.js';
 import { renderGeoTree } from './geo-tree.js';
 
 export function renderGeoDetail() {
@@ -33,20 +34,23 @@ function _isJSON(str) {
   try { return Array.isArray(JSON.parse(str)); } catch (_) { return false; }
 }
 
-// 递归渲染子节点（depth 1/2/3），和顶级 card 同款折叠样式
+// 递归渲染子节点（depth 1/2），内层折叠项
 function _childHTML(node, depth) {
-  const indent = depth > 1 ? 'margin-left:' + ((depth-1)*12) + 'px;' : '';
-  const childrenHTML = (node.children && node.children.length && depth < 3)
-    ? '<div style="margin-top:6px">' + node.children.map(function(gc) { return _childHTML(gc, depth+1); }).join('') + '</div>'
+  if (depth > 1) {
+    const label = node.title ? '<strong>' + escHtml(node.title) + '</strong>' : '';
+    const text  = node.content ? escHtml(node.content) : '';
+    return '<div class="static-text-l3">' + (label && text ? label + '&ensp;' + text : label + text) + '</div>';
+  }
+  const kids = (node.children && node.children.length)
+    ? node.children.map(function(gc) { return _childHTML(gc, depth + 1); }).join('')
     : '';
-  return '<div class="geo-section-card geo-child-card" style="' + indent + 'margin-bottom:6px">' +
-    '<div class="geo-section-toggle">' +
-      '<span class="geo-section-title" style="font-size:' + (14 - depth) + 'px">' + escHtml(node.title) + '</span>' +
-      '<span class="geo-section-arrow">▼</span>' +
-    '</div>' +
-    '<div class="geo-section-body">' +
-      (node.content ? '<div class="geo-section-content">' + escHtml(node.content) + '</div>' : '') +
-      childrenHTML +
+  return '<div class="collapse-item">' +
+    '<div class="collapse-header">' + escHtml(node.title || '') + '</div>' +
+    '<div class="collapse-content">' +
+      '<div class="collapse-inner">' +
+        (node.content ? escHtml(node.content) : '') +
+        kids +
+      '</div>' +
     '</div>' +
   '</div>';
 }
@@ -59,31 +63,27 @@ function _sectionsHTML(sections) {
     const content  = parsed.content || '';
     const children = (s.children && s.children.length) ? s.children
                    : (parsed.children && parsed.children.length) ? parsed.children : [];
-    const childrenHTML = children.length
-      ? '<div class="geo-section-children">' +
-          children.map(function(c) { return _childHTML(c, 1); }).join('') +
-        '</div>'
-      : '';
-    return '<div class="geo-section-card">' +
-      '<div class="geo-section-toggle">' +
-        '<span class="geo-section-title">' + escHtml(s.title) + '</span>' +
-        '<span class="geo-section-arrow">▼</span>' +
-      '</div>' +
-      '<div class="geo-section-body">' +
-        (content ? '<div class="geo-section-content">' + escHtml(content) + '</div>' : '') +
-        childrenHTML +
+    return '<div class="h2-section">' +
+      '<div class="collapse-h2"><span>' + escHtml(s.title || '未命名') + '</span></div>' +
+      '<div class="h2-content">' +
+        (content ? '<div class="collapse-inner">' + escHtml(content) + '</div>' : '') +
+        children.map(function(c) { return _childHTML(c, 1); }).join('') +
       '</div>' +
     '</div>';
   }).join('');
 }
 
 function _bindSectionToggles(detail) {
-  detail.querySelectorAll('.geo-section-toggle').forEach(function(t) {
-    t.addEventListener('click', function(e) {
+  detail.querySelectorAll('.collapse-h2').forEach(function(h) {
+    h.addEventListener('click', function(e) {
       e.stopPropagation();
-      // 只响应直接点到自己的 toggle，防止子 toggle 冒泡触发父级
-      if (e.target.closest('.geo-section-toggle') !== t) return;
-      t.parentElement.classList.toggle('open');
+      h.closest('.h2-section').classList.toggle('active');
+    });
+  });
+  detail.querySelectorAll('.collapse-header').forEach(function(h) {
+    h.addEventListener('click', function(e) {
+      e.stopPropagation();
+      h.closest('.collapse-item').classList.toggle('active');
     });
   });
 }
@@ -97,10 +97,9 @@ function renderCountryDetail(detail) {
 
   const citiesHTML = cities.length
     ? cities.map(function(city) {
-        return '<div class="geo-city-card" data-select-city="' + city.id + '">' +
-          '<span class="geo-city-card-name">' + escHtml(city.name) + '</span>' +
-          '<span class="geo-city-card-arrow">\u203a</span>' +
-        '</div>';
+        return '<span class="geo-city-link" data-select-city="' + city.id + '">' +
+          escHtml(city.name) +
+        '</span>';
       }).join('')
     : '<div class="geo-empty" style="padding:16px 0">暂无城市</div>';
 
@@ -156,10 +155,15 @@ function renderCityDetail(detail) {
 
   const landmarksHTML = landmarks.length
     ? landmarks.map(function(lm) {
+        const descParas = lm.description
+          ? lm.description.split(/\n+/).filter(function(l) { return l.trim(); })
+              .map(function(l) { return '<p class="geo-landmark-desc">' + escHtml(l) + '</p>'; }).join('')
+          : '';
         return '<div class="geo-landmark-item">' +
-          '<div><div class="geo-landmark-name">' + escHtml(lm.name) + '</div>' +
-          (lm.description ? '<div style="font-size:13px;color:var(--muted)">' + escHtml(lm.description) + '</div>' : '') +
-          '</div>' +
+          '<blockquote class="geo-landmark-block">' +
+            '<div class="geo-landmark-name">' + escHtml(lm.name) + '</div>' +
+            descParas +
+          '</blockquote>' +
           (isEditor() ? '<div class="geo-item-actions"><button class="btn bn" data-edit-landmark="' + lm.id + '">✏️</button></div>' : '') +
         '</div>';
       }).join('')
@@ -211,113 +215,11 @@ function renderCityDetail(detail) {
       const id   = parseInt(item.dataset.charId);
       const char = State.allChars.find(function(c) { return c.id === id; });
       if (!char) return;
-      if (isEditor()) { openCharModal(char); } else { _openCharReadonly(char); }
+      if (isEditor()) { openCharModal(char); } else { openCharReadonly(char); }
     });
   });
 
   _bindSectionToggles(detail);
 }
 
-// ── 只读人物弹窗 ──────────────────────────────────────────────
 
-function _parseCharSections(raw) {
-  if (!raw) return [];
-  try {
-    const p = JSON.parse(raw);
-    if (Array.isArray(p)) return p;
-    return [{ title: '个人简介', content: raw }];
-  } catch (_) {
-    return [{ title: '个人简介', content: raw }];
-  }
-}
-
-function _charChildHTML(node, depth) {
-  const indent = depth > 1 ? 'margin-left:' + ((depth-1)*12) + 'px;' : '';
-  const kids = (node.children && node.children.length && depth < 3)
-    ? '<div style="margin-top:6px">' + node.children.map(function(gc){ return _charChildHTML(gc, depth+1); }).join('') + '</div>'
-    : '';
-  return '<div class="geo-section-card geo-child-card" style="' + indent + 'margin-bottom:6px">' +
-    '<div class="geo-section-toggle">' +
-      '<span class="geo-section-title" style="font-size:' + (13-depth) + 'px">' + escHtml(node.title||'') + '</span>' +
-      '<span class="geo-section-arrow">▼</span>' +
-    '</div>' +
-    '<div class="geo-section-body">' +
-      (node.content ? '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(node.content) + '</div>' : '') +
-      kids +
-    '</div>' +
-  '</div>';
-}
-
-function _charSectionsHTML(sections) {
-  return sections.map(function(s) {
-    const childrenHTML = (s.children && s.children.length)
-      ? '<div class="geo-section-children">' + s.children.map(function(c){ return _charChildHTML(c,1); }).join('') + '</div>'
-      : '';
-    return '<div class="geo-section-card">' +
-      '<div class="geo-section-toggle">' +
-        '<span class="geo-section-title" style="font-size:13px">' + escHtml(s.title||'未命名') + '</span>' +
-        '<span class="geo-section-arrow">▼</span>' +
-      '</div>' +
-      '<div class="geo-section-body">' +
-        (s.content ? '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(s.content) + '</div>' : '') +
-        childrenHTML +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
-
-function _openCharReadonly(char) {
-  const container = State.pageContainer;
-  let overlay = container.querySelector('#char-readonly-modal');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'char-readonly-modal';
-    overlay.className = 'tl-modal-overlay modal-center';
-    container.appendChild(overlay);
-  }
-
-  const city    = State.allCities.find(function(c) { return c.id === char.city_id; });
-  const country = city ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null;
-  const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
-  const age = (char.base_age != null && char.base_age !== '') ? String(char.base_age) + ' 岁' : '';
-
-  overlay.innerHTML =
-    '<div class="tl-modal" style="max-width:420px" onmousedown="event.stopPropagation()">' +
-      '<div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px">' +
-        '<div class="geo-person-av" style="width:56px;height:56px;font-size:22px;flex-shrink:0">' +
-          (char.avatar_url ? '<img src="' + escHtml(char.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>' : escHtml(char.name.charAt(0))) +
-        '</div>' +
-        '<div style="flex:1">' +
-          '<h2 style="margin:0 0 4px">' + escHtml(char.name) + '</h2>' +
-          (age      ? '<div style="font-size:13px;color:var(--muted)">' + age + '</div>' : '') +
-          (location ? '<div style="font-size:13px;color:var(--muted)">' + escHtml(location) + '</div>' : '') +
-        '</div>' +
-      '</div>' +
-      (function() {
-        const secs = _parseCharSections(char.description);
-        if (!secs.length) return '<div style="font-size:13px;color:var(--muted);font-style:italic">暂无介绍</div>';
-        return '<div id="char-ro-sections">' + _charSectionsHTML(secs) + '</div>';
-      })() +
-      '<div style="margin-top:20px;text-align:right">' +
-        '<button class="btn bn" id="char-readonly-close">关闭</button>' +
-      '</div>' +
-    '</div>';
-
-  overlay.classList.add('show');
-
-  // 绑定折叠事件（防止子节点冒泡触发父节点）
-  overlay.querySelectorAll('.geo-section-toggle').forEach(function(t) {
-    t.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (e.target.closest('.geo-section-toggle') !== t) return;
-      t.parentElement.classList.toggle('open');
-    });
-  });
-
-  overlay.querySelector('#char-readonly-close').addEventListener('click', function() {
-    overlay.classList.remove('show');
-  });
-  overlay.addEventListener('click', function(e) {
-    if (e.target === overlay) overlay.classList.remove('show');
-  });
-}
