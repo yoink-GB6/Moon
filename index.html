@@ -18,537 +18,139 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/layout.css">
+<link rel="stylesheet" href="styles/components.css">
+<link rel="stylesheet" href="styles/home.css">
+<link rel="stylesheet" href="styles/timeline.css">
+<link rel="stylesheet" href="styles/map.css">
+<link rel="stylesheet" href="styles/characters.css">
+<link rel="stylesheet" href="styles/library.css">
+<link rel="stylesheet" href="styles/responsive.css">
+
 <style>
-/* ════════════════════════════════════════
-   全局变量 & 重置
-════════════════════════════════════════ */
-:root{
-  --bg:#0f1117;--panel:#1a1d2e;--border:#2d3048;
-  --accent:#7c83f7;--green:#27ae60;--red:#e74c3c;--amber:#f39c12;
-  --ib:#252840;--ibr:#3d4166;--text:#e8eaed;--muted:#667788;
-  --sidebar-w:220px;
-  --topbar-h:50px;
+/* ── 页面加密面板 ── */
+#sidebar-footer {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden}
-body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text)}
-
-/* ════════════════════════════════════════
-   App shell
-════════════════════════════════════════ */
-#app{display:flex;height:100%;flex-direction:column}
-
-/* ── Topbar ── */
-#topbar{
-  display:flex;align-items:center;gap:10px;
-  padding:0 14px;height:var(--topbar-h);
-  background:var(--panel);border-bottom:1px solid var(--border);
-  flex-shrink:0;z-index:100;
+.editor-status {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
 }
-#topbar-title{font-size:15px;font-weight:700;color:var(--accent);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#sync-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
-#sync-dot.syncing{background:var(--amber);animation:pulse .8s infinite}
-#sync-dot.ok{background:var(--green)}
-#sync-dot.err{background:var(--red)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-#lock-btn{
-  background:none;border:1px solid var(--ibr);color:var(--muted);
-  border-radius:7px;padding:5px 10px;cursor:pointer;font-size:13px;
-  flex-shrink:0;transition:all .2s;white-space:nowrap;
+#page-lock-panel {
+  padding: 10px 12px 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-#lock-btn.unlocked{color:var(--green);border-color:var(--green)}
-#lock-btn:hover{border-color:var(--accent);color:var(--accent)}
-#menu-btn{
-  display:none;background:none;border:none;color:var(--accent);
-  font-size:22px;cursor:pointer;padding:4px;line-height:1;flex-shrink:0;
+.page-lock-header {
+  font-size: 12px;
+  color: var(--accent-bright);
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
-
-/* ── Body row ── */
-#body-row{display:flex;flex:1;overflow:hidden;position:relative}
-
-/* ── Left sidebar ── */
-#sidebar{
-  position:absolute;left:0;top:0;bottom:0;z-index:100;
-  width:var(--sidebar-w);background:var(--panel);border-right:1px solid var(--border);
-  display:flex;flex-direction:column;overflow:hidden;
-  transition:transform .28s cubic-bezier(0.4,0,0.2,1);
+#page-lock-select {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border-hi);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  cursor: pointer;
 }
-#sidebar.collapsed{transform:translateX(-100%);}
-#sidebar-logo{
-  padding:12px 14px 10px;display:flex;align-items:flex-start;gap:8px;
-  font-size:18px;font-weight:800;color:var(--accent);
-  border-bottom:1px solid var(--border);
-  letter-spacing:.5px;user-select:none;
+#page-lock-select:focus {
+  outline: none;
+  border-color: var(--accent-bright);
 }
-
-#sidebar-nav{flex:1;overflow-y:auto;padding:8px 0}
-#sidebar-nav::-webkit-scrollbar{width:2px}
-#sidebar-nav::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:2px}
-.nav-item{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 16px;cursor:pointer;font-size:14px;color:#99a;
-  border-left:3px solid transparent;transition:all .15s;
-  user-select:none;
+.page-lock-btns {
+  display: flex;
+  gap: 6px;
 }
-.nav-item:hover{background:#22263a;color:#ccd}
-.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(124,131,247,.08)}
-.nav-item .nav-icon{font-size:16px;flex-shrink:0;width:20px;text-align:center}
-.nav-item .nav-label{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#sidebar-footer{
-  padding:10px 16px;font-size:11px;color:var(--muted);
-  border-top:1px solid var(--border);line-height:1.8;
+.page-lock-btns .btn {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 12px;
 }
-
-
-/* Floating expand buttons (when panels are collapsed) */
-.expand-btn-float{
-  position:fixed;display:flex;align-items:center;justify-content:center;
-  width:36px;height:36px;border-radius:50%;
-  background:var(--panel);border:1px solid var(--accent);
-  color:var(--accent);font-size:16px;cursor:pointer;
-  box-shadow:0 4px 16px rgba(0,0,0,.5);z-index:200;
-  transition:all .2s;opacity:0;pointer-events:none;  /* Hidden via opacity, JS will toggle */
+/* ── 导航栏锁图标 ── */
+.nav-lock-icon {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.55;
+  flex-shrink: 0;
 }
-.expand-btn-float.show{opacity:1;pointer-events:auto;}
-.expand-btn-float:hover{background:var(--accent);color:#fff;transform:scale(1.1)}
-#sidebar-expand{top:50%;left:8px;transform:translateY(-50%)}
-#tl-expand{top:50%;right:8px;transform:translateY(-50%)}
-#map-expand{top:50%;right:8px;transform:translateY(-50%)}
-#lib-expand{top:50%;right:8px;transform:translateY(-50%)}
-
-.panel-toggle-btn{
-  background:none;border:1px solid var(--ibr);color:var(--muted);
-  border-radius:6px;padding:4px 7px;cursor:pointer;font-size:13px;
-  transition:all .15s;flex-shrink:0;line-height:1;
+/* ── 页面密码模态框（通用复用样式） ── */
+#page-pw-modal,
+#set-lock-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 900;
+  align-items: center;
+  justify-content: center;
 }
-.panel-toggle-btn:hover{color:var(--accent);border-color:var(--accent)}
-
-/* ── Main content area ── */
-#main-content{
-  flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative;
-  background:radial-gradient(ellipse at 20% 40%,rgba(124,131,247,.05) 0%,transparent 60%),var(--bg);
+#page-pw-modal.show,
+#set-lock-modal.show {
+  display: flex;
 }
-
-/* ── Sidebar overlay (mobile) ── */
-#sidebar-overlay{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
-  z-index:199;opacity:0;transition:opacity .3s;
+#page-pw-box,
+#set-lock-box {
+  background: var(--panel);
+  border: 1px solid var(--border-hi);
+  border-radius: 12px;
+  padding: 28px 28px 22px;
+  width: min(340px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-#sidebar-overlay.show{display:block;opacity:1}
-
-/* ════════════════════════════════════════
-   Shared component styles
-════════════════════════════════════════ */
-.btn{
-  padding:7px 13px;border-radius:7px;border:none;cursor:pointer;
-  font-size:13px;font-weight:600;white-space:nowrap;
-  transition:filter .15s,transform .1s;touch-action:manipulation;
+#page-pw-box h2,
+#set-lock-box h2 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text);
 }
-.btn:active{transform:scale(.94);filter:brightness(.85)}
-.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
-.bp{background:var(--accent);color:#fff}
-.be{background:var(--green);color:#fff}
-.bn{background:#383b55;color:#bbb}
-.br{background:var(--red);color:#fff}
-
-input[type=text],input[type=number],input[type=password],textarea{
-  background:var(--ib);border:1px solid var(--ibr);color:var(--text);
-  border-radius:7px;padding:8px 11px;font-size:14px;outline:none;width:100%;
-  transition:border-color .2s;-webkit-appearance:none;resize:vertical;
+#page-pw-box label,
+#set-lock-box label {
+  font-size: 13px;
+  color: var(--muted);
 }
-input:focus,textarea:focus{border-color:var(--accent)}
-
-.ctrl-label{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:7px;letter-spacing:.4px}
-.ctrl-note{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
-.small-btn{
-  font-size:11px;padding:4px 9px;border-radius:5px;
-  border:1px solid var(--ibr);background:transparent;color:var(--muted);
-  cursor:pointer;touch-action:manipulation;white-space:nowrap;
+#page-pw-input,
+#set-lock-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface-2);
+  border: 1px solid var(--border-hi);
+  color: var(--text);
+  border-radius: 7px;
+  padding: 9px 12px;
+  font-size: 15px;
 }
-.small-btn:active{color:var(--accent);border-color:var(--accent)}
-.mbtns{display:flex;gap:10px;margin-top:8px}
-.mbtns .btn{padding:10px 16px;font-size:14px}
-
-/* ── Toast ── */
-#toast{
-  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(40px);
-  background:#252840;border:1px solid #4a52a0;color:#c8caff;
-  padding:9px 20px;border-radius:20px;font-size:13px;z-index:3000;
-  transition:transform .25s ease,opacity .25s;opacity:0;pointer-events:none;white-space:nowrap;
+#page-pw-input:focus,
+#set-lock-input:focus {
+  outline: none;
+  border-color: var(--accent-bright);
 }
-#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-.toast-item{
-  position:fixed;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,.9);color:#fff;padding:12px 24px;border-radius:8px;
-  font-size:14px;white-space:nowrap;z-index:9999;
-  opacity:0;pointer-events:none;transition:all .3s;
-  box-shadow:0 4px 16px rgba(0,0,0,.5);
+#page-pw-error,
+#set-lock-error {
+  display: none;
+  color: var(--red-bright);
+  font-size: 13px;
+  margin-top: -4px;
 }
-.toast-item.show{opacity:1}
-
-
-/* ════════════════════════════════════════
-   Password modal
-════════════════════════════════════════ */
-#pw-modal{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);
-  z-index:1000;align-items:center;justify-content:center;
-}
-#pw-modal.show{display:flex}
-#pw-box{
-  background:var(--panel);border:1px solid var(--ibr);border-radius:14px;
-  padding:28px;width:320px;box-shadow:0 16px 48px rgba(0,0,0,.6);
-}
-#pw-box h2{font-size:16px;margin-bottom:16px;color:var(--accent)}
-#pw-error{color:var(--red);font-size:12px;margin-top:-8px;margin-bottom:8px;display:none}
-
-/* ════════════════════════════════════════
-   HOME PAGE styles
-════════════════════════════════════════ */
-.page-home{padding:32px;max-width:720px;overflow-y:auto;height:100%}
-.home-header{display:flex;align-items:center;gap:10px;margin-bottom:20px}
-.home-title-view{font-size:26px;font-weight:800;color:var(--text);flex:1}
-.home-body-wrap{margin-bottom:28px;position:relative}
-.home-body-view p{color:#aab;line-height:1.85;font-size:15px;margin-bottom:.5em}
-.home-placeholder{color:var(--muted)!important;font-style:italic}
-.home-links-section{margin-bottom:28px}
-.home-links-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.home-links-header h3{font-size:14px;font-weight:700;color:var(--accent)}
-.link-item{
-  display:flex;align-items:center;gap:10px;padding:9px 12px;
-  background:var(--ib);border:1px solid var(--ibr);border-radius:8px;margin-bottom:6px;
-}
-.link-item a{color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;flex:1}
-.link-item a:hover{text-decoration:underline}
-.link-url-preview{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
-.link-delete-btn{padding:3px 8px;font-size:12px}
-.edit-inline-btn{
-  background:none;border:1px solid var(--ibr);color:var(--muted);
-  border-radius:6px;padding:4px 9px;cursor:pointer;font-size:12px;
-  transition:all .15s;white-space:nowrap;
-}
-.edit-inline-btn:hover{color:var(--accent);border-color:var(--accent)}
-.inline-editor{margin-bottom:12px}
-.inline-editor input,.inline-editor textarea{margin-bottom:8px;font-size:15px}
-.inline-editor-btns{display:flex;gap:8px}
-.inline-editor-btns .btn{padding:7px 14px;font-size:13px}
-.add-link-form{background:var(--ib);border:1px solid var(--ibr);border-radius:9px;padding:14px;margin-top:8px}
-.add-link-form input{margin-bottom:8px}
-
-/* ════════════════════════════════════════
-   TIMELINE PAGE styles
-════════════════════════════════════════ */
-.tl-layout{position:relative;height:100%;overflow:hidden}
-.tl-cw{
-  position:absolute;top:0;left:0;right:0;bottom:0;
-  overflow:hidden;touch-action:none;cursor:grab;user-select:none;
-  background:radial-gradient(ellipse at 20% 40%,rgba(124,131,247,.06) 0%,transparent 60%),
-             radial-gradient(ellipse at 80% 70%,rgba(39,174,96,.05) 0%,transparent 55%),var(--bg);
-}
-.tl-cw.grabbing{cursor:grabbing}
-.tl-cw canvas{display:block}
-.tl-panel{
-  position:absolute;right:0;top:0;bottom:0;z-index:50;
-  width:240px;background:var(--panel);border-left:1px solid var(--border);
-  display:flex;flex-direction:column;overflow:hidden;
-  transition:transform .28s cubic-bezier(0.4,0,0.2,1);
-}
-.tl-panel.collapsed{transform:translateX(100%);}
-.tl-panel-title{
-  padding:12px 14px 9px;font-size:13px;font-weight:700;
-  color:var(--accent);border-bottom:1px solid var(--border);
-}
-.tl-ctrl{padding:11px 13px;border-bottom:1px solid var(--border)}
-.tl-offset-row{display:flex;align-items:center;gap:5px;margin-bottom:8px}
-.tl-ob{
-  width:34px;height:34px;border-radius:7px;border:none;cursor:pointer;
-  font-size:15px;font-weight:700;background:var(--ib);color:#a0a8ff;
-  touch-action:manipulation;transition:background .15s;flex-shrink:0;
-}
-.tl-ob:active{background:var(--ibr);transform:scale(.9)}
-.tl-ob:disabled{opacity:.4;cursor:not-allowed;transform:none}
-.tl-age-val{
-  flex:1;text-align:center;font-size:18px;font-weight:700;color:var(--accent);
-  background:var(--ib);border:1px solid var(--ibr);border-radius:7px;padding:5px 0;min-width:0;
-}
-.tl-slider-row{display:flex;align-items:center;gap:8px}
-.tl-slider-row input[type=range],#tl-slider{
-  flex:1;-webkit-appearance:none;appearance:none;height:5px;
-  border-radius:3px;background:var(--ibr);outline:none;cursor:pointer;
-}
-#tl-slider::-webkit-slider-thumb,.tl-slider-row input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
-  background:var(--accent);cursor:pointer;border:2px solid var(--panel);
-}
-.tl-add-area{padding:11px 13px;border-bottom:1px solid var(--border)}
-.tl-add-area input{margin-bottom:6px;font-size:13px;padding:7px 10px}
-.tl-add-row{display:flex;gap:6px}
-.tl-add-row input{flex:1}
-.tl-add-row .btn{flex-shrink:0;padding:7px 10px;font-size:13px}
-.tl-clist{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:5px 0}
-.tl-clist::-webkit-scrollbar{width:3px}
-.tl-clist::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:3px}
-.tl-ci{display:flex;align-items:center;padding:7px 12px;cursor:pointer;gap:8px;transition:background .1s}
-.tl-ci:hover{background:#22263a}
-.tl-ci:hover .tl-cedit{color:var(--accent)}
-.tl-ci-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
-.tl-ci-info{flex:1;min-width:0}
-.tl-cname{font-size:13px;color:#cdd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tl-cmeta{font-size:10px;color:var(--muted);margin-top:1px}
-.tl-cage{font-size:12px;font-weight:700;background:var(--ib);color:var(--accent);border-radius:10px;padding:2px 8px;flex-shrink:0}
-.tl-cage.faded{color:var(--red);background:rgba(231,76,60,.12)}
-.tl-cedit{font-size:12px;color:#334;flex-shrink:0;transition:color .15s;cursor:pointer;padding:4px}
-.tl-empty{padding:20px 13px;color:var(--muted);font-size:12px;line-height:1.9}
-.tl-info{padding:9px 13px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);line-height:1.9}
-.tl-info b{color:var(--accent);font-weight:600}
-.limit-tag{color:var(--amber)}
-.dead-tag{color:var(--red)}
-
-/* Timeline modal */
-.tl-modal-overlay{
-  display:none;position:absolute;inset:0;background:rgba(0,0,0,.65);
-  z-index:500;align-items:flex-end;justify-content:center;
-}
-.tl-modal-overlay.show{display:flex}
-.tl-modal{
-  background:var(--panel);border:1px solid var(--ibr);
-  border-radius:14px 14px 0 0;padding:22px 20px 28px;
-  width:100%;max-width:440px;max-height:88vh;overflow-y:auto;
-  box-shadow:0 -8px 32px rgba(0,0,0,.5);
-}
-.tl-modal h2{font-size:16px;margin-bottom:14px;color:var(--accent)}
-.tl-modal label{font-size:12px;color:#888;display:block;margin-bottom:4px}
-.tl-modal input[type=text],.tl-modal input[type=number]{margin-bottom:11px;font-size:14px;padding:9px 11px}
-.tl-avatar-section{margin-bottom:12px}
-.tl-avatar-wrap{display:flex;align-items:center;gap:12px;margin-bottom:6px}
-.tl-avatar-preview{
-  width:52px;height:52px;border-radius:50%;overflow:hidden;
-  background:var(--ib);border:2px solid var(--ibr);
-  display:flex;align-items:center;justify-content:center;
-  font-size:20px;font-weight:700;color:#fff;flex-shrink:0;position:relative;
-}
-.tl-avatar-preview img{width:100%;height:100%;object-fit:cover}
-#tl-avatar-clear-x{
-  position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;
-  background:var(--red);color:#fff;font-size:14px;line-height:20px;text-align:center;
-  cursor:pointer;display:none;box-shadow:0 2px 6px rgba(0,0,0,.4);font-weight:700;
-}
-.tl-avatar-preview:hover #tl-avatar-clear-x{display:block}
-.tl-avatar-btns-col{flex:1}
-.tl-avatar-btns{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px}
-.tl-avatar-btns .btn{font-size:12px;padding:6px 10px}
-.tl-url-row{display:flex;gap:6px}
-.tl-url-row input{flex:1;font-size:13px;padding:7px 10px;margin-bottom:0}
-.tl-url-row .btn{font-size:12px;padding:6px 10px;flex-shrink:0}
-.tl-limit-section{
-  background:rgba(124,131,247,.06);border:1px solid rgba(124,131,247,.18);
-  border-radius:9px;padding:11px 13px;margin-bottom:13px;
-}
-.tl-limit-section label{font-size:12px;color:#888;display:block;margin-bottom:6px}
-.tl-limit-row{display:flex;align-items:center;gap:10px}
-.tl-toggle{
-  width:36px;height:20px;background:var(--ibr);border-radius:10px;border:none;
-  cursor:pointer;position:relative;flex-shrink:0;transition:background .2s;
-}
-.tl-toggle.on{background:var(--accent)}
-.tl-toggle::after{
-  content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;
-  top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3);
-}
-.tl-toggle.on::after{left:19px}
-#tl-limit-input{width:80px;margin-bottom:0;font-size:14px;padding:7px 10px}
-#tl-file-input{display:none}
-#char-file-input{display:none}
-
-
-/* ════════════════════════════════════════
-   TAB & COLLAPSIBLE (shared timeline + map)
-════════════════════════════════════════ */
-.tl-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
-.tl-tab{flex:1;padding:9px 4px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
-.tl-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
-.tl-tab:hover:not(.active){color:#ccd;background:#22263a}
-.tl-tab-content{display:flex;flex-direction:column;flex:1;overflow:hidden}
-.tl-section{flex-shrink:0}
-.tl-section-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);user-select:none;transition:background .1s}
-.tl-section-hdr:hover{background:#22263a}
-.tl-section-body{border-bottom:1px solid var(--border)}
-.tl-chevron{font-size:11px;color:var(--muted)}
-
-/* ════════════════════════════════════════
-   MAP PAGE
-════════════════════════════════════════ */
-.map-layout{position:relative;height:100%;overflow:hidden}
-.map-cw{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;touch-action:none;cursor:grab;background:var(--bg)}
-.map-cw canvas{display:block;width:100%;height:100%}
-
-/* Toolbar overlay */
-.map-toolbar{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:5px 7px;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:10}
-.map-tb-btn{width:30px;height:30px;border-radius:6px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.map-tb-btn:hover,.map-tb-btn.active{background:rgba(124,131,247,.18);color:var(--accent)}
-.map-tb-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
-.map-mode-hint{background:rgba(124,131,247,.18);color:var(--accent);font-size:11px;padding:3px 8px;border-radius:12px;white-space:nowrap;margin-left:4px}
-
-/* Popup */
-.map-popup{position:absolute;background:var(--panel);border:1px solid var(--ibr);border-radius:10px;padding:12px 14px;min-width:180px;max-width:260px;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:20}
-.map-popup-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.map-popup-title-text{font-size:14px;font-weight:700;color:var(--text)}
-.map-popup-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 2px;line-height:1}
-.map-popup-close:hover{color:var(--red)}
-.map-popup-desc{font-size:13px;color:#aab;line-height:1.6;margin-bottom:8px;white-space:pre-wrap}
-.map-popup-chars{margin-bottom:8px}
-.popup-chars-label{font-size:11px;color:#667;margin-bottom:5px}
-.popup-char-item{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:13px;color:#cdd}
-.popup-char-av{width:22px;height:22px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
-.map-popup-actions{display:flex;gap:7px;padding-top:8px;border-top:1px solid var(--border)}
-
-/* Panel */
-.map-panel{
-  position:absolute;right:0;top:0;bottom:0;z-index:50;
-  width:240px;background:var(--panel);border-left:1px solid var(--border);
-  display:flex;flex-direction:column;overflow:hidden;
-  transition:transform .28s cubic-bezier(0.4,0,0.2,1);
-}
-.map-panel.collapsed{transform:translateX(100%);}
-.map-panel-hdr{padding:11px 14px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;flex-shrink:0}
-.map-panel-hdr:hover{background:#22263a}
-#map-panel-chevron{font-size:11px;color:var(--muted)}
-.map-tab-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch}
-.map-tab-scroll::-webkit-scrollbar{width:3px}
-.map-tab-scroll::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:3px}
-
-/* Map item list */
-.map-item-list{padding:4px 0}
-.map-list-item{display:flex;align-items:center;gap:8px;padding:6px 13px;cursor:pointer;transition:background .1s;font-size:13px}
-.map-list-item:hover{background:#22263a}
-.map-list-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0}
-.map-list-name{flex:1;color:#cdd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.map-list-count{font-size:11px;color:var(--muted)}
-.map-empty{padding:10px 13px;font-size:12px;color:var(--muted)}
-
-/* Character picker in modal */
-.map-char-picker{display:flex;flex-wrap:wrap;gap:7px;padding:6px 0;max-height:180px;overflow-y:auto;margin-bottom:4px}
-.char-pick-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;border-radius:8px;border:2px solid transparent;cursor:pointer;transition:all .15s;width:60px}
-.char-pick-item:hover{background:#22263a}
-.char-pick-item.selected{border-color:var(--accent);background:rgba(124,131,247,.1)}
-.char-pick-av{width:32px;height:32px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
-.char-pick-name{font-size:11px;color:#cdd;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
-
-
-/* ════════════════════════════════════════
-   CHARACTERS PAGE
-════════════════════════════════════════ */
-.chars-layout{display:flex;flex-direction:column;height:100%;overflow:hidden;padding:20px 28px}
-.chars-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.chars-header h2{font-size:20px;font-weight:700;color:var(--accent);margin:0}
-.chars-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;padding-bottom:20px;align-items:start}
-.chars-grid::-webkit-scrollbar{width:4px}
-.chars-grid::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:3px}
-.chars-empty{grid-column:1/-1;text-align:center;color:var(--muted);font-size:14px;padding:40px 20px}
-.char-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .18s;user-select:none}
-.char-card:hover{border-color:var(--accent);background:#22263a;transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
-.char-card-av{width:64px;height:64px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;flex-shrink:0}
-.char-card-name{font-size:15px;font-weight:700;color:#e8eaed;text-align:center}
-.char-card-age{font-size:12px;color:var(--accent);background:rgba(124,131,247,.15);padding:3px 10px;border-radius:12px}
-.char-card-desc{font-size:12px;color:#889;text-align:center;line-height:1.5;word-wrap:break-word}
-
-
-/* ════════════════════════════════════════
-   LIBRARY PAGE (指令集)
-════════════════════════════════════════ */
-.lib-layout{position:relative;height:100%;overflow:hidden}
-.lib-main{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;overflow:hidden;padding:20px 28px}
-.lib-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.lib-header h2{font-size:20px;font-weight:700;color:var(--accent);margin:0}
-
-.lib-panel{position:absolute;right:0;top:0;bottom:0;z-index:50;width:240px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:transform .28s cubic-bezier(0.4,0,0.2,1)}
-.lib-panel.collapsed{transform:translateX(100%)}
-.lib-panel-hdr{padding:11px 14px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;flex-shrink:0}
-.lib-panel-hdr:hover{background:#22263a}
-.lib-panel-body{flex:1;overflow-y:auto;padding:12px 14px}
-.lib-panel-body::-webkit-scrollbar{width:3px}
-.lib-panel-body::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:2px}
-
-.lib-tag-list{display:flex;flex-direction:column;gap:6px}
-.lib-tag-filter{padding:8px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .18s;font-size:13px;background:var(--bg);border:1px solid transparent}
-.lib-tag-filter:hover{background:#22263a;border-color:var(--border)}
-.lib-tag-filter.selected{background:rgba(124,131,247,.25);color:var(--accent);font-weight:600;border-color:var(--accent);box-shadow:0 0 0 1px rgba(124,131,247,.3)}
-.lib-tag-main{flex:1;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
-.lib-tag-name{flex:1}
-.lib-tag-count{color:var(--muted);font-size:11px;margin-left:8px}
-.lib-tag-actions{display:flex;gap:4px;margin-left:8px;opacity:0;transition:opacity .15s}
-.lib-tag-filter:hover .lib-tag-actions{opacity:1}
-.lib-tag-action-btn{width:22px;height:22px;border:none;background:rgba(124,131,247,.15);border-radius:4px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
-.lib-tag-action-btn:hover{background:rgba(124,131,247,.3);transform:scale(1.1)}
-.lib-tag-edit:hover{background:rgba(39,174,96,.25)}
-.lib-tag-delete:hover{background:rgba(239,68,68,.25)}
-
-.lib-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding-bottom:20px;align-items:start}
-.lib-grid::-webkit-scrollbar{width:4px}
-.lib-grid::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:3px}
-.lib-empty{grid-column:1/-1;text-align:center;color:var(--muted);font-size:14px;padding:40px 20px}
-
-.lib-item{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .18s;user-select:none}
-.lib-item:hover{border-color:var(--accent);background:#22263a;transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.3)}
-.lib-item-content{font-size:14px;line-height:1.7;color:#cdd;margin-bottom:10px;white-space:pre-wrap;word-break:break-word}
-.lib-item-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.lib-item-tag{font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(124,131,247,.15);color:var(--accent)}
-
-.lib-item-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
-.lib-item-author{font-size:12px;color:#889;font-style:italic}
-.lib-item-like{display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(124,131,247,.08);border:1px solid rgba(124,131,247,.2);border-radius:8px;cursor:pointer;transition:all .2s;user-select:none}
-.lib-item-like:hover{background:rgba(124,131,247,.15);border-color:rgba(124,131,247,.4);transform:translateY(-1px)}
-.lib-item-like:active{transform:translateY(0) scale(0.98)}
-.lib-item-like.liked{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4)}
-.lib-item-like.liked:hover{background:rgba(239,68,68,.25);border-color:rgba(239,68,68,.6)}
-.lib-item-like.liked .lib-like-count{color:#ef4444}
-.lib-author-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--bg);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;max-height:200px;overflow-y:auto;z-index:100;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3)}
-.lib-author-suggestion{padding:8px 12px;cursor:pointer;font-size:13px;transition:background .15s}
-.lib-author-suggestion:hover{background:rgba(124,131,247,.15)}
-.lib-author-suggestion:active{background:rgba(124,131,247,.25)}
-.lib-sort-btn{flex:1;padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px;cursor:pointer;transition:all .2s;white-space:nowrap}
-.lib-sort-btn:hover{background:rgba(124,131,247,.1);border-color:rgba(124,131,247,.3)}
-.lib-sort-btn.active{background:rgba(124,131,247,.2);border-color:var(--accent);color:var(--accent);font-weight:600}
-.lib-like-btn{font-size:18px;line-height:1;pointer-events:none}
-.lib-like-count{font-size:14px;color:var(--accent);font-weight:600;min-width:24px;text-align:center;pointer-events:none}
-
-.lib-tag-picker{display:flex;flex-wrap:wrap;gap:8px;padding:8px;background:var(--bg);border-radius:6px;min-height:40px}
-.lib-tag-checkbox{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .15s;font-size:13px;background:var(--panel);border:1px solid var(--border)}
-.lib-tag-checkbox:hover{background:#22263a;border-color:var(--accent)}
-.lib-tag-checkbox input[type="checkbox"]{margin:0;cursor:pointer}
-
-/* ════════════════════════════════════════
-   PLACEHOLDER page (未来页面)
-════════════════════════════════════════ */
-.page-placeholder{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  height:100%;color:var(--muted);text-align:center;padding:40px;
-}
-.page-placeholder .placeholder-icon{font-size:56px;margin-bottom:16px;opacity:.5}
-.page-placeholder h2{font-size:20px;font-weight:700;margin-bottom:8px;color:#667}
-.page-placeholder p{font-size:14px;line-height:1.8}
-
-/* ════════════════════════════════════════
-   Responsive
-════════════════════════════════════════ */
-@media(max-width:768px){
-  #menu-btn{display:block}
-  #sidebar{
-    position:fixed;left:0;top:0;bottom:0;z-index:200;
-    transform:translateX(-100%);  /* Hidden by default on mobile */
-  }
-  #sidebar.open{transform:translateX(0) !important}  /* Mobile hamburger menu overrides collapsed state */
-  #toast{bottom:16px}
-  .tl-panel{width:200px}
-  .page-home{padding:20px}
-  .tl-modal-overlay{position:fixed}
-}
-@media(min-width:769px){
-  #menu-btn{display:none}
-  /* Desktop: sidebar uses .collapsed class, not transform:none */
-  #sidebar{position:absolute}  /* Keep absolute, allow .collapsed to work */
+.page-name-tag {
+  font-size: 13px;
+  color: var(--accent-bright);
+  font-weight: 600;
 }
 </style>
+
 </head>
 <body>
 
@@ -558,7 +160,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <button id="menu-btn">☰</button>
     <div id="topbar-title">欢迎欢迎~</div>
     <div id="sync-dot" title="同步状态"></div>
-    <button id="lock-btn" onclick="showPwModal()">🔒 编辑</button>
+    <button id="lock-btn" onclick="showPwModal()">readonly</button>
   </div>
 
   <div id="body-row">
@@ -566,10 +168,10 @@ input:focus,textarea:focus{border-color:var(--accent)}
     <div id="sidebar">
       <div id="sidebar-logo">
         <div style="flex:1">
-          🌐 欢迎欢迎~
+          欢迎欢迎~
           <span style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px">嗯呢嗯呢</span>
         </div>
-        <button id="sidebar-toggle" class="panel-toggle-btn" title="折叠/展开导航栏">◀</button>
+        <button id="sidebar-toggle" class="panel-toggle-btn" title="折叠/展开导航栏">‹</button>
       </div>
       <nav id="sidebar-nav">
         <!-- Nav items injected by router -->
@@ -579,7 +181,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
     </div>
 
     <div id="sidebar-overlay"></div>
-    <button id="sidebar-expand" class="expand-btn-float" title="展开导航栏">▶</button>
+    <button id="sidebar-expand" class="expand-btn-float" title="展开导航栏">›</button>
 
     <!-- Main area -->
     <div id="main-content">
@@ -591,8 +193,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
 <!-- Password modal -->
 <div id="pw-modal">
   <div id="pw-box">
-    <h2>🔐 输入编辑密码</h2>
-    <label>密码</label>
+    <h2>输入编辑密码</h2>
     <input id="pw-input" type="password" placeholder="请输入密码" autocomplete="current-password"/>
     <div id="pw-error">密码错误，请重试</div>
     <div class="mbtns" style="justify-content:flex-end;margin-top:4px">
@@ -602,32 +203,64 @@ input:focus,textarea:focus{border-color:var(--accent)}
   </div>
 </div>
 
+<!-- 访问加密页面的密码弹窗 -->
+<div id="page-pw-modal">
+  <div id="page-pw-box">
+    <h2>该页面已加密</h2>
+    <div class="page-name-tag" id="page-pw-page-name"></div>
+    <label>请输入访问密码</label>
+    <input id="page-pw-input" type="password" placeholder="请输入密码" autocomplete="off"/>
+    <div id="page-pw-error">密码错误，请重试</div>
+    <div class="mbtns" style="justify-content:flex-end;margin-top:4px">
+      <button class="btn bn" onclick="closePagePwModal()">取消</button>
+      <button class="btn bp" onclick="submitPagePw()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设置页面加密密码的弹窗（编辑模式） -->
+<div id="set-lock-modal">
+  <div id="set-lock-box">
+    <h2>设置页面密码</h2>
+    <div class="page-name-tag" id="set-lock-page-name"></div>
+    <input type="hidden" id="set-lock-page-id"/>
+    <label>新密码</label>
+    <input id="set-lock-input" type="password" placeholder="请输入要设置的密码" autocomplete="new-password"/>
+    <div id="set-lock-error"></div>
+    <div class="mbtns" style="justify-content:flex-end;margin-top:4px">
+      <button class="btn bn" onclick="closeSetLockModal()">取消</button>
+      <button class="btn bp" onclick="submitSetLock()">确认</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script type="module">
 const _V = Date.now(); // 缓存破坏版本号，每次加载页面时生成
-import { showToast, initSidebar, closeSidebar } from './core/ui.js';
+import { showToast, initSidebar, closeSidebar, confirmDialog, bindPanelToggle } from './core/ui.js';
 import { isEditor, tryUnlock, lock, onAuthChange } from './core/auth.js';
+import { supaClient } from './core/supabase-client.js';
 
 // ── Router config ──────────────────────────────────
 // 添加新页面：在这里加一条记录，并在 pages/ 目录下建对应 .js 文件
 const ROUTES = [
   {
     id: 'home',
-    label: '🏠 主页',
-    icon: '🏠',
+    label: '⌂ 主页',
+    icon: '⌂',
     loader: () => import('./pages/home.js?v='+_V),
   },
   {
     id: 'characters',
-    label: '👥 世界观及人物',
-    icon: '👥',
+    label: '☲ 世界观及人物',
+    icon: '☲',
     loader: () => import('./pages/characters.js?v='+_V),
   },
   {
     id: 'library',
-    label: '📋 指令集',
-    icon: '📋',
+    label: '¶ 指令集',
+    icon: '¶',
     loader: () => import('./pages/library.js?v='+_V),
   },
   {
@@ -656,6 +289,51 @@ const ROUTES = [
 let currentRoute = null;
 let currentModule = null;
 
+// ── Page Lock State ────────────────────────────────
+let pageLocks = {};          // { pageId: sha256Hash }
+const sessionUnlocked = new Set(); // 本次会话中已解锁的页面
+
+// SHA-256 工具函数
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// 从 Supabase 加载页面锁定配置
+async function loadPageLocks() {
+  try {
+    const { data } = await supaClient.from('site_content').select('value').eq('key','page_locks').single();
+    if (data?.value) pageLocks = JSON.parse(data.value);
+  } catch(e) { /* 首次使用时可能没有记录，忽略 */ }
+  buildNav();
+  updateLockPanelSelects();
+}
+
+// 保存页面锁定配置到 Supabase
+async function savePageLocks() {
+  await supaClient.from('site_content')
+    .upsert({ key: 'page_locks', value: JSON.stringify(pageLocks) }, { onConflict: 'key' });
+}
+
+// 更新加密面板中的 select 选项和按钮状态
+function updateLockPanelSelects() {
+  const sel = document.getElementById('page-lock-select');
+  if (!sel) return;
+  // 更新每个 option 的显示（加/去锁图标）
+  ROUTES.forEach(r => {
+    const opt = sel.querySelector(`option[value="${r.id}"]`);
+    if (opt) opt.textContent = pageLocks[r.id] ? `${r.label}  🔒` : r.label;
+  });
+  updateLockBtns(sel.value);
+}
+
+// 根据选中的 page 显示/隐藏「移除」按钮
+function updateLockBtns(pageId) {
+  const removeBtn = document.getElementById('page-lock-remove-btn');
+  if (!removeBtn) return;
+  removeBtn.style.display = pageLocks[pageId] ? '' : 'none';
+}
+
 // ── Build nav ──────────────────────────────────────
 function buildNav() {
   const nav = document.getElementById('sidebar-nav');
@@ -664,6 +342,7 @@ function buildNav() {
       <span class="nav-icon">${r.icon}</span>
       <span class="nav-label">${r.label.replace(r.icon,'').trim()}</span>
       ${r.placeholder ? '<span style="font-size:10px;color:#555;margin-left:auto">soon</span>' : ''}
+      ${pageLocks[r.id] && !isEditor() ? '<span class="nav-lock-icon">🔒</span>' : ''}
     </div>
   `).join('');
   nav.querySelectorAll('.nav-item').forEach(el => {
@@ -678,6 +357,12 @@ function buildNav() {
 async function navigate(id) {
   const route = ROUTES.find(r => r.id === id) || ROUTES[0];
   if (currentRoute?.id === route.id) return;
+
+  // 检查该页面是否加密（编辑者和本次已解锁的页面直接通过）
+  if (pageLocks[route.id] && !isEditor() && !sessionUnlocked.has(route.id)) {
+    showPagePasswordModal(route);
+    return;
+  }
 
   // Unmount current
   if (currentModule?.unmount) currentModule.unmount();
@@ -723,17 +408,58 @@ onAuthChange(editor => {
   const banner = document.getElementById('readonly-banner');
   const footer = document.getElementById('sidebar-footer');
   if (editor) {
-    btn.textContent = '🔓 编辑中';
+    btn.textContent = '-- EDITING --';
     btn.classList.add('unlocked');
-    banner.classList.remove('show');
-    footer.textContent = '✅ 编辑模式已解锁';
+    if (banner) banner.classList.remove('show');
+    // 显示编辑状态 + 页面加密管理面板
+    footer.innerHTML = `
+      <div class="editor-status"> 编辑模式已解锁</div>
+      <div id="page-lock-panel">
+        <div class="page-lock-header"> 页面加密</div>
+        <select id="page-lock-select">
+          ${ROUTES.map(r => `<option value="${r.id}">${pageLocks[r.id] ? r.label + '  🔒' : r.label}</option>`).join('')}
+        </select>
+        <div class="page-lock-btns">
+          <button id="page-lock-set-btn" class="btn bp">设置密码</button>
+          <button id="page-lock-remove-btn" class="btn br" style="${pageLocks[ROUTES[0]?.id] ? '' : 'display:none'}">移除加密</button>
+        </div>
+      </div>`;
+    bindLockPanel();
   } else {
-    btn.textContent = '🔒 编辑';
+    btn.textContent = 'READONLY';
     btn.classList.remove('unlocked');
-    banner.classList.add('show');
-    footer.textContent = '';
+    if (banner) banner.classList.add('show');
+    footer.innerHTML = '';
+    buildNav(); // 重新构建导航（可能需要显示锁图标）
   }
 });
+
+// 绑定加密面板的事件
+function bindLockPanel() {
+  const sel = document.getElementById('page-lock-select');
+  // 初始化按钮状态
+  updateLockBtns(sel?.value);
+
+  sel?.addEventListener('change', () => updateLockBtns(sel.value));
+
+  document.getElementById('page-lock-set-btn')?.addEventListener('click', () => {
+    const pageId = document.getElementById('page-lock-select').value;
+    window.showSetLockModal(pageId);
+  });
+
+  document.getElementById('page-lock-remove-btn')?.addEventListener('click', async () => {
+    const pageId = document.getElementById('page-lock-select').value;
+    const route = ROUTES.find(r => r.id === pageId);
+    if (confirmDialog(`确定移除「${route.label}」的加密吗？`)) {
+      delete pageLocks[pageId];
+      sessionUnlocked.delete(pageId);
+      await savePageLocks();
+      showToast('✅ 已移除页面加密');
+      buildNav();
+      updateLockPanelSelects();
+    }
+  });
+}
 
 // ── Password modal (global) ────────────────────────
 window.showPwModal = function() {
@@ -757,7 +483,7 @@ window.submitPw = async function() {
     tryUnlock(pw);
     delete window.EDIT_PASSWORD;
     window.closePwModal();
-    showToast('✅ 已解锁编辑模式');
+    showToast('ok 已解锁编辑模式');
   } else {
     document.getElementById('pw-error').style.display = 'block';
     document.getElementById('pw-input').value = '';
@@ -779,24 +505,96 @@ document.getElementById('pw-modal').addEventListener('click', e => {
   if (e.target===document.getElementById('pw-modal')) window.closePwModal();
 });
 
-// ── Left sidebar toggle ────────────────────────────
-function toggleSidebarPanel() {
-  const sb = document.getElementById('sidebar');
-  const btn = document.getElementById('sidebar-toggle');
-  const expandBtn = document.getElementById('sidebar-expand');
-  console.log('[toggleSidebarPanel] sidebar:', sb, 'collapsed before:', sb?.classList.contains('collapsed'));
-  const collapsed = sb.classList.toggle('collapsed');
-  console.log('[toggleSidebarPanel] collapsed after:', collapsed, 'classList:', sb?.classList.toString());
-  btn.textContent = collapsed ? '▶' : '◀';
-  if (expandBtn) expandBtn.classList.toggle('show', collapsed);
+// ── 访问加密页面的弹窗 ─────────────────────────────
+let _pendingNavRoute = null;
+
+function showPagePasswordModal(route) {
+  _pendingNavRoute = route;
+  document.getElementById('page-pw-page-name').textContent = route.label;
+  document.getElementById('page-pw-input').value = '';
+  document.getElementById('page-pw-error').style.display = 'none';
+  document.getElementById('page-pw-modal').classList.add('show');
+  setTimeout(() => document.getElementById('page-pw-input').focus(), 60);
 }
-document.getElementById('sidebar-toggle')?.addEventListener('click', toggleSidebarPanel);
-document.getElementById('sidebar-expand')?.addEventListener('click', toggleSidebarPanel);
+
+window.closePagePwModal = function() {
+  document.getElementById('page-pw-modal').classList.remove('show');
+  document.getElementById('page-pw-input').value = '';
+  _pendingNavRoute = null;
+};
+
+window.submitPagePw = async function() {
+  if (!_pendingNavRoute) return;
+  const pw = document.getElementById('page-pw-input').value;
+  const hash = await sha256(pw);
+  if (hash === pageLocks[_pendingNavRoute.id]) {
+    sessionUnlocked.add(_pendingNavRoute.id);
+    const route = _pendingNavRoute;
+    window.closePagePwModal();
+    navigate(route.id);
+  } else {
+    document.getElementById('page-pw-error').style.display = 'block';
+    document.getElementById('page-pw-input').value = '';
+    document.getElementById('page-pw-input').focus();
+  }
+};
+
+document.getElementById('page-pw-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); window.submitPagePw(); }
+  if (e.key === 'Escape') { e.stopPropagation(); window.closePagePwModal(); }
+});
+document.getElementById('page-pw-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('page-pw-modal')) window.closePagePwModal();
+});
+
+// ── 设置页面加密密码的弹窗 ─────────────────────────
+window.showSetLockModal = function(pageId) {
+  const route = ROUTES.find(r => r.id === pageId);
+  document.getElementById('set-lock-page-name').textContent = route.label;
+  document.getElementById('set-lock-page-id').value = pageId;
+  document.getElementById('set-lock-input').value = '';
+  document.getElementById('set-lock-error').style.display = 'none';
+  document.getElementById('set-lock-modal').classList.add('show');
+  setTimeout(() => document.getElementById('set-lock-input').focus(), 60);
+};
+
+window.closeSetLockModal = function() {
+  document.getElementById('set-lock-modal').classList.remove('show');
+  document.getElementById('set-lock-input').value = '';
+};
+
+window.submitSetLock = async function() {
+  const pw = document.getElementById('set-lock-input').value.trim();
+  if (!pw) {
+    document.getElementById('set-lock-error').textContent = '密码不能为空';
+    document.getElementById('set-lock-error').style.display = 'block';
+    return;
+  }
+  const pageId = document.getElementById('set-lock-page-id').value;
+  pageLocks[pageId] = await sha256(pw);
+  await savePageLocks();
+  showToast('✅ 页面加密已设置');
+  window.closeSetLockModal();
+  buildNav();
+  updateLockPanelSelects();
+};
+
+document.getElementById('set-lock-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); window.submitSetLock(); }
+  if (e.key === 'Escape') { e.stopPropagation(); window.closeSetLockModal(); }
+});
+document.getElementById('set-lock-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('set-lock-modal')) window.closeSetLockModal();
+});
+
+// ── Left sidebar toggle ────────────────────────────
+bindPanelToggle(document, '#sidebar', '#sidebar-toggle', '#sidebar-expand', '#sidebar-toggle');
 
 // ── Init ───────────────────────────────────────────
 initSidebar();
 buildNav();
 navigate('library');  // 默认进入指令集页面
+loadPageLocks();      // 异步加载页面加密配置
 </script>
 
 </body>
