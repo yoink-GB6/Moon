@@ -1,0 +1,58 @@
+/* ════════════════════════════════════════
+   MAP PAGE
+════════════════════════════════════════ */
+.map-layout{position:relative;height:100%;overflow:hidden}
+.map-cw{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;touch-action:none;cursor:grab;background:var(--bg)}
+.map-cw canvas{display:block;width:100%;height:100%}
+
+/* ── Toolbar overlay ── */
+.map-toolbar{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:5px 7px;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:10}
+.map-tb-btn{width:30px;height:30px;border-radius:6px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.map-tb-btn:hover,.map-tb-btn.active{background:rgba(168,137,58,.18);color:var(--accent)}
+.map-tb-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
+.map-mode-hint{background:rgba(168,137,58,.18);color:var(--accent);font-size:11px;padding:3px 8px;border-radius:12px;white-space:nowrap;margin-left:4px}
+
+/* ── Popup ── */
+.map-popup{position:absolute;background:var(--panel);border:1px solid var(--ibr);border-radius:10px;padding:12px 14px;min-width:180px;max-width:260px;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:20}
+.map-popup-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.map-popup-title-text{font-size:14px;font-weight:700;color:var(--text)}
+.map-popup-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 2px;line-height:1}
+.map-popup-close:hover{color:var(--red)}
+.map-popup-desc{font-size:13px;color:#aab;line-height:1.6;margin-bottom:8px;white-space:pre-wrap}
+.map-popup-chars{margin-bottom:8px}
+.popup-chars-label{font-size:11px;color:#667;margin-bottom:5px}
+.popup-char-item{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:13px;color:#cdd}
+.popup-char-av{width:22px;height:22px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.map-popup-actions{display:flex;gap:7px;padding-top:8px;border-top:1px solid var(--border)}
+
+/* ── Panel ── */
+.map-panel{
+  position:absolute;right:0;top:0;bottom:0;z-index:50;
+  width:240px;background:var(--panel);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:transform .28s cubic-bezier(0.4,0,0.2,1);
+}
+.map-panel.collapsed{transform:translateX(100%)}
+.map-panel-hdr{padding:11px 14px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;flex-shrink:0}
+.map-panel-hdr:hover{background:#1e1b12}
+#map-panel-chevron{font-size:11px;color:var(--muted)}
+.map-tab-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch}
+.map-tab-scroll::-webkit-scrollbar{width:3px}
+.map-tab-scroll::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:3px}
+
+/* ── Map item list ── */
+.map-item-list{padding:4px 0}
+.map-list-item{display:flex;align-items:center;gap:8px;padding:6px 13px;cursor:pointer;transition:background .1s;font-size:13px}
+.map-list-item:hover{background:#1e1b12}
+.map-list-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.map-list-name{flex:1;color:#cdd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.map-list-count{font-size:11px;color:var(--muted)}
+.map-empty{padding:10px 13px;font-size:12px;color:var(--muted)}
+
+/* ── Character picker in modal ── */
+.map-char-picker{display:flex;flex-wrap:wrap;gap:7px;padding:6px 0;max-height:180px;overflow-y:auto;margin-bottom:4px}
+.char-pick-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;border-radius:8px;border:2px solid transparent;cursor:pointer;transition:all .15s;width:60px}
+.char-pick-item:hover{background:#1e1b12}
+.char-pick-item.selected{border-color:var(--accent);background:rgba(168,137,58,.1)}
+.char-pick-av{width:32px;height:32px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+.char-pick-name{font-size:11px;color:#cdd;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}

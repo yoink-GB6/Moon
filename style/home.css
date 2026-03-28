@@ -1,0 +1,91 @@
+/* ════════════════════════════════════════
+   HOME PAGE — Markdown 编辑器
+════════════════════════════════════════ */
+.page-home{padding:40px;max-width:760px;margin:0 auto;overflow-y:auto;height:100%;position:relative;box-sizing:border-box}
+
+/* 编辑按钮悬浮右上角 */
+.home-md-edit-btn{position:absolute;top:32px;right:32px}
+
+/* 工具栏 */
+.home-md-toolbar{display:flex;gap:8px;margin-bottom:16px}
+
+/* 编辑 textarea */
+.home-md-textarea{
+  width:100%;min-height:400px;resize:none;
+  font-family:var(--font-body);
+  font-size:14px;line-height:1.8;
+  background:var(--surface-2);color:var(--text);
+  border:1px solid var(--border-hi);border-radius:4px;
+  padding:24px;box-sizing:border-box;outline:none;
+  transition:border-color .2s;
+}
+.home-md-textarea:focus{border-color:var(--accent-dim)}
+
+/* 占位提示 */
+.home-placeholder{color:var(--muted);font-style:italic;font-size:14px}
+
+/* ── Markdown 渲染区 ── */
+.home-md-view{line-height:1.85;color:var(--text)}
+
+.home-md-view .md-h1{
+  font-family:var(--font-title);font-size:28px;
+  color:var(--accent-bright);
+  margin:0 0 28px;letter-spacing:.12em;text-transform:uppercase;
+  border-bottom:1px solid var(--accent-dim);padding-bottom:12px;
+}
+.home-md-view .md-h2{
+  font-family:var(--font-title);font-size:20px;
+  color:var(--accent);
+  margin:36px 0 16px;letter-spacing:.1em;
+}
+.home-md-view .md-h3{
+  font-size:16px;font-weight:600;color:var(--text);
+  margin:26px 0 10px;
+}
+.home-md-view .md-h4{
+  font-size:14px;font-weight:600;color:var(--muted);
+  margin:20px 0 8px;letter-spacing:.05em;
+}
+
+.home-md-view .md-p{
+  color:var(--text);font-size:15px;line-height:1.85;
+  margin:0 0 16px;
+}
+
+.home-md-view .md-ul,
+.home-md-view .md-ol{margin:0 0 16px 22px;padding:0}
+.home-md-view .md-ul li,
+.home-md-view .md-ol li{
+  color:var(--text);font-size:15px;line-height:1.85;margin-bottom:5px;
+}
+.home-md-view .md-ul li::marker{color:var(--accent-dim)}
+.home-md-view .md-ol li::marker{color:var(--accent-dim)}
+
+.home-md-view .md-bq{
+  border-left:3px solid var(--accent-dim);
+  margin:18px 0;padding:8px 18px;
+  color:var(--muted);font-style:italic;
+  background:var(--surface-2);border-radius:0 4px 4px 0;
+}
+
+.home-md-view .md-hr{
+  border:none;border-top:1px solid var(--accent-dim);
+  margin:32px 0;opacity:.45;
+}
+
+.home-md-view .md-img{
+  max-width:100%;border-radius:4px;
+  margin:10px 0;display:block;
+}
+
+.home-md-view a{color:var(--accent);text-decoration:none;transition:color .2s}
+.home-md-view a:hover{color:var(--accent-bright);text-decoration:underline}
+
+.home-md-view strong{color:var(--accent-bright);font-weight:700}
+.home-md-view em{color:var(--muted);font-style:italic}
+
+.home-md-view code{
+  font-family:'Share Tech Mono','Courier New',monospace;
+  font-size:13px;background:var(--surface-2);
+  color:var(--accent-bright);padding:2px 6px;border-radius:3px;
+}

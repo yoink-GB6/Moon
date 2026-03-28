@@ -1,0 +1,125 @@
+/* ════════════════════════════════════════
+   Shared buttons
+════════════════════════════════════════ */
+.btn{
+  display:inline-block;vertical-align:middle;
+  margin:0 2px;padding:3px 10px;
+  color:var(--accent);background:var(--accent-muted);border:1px solid var(--accent-dim);
+  border-radius:2px;text-transform:uppercase;letter-spacing:.18em;
+  line-height:1.5;font-size:12px;font-weight:600;
+  cursor:pointer;white-space:nowrap;
+  transition:filter .15s,transform .1s;touch-action:manipulation;
+}
+.btn:hover:not(:disabled){filter:brightness(1.2)}
+.btn:active{transform:scale(.94);filter:brightness(.85)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.bp{color:var(--accent-bright);border-color:var(--accent)}
+.be{color:var(--green-bright);background:var(--green-muted);border-color:var(--green-dim)}
+.bn{color:var(--muted);background:var(--surface-2);border-color:var(--border-hi)}
+.br{color:var(--red-bright);background:var(--red-muted);border-color:var(--red-dim)}
+
+/* ── Inputs ── */
+input[type=text],input[type=number],input[type=password],textarea{
+  background:var(--ib);border:1px solid var(--ibr);color:var(--text);
+  border-radius:4px;padding:8px 11px;font-size:14px;outline:none;width:100%;
+  transition:border-color .2s;-webkit-appearance:none;resize:vertical;
+}
+input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(168,137,58,.15)}
+
+.ctrl-label{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:7px;letter-spacing:.4px}
+.ctrl-note{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.small-btn{
+  display:inline-block;vertical-align:middle;
+  margin:0 2px;padding:1px 7px;
+  color:var(--muted);background:transparent;
+  border:1px solid var(--border-hi);border-radius:2px;
+  letter-spacing:.15em;line-height:1.5;font-size:11px;
+  cursor:pointer;touch-action:manipulation;white-space:nowrap;
+}
+.small-btn:active{color:var(--accent);border-color:var(--accent)}
+.mbtns{display:flex;gap:10px;margin-top:8px}
+.mbtns .btn{padding:7px 14px;font-size:13px}
+
+/* ── Toast ── */
+#toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(40px);
+  background:var(--surface-2);border:1px solid var(--border-hi);color:var(--accent-bright);
+  padding:9px 20px;border-radius:4px;font-size:13px;z-index:3000;
+  transition:transform .25s ease,opacity .25s;opacity:0;pointer-events:none;white-space:nowrap;
+  box-shadow:0 0 0 1px var(--accent-muted);
+}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast-item{
+  position:fixed;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.9);color:var(--text);padding:12px 24px;border-radius:4px;
+  font-size:14px;white-space:nowrap;z-index:9999;
+  opacity:0;pointer-events:none;transition:all .3s;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+}
+.toast-item.show{opacity:1}
+
+/* ── Password modal ── */
+#pw-modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:1000;align-items:center;justify-content:center;
+}
+#pw-modal.show{display:flex}
+#pw-box{
+  background:var(--panel);border:1px solid var(--border-hi);border-radius:4px;
+  padding:28px;width:320px;
+  box-shadow:0 0 0 1px var(--accent-muted),0 24px 80px rgba(0,0,0,.6);
+}
+#pw-box h2{font-size:16px;margin-bottom:16px;color:var(--accent-bright);display:flex;align-items:center;gap:10px}
+#pw-box h2::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--accent-dim),transparent)}
+#pw-error{color:var(--red);font-size:12px;margin-top:-8px;margin-bottom:8px;display:none}
+
+/* ── Shared modal overlay + box (used by timeline & characters) ── */
+.tl-modal-overlay{
+  display:none;position:absolute;inset:0;background:rgba(0,0,0,.7);
+  z-index:500;align-items:flex-end;justify-content:center;
+}
+.tl-modal-overlay.show{display:flex}
+.tl-modal{
+  background:var(--panel);border:1px solid var(--border-hi);
+  border-radius:8px 8px 0 0;padding:22px 20px 28px;
+  width:100%;max-width:440px;max-height:88vh;overflow-y:auto;
+  box-shadow:0 0 0 1px var(--accent-muted),0 -8px 40px rgba(0,0,0,.6);
+  position:relative;
+}
+.tl-modal h2{
+  font-size:16px;margin-bottom:14px;color:var(--accent-bright);
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--font-title);letter-spacing:.06em;
+}
+.tl-modal h2::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,var(--accent-dim),transparent);
+}
+.tl-modal{scrollbar-width:thin;scrollbar-color:rgba(168,137,58,.2) transparent}
+.tl-modal::-webkit-scrollbar{width:4px}
+.tl-modal::-webkit-scrollbar-track{background:transparent}
+.tl-modal::-webkit-scrollbar-thumb{background:rgba(168,137,58,.2);border-radius:2px}
+.tl-modal::-webkit-scrollbar-thumb:hover{background:rgba(168,137,58,.4)}
+.tl-modal label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+.tl-modal input[type=text],.tl-modal input[type=number]{margin-bottom:11px;font-size:14px;padding:9px 11px}
+
+/* ── Shared tab bar (timeline + map) ── */
+.tl-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.tl-tab{flex:1;padding:9px 4px;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;text-transform:uppercase;letter-spacing:.12em}
+.tl-tab.active{color:var(--accent-bright);border-bottom-color:var(--accent);font-weight:600}
+.tl-tab:hover:not(.active){color:var(--text);background:rgba(168,137,58,.06)}
+.tl-tab-content{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.tl-section{flex-shrink:0}
+.tl-section-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);user-select:none;transition:background .1s}
+.tl-section-hdr:hover{background:rgba(168,137,58,.06)}
+.tl-section-body{border-bottom:1px solid var(--border)}
+.tl-chevron{font-size:11px;color:var(--muted)}
+
+/* ── Placeholder page ── */
+.page-placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;color:var(--muted);text-align:center;padding:40px;
+}
+.page-placeholder .placeholder-icon{font-size:56px;margin-bottom:16px;opacity:.4}
+.page-placeholder h2{font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text-faint)}
+.page-placeholder p{font-size:14px;line-height:1.8}
