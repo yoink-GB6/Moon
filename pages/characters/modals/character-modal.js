@@ -270,7 +270,9 @@ export function setupCharModal() {
   container.querySelector('#char-save-btn')?.addEventListener('click', saveCharacter);
   container.querySelector('#char-delete-btn')?.addEventListener('click', deleteCharacter);
   container.querySelector('#char-cancel-btn')?.addEventListener('click', function() { closeModal(modal); });
-  modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(modal); });
+  let _mdOnModal = false;
+  modal.addEventListener('mousedown', function(e) { _mdOnModal = (e.target === modal); });
+  modal.addEventListener('mouseup', function(e) { if (_mdOnModal && e.target === modal) closeModal(modal); _mdOnModal = false; });
 }
 
 // ── openCharModal ─────────────────────────────────────────────

@@ -21,13 +21,16 @@ const PRESETS = [
 ];
 
 // ── markdown 工具（从独立模块导入，避免循环依赖）─────────────────
-export { mdToChildren, childrenToMd } from './md-utils.js';
+import { mdToChildren, childrenToMd } from './md-utils.js';
+export { mdToChildren, childrenToMd };
 
 // ── setup / open ──────────────────────────────────────────────
 
 export function setupCountryModal() {
   const modal = State.pageContainer.querySelector('#country-modal');
-  modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(modal); });
+  let _mdOnModal = false;
+  modal.addEventListener('mousedown', function(e) { _mdOnModal = (e.target === modal); });
+  modal.addEventListener('mouseup', function(e) { if (_mdOnModal && e.target === modal) closeModal(modal); _mdOnModal = false; });
 }
 
 export function openCountryModal(country) {

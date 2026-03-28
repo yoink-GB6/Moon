@@ -21,7 +21,9 @@ const PRESETS = [
 
 export function setupCityModal() {
   const modal = State.pageContainer.querySelector('#city-modal');
-  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
+  let _mdOnModal = false;
+  modal.addEventListener('mousedown', (e) => { _mdOnModal = (e.target === modal); });
+  modal.addEventListener('mouseup', (e) => { if (_mdOnModal && e.target === modal) closeModal(modal); _mdOnModal = false; });
 }
 
 export function openCityModal(city, preselectedCountryId = null) {

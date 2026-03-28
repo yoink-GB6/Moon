@@ -34,7 +34,7 @@ export function mdToChildren(text) {
   }
 
   for (const line of lines) {
-    const h3 = line.match(/^###[ \t]+(.+)/);
+    const h3 = line.match(/^-[ \t]+(.+)/);
     const h2 = !h3 && line.match(/^##[ \t]+(.+)/);
     const h1 = !h3 && !h2 && line.match(/^#[ \t]+(.+)/);
 
@@ -92,7 +92,7 @@ export function childrenToMd(sec) {
           if (gc.content) out += '\n' + gc.content;
           if (gc.children && gc.children.length) {
             gc.children.forEach(function(ggc) {
-              out += '\n\n### ' + ggc.title;
+              out += '\n\n- ' + ggc.title;
               if (ggc.content) out += '\n' + ggc.content;
             });
           }

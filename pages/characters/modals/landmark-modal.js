@@ -15,9 +15,9 @@ export function setupLandmarkModal() {
   // 只绑定关闭行为，保存/删除在 open 时绑定，避免事件丢失
   container.querySelector('#landmark-cancel-btn')?.addEventListener('click', () => closeModal(modal));
   
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal(modal);
-  });
+  let _mdOnModal = false;
+  modal.addEventListener('mousedown', (e) => { _mdOnModal = (e.target === modal); });
+  modal.addEventListener('mouseup', (e) => { if (_mdOnModal && e.target === modal) closeModal(modal); _mdOnModal = false; });
 }
 
 export function openLandmarkModal(landmark, preselectedCityId = null) {
