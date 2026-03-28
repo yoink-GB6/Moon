@@ -47,6 +47,41 @@ export function escHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+// ── 通用面板折叠/展开 ──────────────────────────────────
+/**
+ * 为任意可折叠面板绑定折叠/展开事件，并初始化 chevron 初始状态。
+ * @param {Element|Document} scope  - querySelector 的查询范围
+ * @param {string} panelSel         - 面板选择器（添加/移除 .collapsed）
+ * @param {string} toggleBtnSel     - 折叠按钮选择器（标题栏点击区域）
+ * @param {string} [expandBtnSel]   - 浮动展开按钮选择器
+ * @param {string} [chevronSel]     - 箭头文字元素选择器
+ */
+export function bindPanelToggle(scope, panelSel, toggleBtnSel, expandBtnSel, chevronSel) {
+  function setChevron(collapsed) {
+    if (!chevronSel) return;
+    const chevron = scope.querySelector(chevronSel);
+    if (chevron) chevron.textContent = collapsed ? '›' : '‹';
+  }
+
+  function toggle() {
+    const panel = scope.querySelector(panelSel);
+    if (!panel) return;
+    const collapsed = panel.classList.toggle('collapsed');
+    setChevron(collapsed);
+    if (expandBtnSel) {
+      const expandBtn = scope.querySelector(expandBtnSel);
+      if (expandBtn) expandBtn.classList.toggle('show', collapsed);
+    }
+  }
+
+  // 初始化 chevron，使其与当前面板状态一致（无需在 HTML 里写死字符）
+  const panel = scope.querySelector(panelSel);
+  if (panel) setChevron(panel.classList.contains('collapsed'));
+
+  scope.querySelector(toggleBtnSel)?.addEventListener('click', toggle);
+  if (expandBtnSel) scope.querySelector(expandBtnSel)?.addEventListener('click', toggle);
+}
+
 // ── Sidebar toggle ──
 export function initSidebar() {
   const btn = document.getElementById('menu-btn');
