@@ -3,7 +3,7 @@
 
 import { supaClient, setSyncStatus, dbError } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
-import { showToast, escHtml, confirmDialog } from '../core/ui.js';
+import { showToast, escHtml, confirmDialog, bindPanelToggle } from '../core/ui.js';
 
 let items = [];           // All library items
 let tags = [];            // All available tags
@@ -54,10 +54,9 @@ function buildHTML() {
   <!-- Main content area -->
   <div class="lib-main">
     <div class="lib-header">
-      <h2>📋 指令集</h2>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn bn" id="lib-sort-btn" title="切换排序方式">👍 点赞排序</button>
-        <button class="btn bn" id="lib-unlock-btn">🔒 解锁指令编辑</button>
+        <button class="btn bn" id="lib-sort-btn" title="切换排序方式">点赞排序</button>
+        <button class="btn bn" id="lib-unlock-btn">解锁指令编辑</button>
         <button class="btn bp" id="lib-add-btn" style="display:none">＋ 新建</button>
       </div>
     </div>
@@ -65,18 +64,18 @@ function buildHTML() {
   </div>
 
   <!-- Floating expand button (shows when panel collapsed) -->
-  <button id="lib-expand" class="expand-btn-float" title="展开筛选">◀</button>
+  <button id="lib-expand" class="expand-btn-float" title="展开筛选">‹</button>
 
   <!-- Right sidebar filter panel -->
   <div class="lib-panel">
     <div class="lib-panel-hdr" id="lib-panel-toggle">
-      <span>🔍 搜索 & 筛选</span>
-      <span id="lib-panel-chevron">◀</span>
+      <span>搜索 & 筛选</span>
+      <span id="lib-panel-chevron">‹</span>
     </div>
     <div class="lib-panel-body">
       <!-- Privacy unlock -->
       <div style="margin-bottom:16px">
-        <div style="font-size:12px;color:#889;margin-bottom:8px">🔒 隐私内容解锁</div>
+        <div style="font-size:12px;color:#889;margin-bottom:8px">隐私内容解锁</div>
         <div style="display:flex;gap:8px">
           <input 
             id="lib-privacy-input"
@@ -147,7 +146,7 @@ function buildHTML() {
 
     <label style="margin-top:12px;display:flex;align-items:center;gap:8px;cursor:pointer">
       <input type="checkbox" id="lib-private-checkbox" style="cursor:pointer"/>
-      <span>🔒 设为隐私指令（仅输入密码后可见）</span>
+      <span>设为隐私指令（仅输入密码后可见）</span>
     </label>
     
     <div id="lib-privacy-key-group" style="margin-top:8px;display:none">
@@ -177,7 +176,7 @@ function buildHTML() {
 <!-- Read-only preview modal -->
 <div id="lib-preview-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:600px" onmousedown="event.stopPropagation()">
-    <h2>📋 查看指令</h2>
+    <h2>查看指令</h2>
     
     <div style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:12px;max-height:400px;overflow-y:auto">
       <div id="lib-preview-content" style="white-space:pre-wrap;word-break:break-word;line-height:1.7;font-size:14px"></div>
@@ -187,7 +186,7 @@ function buildHTML() {
     
     <div class="mbtns" style="justify-content:space-between">
       <button class="btn bn" id="lib-preview-close">关闭</button>
-      <button class="btn bp" id="lib-preview-copy">📋 复制内容</button>
+      <button class="btn bp" id="lib-preview-copy">复制内容</button>
     </div>
   </div>
 </div>
@@ -225,16 +224,18 @@ function bindControls(container) {
   container.querySelector('#lib-modal-cancel').addEventListener('click', () => closeModal(container));
   container.querySelector('#lib-modal-save').addEventListener('click', () => saveItem(container));
   container.querySelector('#lib-modal-delete').addEventListener('click', () => deleteItem(container));
-  container.querySelector('#lib-modal').addEventListener('mousedown', e => {
-    if (e.target === container.querySelector('#lib-modal')) closeModal(container);
-  });
-  
+  const _libModal = container.querySelector('#lib-modal');
+  let _mdOnLibModal = false;
+  _libModal.addEventListener('mousedown', e => { _mdOnLibModal = (e.target === _libModal); });
+  _libModal.addEventListener('mouseup', e => { if (_mdOnLibModal && e.target === _libModal) closeModal(container); _mdOnLibModal = false; });
+
   // Preview modal buttons
   container.querySelector('#lib-preview-close').addEventListener('click', () => closePreviewModal(container));
   container.querySelector('#lib-preview-copy').addEventListener('click', () => copyFromPreview(container));
-  container.querySelector('#lib-preview-modal').addEventListener('mousedown', e => {
-    if (e.target === container.querySelector('#lib-preview-modal')) closePreviewModal(container);
-  });
+  const _libPreviewModal = container.querySelector('#lib-preview-modal');
+  let _mdOnPreviewModal = false;
+  _libPreviewModal.addEventListener('mousedown', e => { _mdOnPreviewModal = (e.target === _libPreviewModal); });
+  _libPreviewModal.addEventListener('mouseup', e => { if (_mdOnPreviewModal && e.target === _libPreviewModal) closePreviewModal(container); _mdOnPreviewModal = false; });
   
   // Add tag button
   container.querySelector('#lib-add-tag-btn').addEventListener('click', () => addNewTag(container));
@@ -370,22 +371,14 @@ function bindControls(container) {
     if (e.key === 'Enter') submitPassword(container);
     if (e.key === 'Escape') closePasswordModal(container);
   });
-  container.querySelector('#lib-password-modal').addEventListener('mousedown', e => {
-    if (e.target === container.querySelector('#lib-password-modal')) closePasswordModal(container);
-  });
+  const _libPwdModal = container.querySelector('#lib-password-modal');
+  let _mdOnPwdModal = false;
+  _libPwdModal.addEventListener('mousedown', e => { _mdOnPwdModal = (e.target === _libPwdModal); });
+  _libPwdModal.addEventListener('mouseup', e => { if (_mdOnPwdModal && e.target === _libPwdModal) closePasswordModal(container); _mdOnPwdModal = false; });
 
   // Sort buttons
   // Panel toggle
-  function toggleLibPanel() {
-    const panel = container.querySelector('.lib-panel');
-    const chevron = container.querySelector('#lib-panel-chevron');
-    const expandBtn = container.querySelector('#lib-expand');
-    const collapsed = panel.classList.toggle('collapsed');
-    chevron.textContent = collapsed ? '▶' : '◀';
-    if (expandBtn) expandBtn.classList.toggle('show', collapsed);
-  }
-  container.querySelector('#lib-panel-toggle')?.addEventListener('click', toggleLibPanel);
-  container.querySelector('#lib-expand')?.addEventListener('click', toggleLibPanel);
+  bindPanelToggle(container, '.lib-panel', '#lib-panel-toggle', '#lib-expand', '#lib-panel-chevron');
 }
 
 async function fetchAll() {
@@ -483,8 +476,8 @@ function renderTagList(tagListEl) {
     // Edit/delete buttons (only visible in edit mode)
     const actionBtns = editable 
       ? `<div class="lib-tag-actions">
-          <button class="lib-tag-action-btn lib-tag-edit" data-tag="${escHtml(tag)}" title="重命名">✏️</button>
-          <button class="lib-tag-action-btn lib-tag-delete" data-tag="${escHtml(tag)}" title="删除">🗑️</button>
+          <button class="lib-tag-action-btn lib-tag-edit" data-tag="${escHtml(tag)}" title="重命名">✎</button>
+          <button class="lib-tag-action-btn lib-tag-delete" data-tag="${escHtml(tag)}" title="删除">🗑</button>
          </div>`
       : '';
     
@@ -613,7 +606,7 @@ function renderGrid(container) {
     const likes = item.likes || 0;
     const isLiked = likedItems.has(item.id);
     const likedClass = isLiked ? 'liked' : '';
-    const likeIcon = isLiked ? '❤️' : '👍';
+    const likeIcon = isLiked ? '♥' : '★';
     const likeTitle = isLiked ? '取消点赞' : '点赞';
     
     return `<div class="lib-item" data-id="${item.id}">
@@ -1151,7 +1144,7 @@ async function likeItem(itemId) {
     const iconEl = likeArea.querySelector('.lib-like-btn');
     
     if (countEl) countEl.textContent = newLikes;
-    if (iconEl) iconEl.textContent = isLiking ? '❤️' : '👍';
+    if (iconEl) iconEl.textContent = isLiking ? '♥' : '★';
     
     // Update class and title
     if (isLiking) {
@@ -1164,7 +1157,7 @@ async function likeItem(itemId) {
   }
   
   // Show toast immediately
-  showToast(isLiking ? '👍 已点赞' : '💔 已取消点赞');
+  showToast(isLiking ? '已 ♥' : '不 ♥');
   
   // Save to database in background
   setSyncStatus('syncing');
@@ -1192,7 +1185,7 @@ async function likeItem(itemId) {
       const countEl = likeArea.querySelector('.lib-like-count');
       const iconEl = likeArea.querySelector('.lib-like-btn');
       if (countEl) countEl.textContent = item.likes;
-      if (iconEl) iconEl.textContent = likedItems.has(itemId) ? '❤️' : '👍';
+      if (iconEl) iconEl.textContent = likedItems.has(itemId) ? '♥' : '★';
       if (likedItems.has(itemId)) {
         likeArea.classList.add('liked');
         likeArea.title = '取消点赞';
@@ -1319,10 +1312,10 @@ function updateSortButton(container) {
   if (!sortBtn) return;
   
   if (sortBy === 'likes') {
-    sortBtn.textContent = '👍 点赞排序';
+    sortBtn.textContent = '❤ 点赞排序';
     sortBtn.title = '当前：按点赞数排序，点击切换为时间排序';
   } else {
-    sortBtn.textContent = '🕐 时间排序';
+    sortBtn.textContent = '⏱ 时间排序';
     sortBtn.title = '当前：按创建时间排序，点击切换为点赞排序';
   }
 }
@@ -1330,25 +1323,26 @@ function updateSortButton(container) {
 function updateLibraryUI(container) {
   const unlockBtn = container.querySelector('#lib-unlock-btn');
   const addBtn = container.querySelector('#lib-add-btn');
-  
+  if (!unlockBtn || !addBtn) return;
+
   // Check if editable through EITHER global OR library-specific mode
   const isEditable = isLibraryEditor();
-  
+
   if (isEditable) {
     if (isEditor()) {
       // Global edit mode is active
-      unlockBtn.textContent = '🔓 全局编辑中';
+      unlockBtn.textContent = '全局编辑中';
       unlockBtn.className = 'btn bp';
       unlockBtn.disabled = true;  // Can't lock from here
     } else {
       // Library-specific edit mode
-      unlockBtn.textContent = '🔓 锁定指令编辑';
+      unlockBtn.textContent = '锁定指令编辑';
       unlockBtn.className = 'btn bp';
       unlockBtn.disabled = false;
     }
     addBtn.style.display = '';
   } else {
-    unlockBtn.textContent = '🔒 解锁指令编辑';
+    unlockBtn.textContent = '解锁指令编辑';
     unlockBtn.className = 'btn bn';
     unlockBtn.disabled = false;
     addBtn.style.display = 'none';
@@ -1382,7 +1376,7 @@ async function unlockPrivateContent(container) {
   );
   
   if (matchingItems.length === 0) {
-    showToast('❌ 密码错误或没有匹配的隐私内容');
+    showToast(' X 密码错误或没有匹配的隐私内容');
     input.value = '';
     return;
   }
@@ -1405,7 +1399,7 @@ async function unlockPrivateContent(container) {
   updateUnlockedKeysDisplay(container);
   renderGrid(container.querySelector('.lib-layout'));
   
-  showToast(`✅ 已解锁 ${matchingItems.length} 条隐私内容`);
+  showToast(`√ 已解锁 ${matchingItems.length} 条隐私内容`);
 }
 
 function updateUnlockedKeysDisplay(container) {
@@ -1435,6 +1429,6 @@ window.clearAllKeys = function() {
     const layout = container.querySelector('.lib-layout');
     updateUnlockedKeysDisplay(container);
     renderGrid(layout);
-    showToast('🔒 已清除所有解锁密码');
+    showToast(' 已清除所有解锁密码');
   }
 };

@@ -1,6 +1,6 @@
 // pages/characters.js
 import { isEditor, onAuthChange } from '../core/auth.js';
-import { escHtml } from '../core/ui.js';
+import { escHtml, bindPanelToggle } from '../core/ui.js';
 import * as State from './characters/state.js';
 import { loadAllData, subscribeRealtime, unsubscribeRealtime } from './characters/data-loader.js';
 import { renderCharactersTab, bindCharactersTab } from './characters/characters-tab.js';
@@ -56,8 +56,8 @@ function buildHTML() {
   return `
 <div class="intro-body">
   <div class="intro-tabs">
-    <button class="intro-tab active" data-tab="characters"><span class="tab-icon">👥</span><span class="tab-label">人物介绍</span></button>
-    <button class="intro-tab" data-tab="geography"><span class="tab-icon">🏛️</span><span class="tab-label">国家及势力</span></button>
+    <button class="intro-tab active" data-tab="characters"><span class="tab-label">人物介绍</span></button>
+    <button class="intro-tab" data-tab="geography"><span class="tab-label">国家及势力</span></button>
   </div>
   <div class="intro-row">
   <div class="intro-main">
@@ -78,13 +78,13 @@ function buildHTML() {
   </div><!-- /intro-main -->
 
   <!-- 右侧面板展开按钮（panel外，不受overflow:hidden影响）-->
-  <button id="chars-panel-expand" class="panel-expand-trigger" title="展开面板">▶</button>
+  <button id="chars-panel-expand" class="panel-expand-trigger" title="展开面板">‹</button>
 
   <!-- 右侧面板 -->
   <div id="chars-panel" class="tl-panel">
     <div class="map-panel-hdr" id="chars-panel-toggle">
-      <span id="chars-panel-title">👥 人物列表</span>
-      <span id="chars-panel-chevron">◀</span>
+      <span id="chars-panel-title">人物列表</span>
+      <span id="chars-panel-chevron">‹</span>
     </div>
 
     <!-- 人物标签页 -->
@@ -118,7 +118,7 @@ function buildHTML() {
 
 <!-- 人物模态框 -->
 <div id="char-modal" class="tl-modal-overlay modal-center">
-  <div class="tl-modal" style="max-width:500px" onmousedown="event.stopPropagation()">
+  <div class="tl-modal char-modal-box" onmousedown="event.stopPropagation()">
     <h2 id="char-modal-title">编辑人物</h2>
     <label>名字</label><input id="char-name" type="text"/>
     <label>年龄</label><input id="char-age" type="number" min="0" placeholder="0"/>
@@ -176,173 +176,7 @@ function buildHTML() {
   </div>
 </div>
 
-<style>
-/* ── 整体布局 ── */
-.intro-body{height:100%;width:100%;display:flex;flex-direction:column;overflow:hidden}
-.intro-row{flex:1;display:flex;overflow:hidden}.intro-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.intro-tabs{display:flex;gap:0;padding:0;flex-shrink:0;border-bottom:2px solid var(--border);width:100%}
-.intro-tab{display:flex;align-items:center;gap:8px;padding:10px 20px;border:none;background:transparent;color:var(--muted);cursor:pointer;position:relative;transition:all 0.2s}
-.intro-tab:hover{color:var(--text);background:rgba(124,131,247,0.05)}
-.intro-tab.active{color:var(--accent)}
-.intro-tab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--accent)}
-.intro-content{flex:1;overflow-y:auto;padding:24px 32px}
-.intro-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;max-width:1100px;margin-left:auto;margin-right:auto}
-/* ── 人物卡片 ── */
-.intro-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;max-width:1100px;margin:0 auto}
-.intro-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all 0.2s}
-.intro-card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.08);border-color:var(--accent)}
-.intro-avatar{width:60px;height:60px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:600;overflow:hidden;flex-shrink:0}
-.intro-avatar img{width:100%;height:100%;object-fit:cover}
-/* ── 地理布局 ── */
-.geo-layout{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;flex:1}
-.geo-main{flex:1;overflow-y:auto;padding:24px 32px;scrollbar-width:thin;scrollbar-color:rgba(124,131,247,0.2) transparent}.geo-main::-webkit-scrollbar{width:4px}.geo-main::-webkit-scrollbar-track{background:transparent}.geo-main::-webkit-scrollbar-thumb{background:rgba(124,131,247,0.2);border-radius:2px}
-/* ── 右侧面板 ── */
-.tl-panel{width:260px;flex-shrink:0;background:var(--bg);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width 0.28s ease}
-.tl-panel.collapsed{width:0}
-.map-panel-hdr{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border-bottom:1px solid var(--border);flex-shrink:0;user-select:none;font-weight:600;font-size:13px}
-.map-panel-hdr:hover{background:rgba(124,131,247,0.06)}
-.panel-body-section{display:flex;flex-direction:column;flex:1;overflow:hidden}
-.panel-search-box{padding:10px 12px;flex-shrink:0;border-bottom:1px solid var(--border)}
-.panel-search-wrap{position:relative;display:flex;align-items:center}
-.panel-search-wrap input{width:100%;padding:7px 28px 7px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none;transition:border-color 0.2s}
-.panel-search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,247,0.12)}
-.panel-search-clear{position:absolute;right:7px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;line-height:1;display:none;transition:color 0.15s}
-.panel-search-clear:hover{color:var(--text)}
-/* 面板展开按钮 */
-.panel-expand-trigger{display:none;position:fixed;right:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:var(--panel);border:1px solid var(--accent);color:var(--accent);font-size:16px;cursor:pointer;z-index:200;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.5);transition:all 0.2s;opacity:0;pointer-events:none}
-.panel-expand-trigger.visible{display:flex;opacity:1;pointer-events:auto}
-.panel-expand-trigger:hover{background:var(--accent);color:#fff;transform:translateY(-50%) scale(1.1)}
-/* ── 人物列表 ── */
-.tl-clist{flex:1;overflow-y:auto;padding:6px}
-.tl-ci{display:flex;align-items:center;gap:10px;padding:9px 10px;margin:2px 0;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all 0.15s}
-.tl-ci:hover{background:rgba(124,131,247,0.08);border-color:rgba(124,131,247,0.2)}
-.tl-ci.active-item{background:rgba(124,131,247,0.12);border-color:var(--accent)}
-.tl-ci-av{width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;overflow:hidden}
-.tl-ci-info{flex:1;min-width:0}
-.tl-cname{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tl-cmeta{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tl-empty{padding:20px;text-align:center;color:var(--muted);font-size:13px}
-/* ── 地理搜索面板 ── */
-.geo-panel-search-box{padding:10px 12px 6px;flex-shrink:0}
-.geo-panel-search-wrap{position:relative}
-.geo-panel-search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;opacity:0.45;pointer-events:none}
-.geo-panel-search-wrap input{width:100%;padding:7px 10px 7px 28px;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none;transition:border-color 0.2s,box-shadow 0.2s}
-.geo-panel-search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,247,0.15)}
-.geo-panel-results{display:none;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,0.25);overflow-y:auto;max-height:220px}
-.geo-panel-results.open{display:block}
-.geo-panel-result-item{display:flex;align-items:center;gap:8px;padding:8px 11px;cursor:pointer;font-size:12px;border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.12s}
-.geo-panel-result-item:last-child{border-bottom:none}
-.geo-panel-result-item:hover,.geo-panel-result-item.focused{background:rgba(124,131,247,0.1)}
-.geo-panel-result-icon{width:18px;text-align:center;flex-shrink:0;font-size:13px}
-.geo-panel-result-name{flex:1;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.geo-panel-result-path{font-size:10px;color:var(--muted);flex-shrink:0}
-.geo-panel-results-empty{padding:16px;text-align:center;color:var(--muted);font-size:12px}
-.geo-panel-add{padding:2px 12px 6px;flex-shrink:0}
-.geo-panel-add .btn{width:100%;font-size:12px;padding:5px}
-/* ── 地理树 ── */
-.geo-tree-list{flex:1;overflow-y:auto;padding:6px 4px}
-/* 树节点公共 */
-.gt-row{display:flex;align-items:center;padding:6px 8px;border-radius:6px;cursor:pointer;user-select:none;transition:background 0.13s}
-.gt-row:hover{background:rgba(124,131,247,0.08)}
-.gt-toggle{width:18px;flex-shrink:0;text-align:center;font-size:10px;color:var(--muted);transition:color 0.15s}
-.gt-row:hover .gt-toggle{color:var(--accent)}
-.gt-label{flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gt-actions{display:flex;gap:3px;opacity:0;transition:opacity 0.15s;flex-shrink:0}
-.gt-row:hover .gt-actions{opacity:1}
-.gt-btn{padding:1px 5px;font-size:11px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:all 0.12s}
-.gt-btn:hover{background:rgba(124,131,247,0.12);border-color:var(--accent);color:var(--accent)}
-/* 国家 0级 */
-.gt-country .gt-row{padding-left:6px}
-.gt-country.active .gt-row{background:rgba(124,131,247,0.12)}
-.gt-country.active .gt-label{color:var(--accent);font-weight:600}
-/* 城市 1级 */
-.gt-city .gt-row{padding-left:22px}
-.gt-city.active .gt-row{background:rgba(124,131,247,0.1)}
-.gt-city.active .gt-label{color:var(--accent)}
-/* 地标 2级 */
-.gt-landmark .gt-row{padding-left:40px}
-.gt-landmark .gt-label{font-size:12px;color:var(--muted)}
-.gt-landmark:hover .gt-label{color:var(--text)}
-/* 空提示 */
-.gt-empty-city{font-size:11px;color:var(--muted);padding:3px 8px 3px 24px;font-style:italic}
-.gt-empty-lm{font-size:11px;color:var(--muted);padding:3px 8px 3px 40px;font-style:italic}
-.gt-group-label{font-size:11px;color:var(--muted);padding:8px 8px 2px;letter-spacing:0.05em}
-/* ── 地理详情 ── */
-.geo-detail{max-width:800px;margin:0 auto}.geo-detail h2{margin:0 0 24px 0;display:flex;justify-content:space-between;align-items:center}
-.geo-detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.geo-detail-header h2{margin:0}
-.geo-detail-section{margin-bottom:24px}
-.geo-detail-section h3{font-size:16px;margin:0 0 12px 0;color:var(--accent);display:flex;justify-content:space-between;align-items:center}
-.geo-detail-value{font-size:14px;line-height:1.6}
-.geo-city-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
-.geo-city-card{display:flex;align-items:center;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color 0.15s,background 0.15s}
-.geo-city-card:hover{border-color:var(--accent);background:rgba(124,131,247,0.06)}
-.geo-city-card-name{flex:1;font-size:13px;font-weight:500}
-.geo-city-card-arrow{color:var(--muted);font-size:16px;transition:color 0.15s}
-.geo-city-card:hover .geo-city-card-arrow{color:var(--accent)}
-.geo-landmark-item{padding:12px;margin:6px 0;background:var(--bg);border:1px solid var(--border);border-radius:8px;display:flex;justify-content:space-between;align-items:flex-start}
-.geo-landmark-item:hover{border-color:rgba(124,131,247,0.3)}
-.geo-person-item{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:6px 0;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color 0.15s,background 0.15s}
-.geo-person-item:hover{border-color:var(--accent);background:rgba(124,131,247,0.06)}
-.geo-person-av{width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;overflow:hidden;flex-shrink:0}
-.geo-landmark-name{font-weight:600;margin-bottom:4px}
-.geo-item-actions{opacity:0;display:flex;gap:4px}
-.geo-landmark-item:hover .geo-item-actions,.geo-person-item:hover .geo-item-actions{opacity:1}
-.geo-empty{text-align:center;padding:40px;color:var(--muted)}
-/* ── 折叠小节卡片 ── */
-.geo-section-card{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;transition:border-color 0.2s}
-.geo-section-card:hover{border-color:rgba(124,131,247,0.35)}
-.geo-section-toggle{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;cursor:pointer;user-select:none;background:rgba(124,131,247,0.04);transition:background 0.15s}
-.geo-section-toggle:hover{background:rgba(124,131,247,0.09)}
-.geo-section-title{font-size:14px;font-weight:600}
-.geo-section-arrow{font-size:10px;color:var(--muted);transition:transform 0.22s;transform:rotate(-90deg)}
-.geo-section-card.open .geo-section-arrow{transform:rotate(0deg)}
-.geo-section-body{display:none;padding:12px 16px;border-top:1px solid var(--border)}
-.geo-section-card.open .geo-section-body{display:block}
-.geo-section-content{font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text)}.geo-section-children{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,131,247,0.1)}.geo-child-card .geo-section-title{font-size:13px}.geo-child-card .geo-section-content{font-size:12.5px;color:rgba(232,234,237,0.85)}
-/* ── 国家编辑模态框 ── */
-.cm-sec-hdr{display:flex;align-items:baseline;gap:10px;margin:16px 0 6px}
-.cm-sec-hdr span:first-child{font-size:13px;font-weight:600}
-.cm-hint{font-size:11px;color:var(--muted)}
-.cm-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:28px}
-.cm-tag{padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:transparent;color:var(--text);font-size:12px;cursor:pointer;transition:border-color 0.15s,background 0.15s}
-.cm-tag:hover{border-color:var(--accent);background:rgba(124,131,247,0.1);color:var(--accent)}
-.cm-tags-empty{font-size:11px;color:var(--muted);padding:4px 0}
-.cm-custom-row{display:flex;gap:8px;margin-bottom:12px}
-.cm-custom-row input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none}
-.cm-custom-row input:focus{border-color:var(--accent)}
-.tl-modal-overlay.modal-center{align-items:center;justify-content:center}.tl-modal-overlay.modal-center .tl-modal{border-radius:14px;width:calc(100% - 32px);max-height:90vh}.country-modal-inner{scrollbar-width:thin;scrollbar-color:rgba(124,131,247,0.2) transparent}.country-modal-inner::-webkit-scrollbar{width:4px}.country-modal-inner::-webkit-scrollbar-track{background:transparent}.country-modal-inner::-webkit-scrollbar-thumb{background:rgba(124,131,247,0.2);border-radius:2px}.country-modal-inner::-webkit-scrollbar-thumb:hover{background:rgba(124,131,247,0.4)}.cm-list{display:flex;flex-direction:column;gap:6px;max-height:440px;overflow-y:auto;padding-right:2px;scrollbar-width:thin;scrollbar-color:rgba(124,131,247,0.2) transparent}.cm-list::-webkit-scrollbar{width:4px}.cm-list::-webkit-scrollbar-track{background:transparent}.cm-list::-webkit-scrollbar-thumb{background:rgba(124,131,247,0.2);border-radius:2px}.cm-md-list{gap:6px}.cm-md-card{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg);transition:border-color 0.15s}.cm-md-card:hover{border-color:rgba(124,131,247,0.35)}.cm-md-card.cm-md-open{border-color:rgba(124,131,247,0.5)}.cm-md-hdr{display:flex;align-items:center;gap:8px;padding:9px 10px;min-height:42px;cursor:pointer}.cm-md-title{font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0}.cm-md-preview{flex:1;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.cm-md-edit{flex-shrink:0;padding:3px 7px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;border-radius:5px;transition:all 0.15s}.cm-md-edit:hover{border-color:var(--accent);color:var(--accent);background:rgba(124,131,247,0.08)}.cm-md-del{flex-shrink:0;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;transition:color 0.15s}.cm-md-del:hover{color:var(--red)}.cm-md-body{border-top:1px solid var(--border)}.cm-md-guide{font-size:11px;color:var(--muted);padding:6px 12px 0;line-height:1.5}.cm-md-guide code{background:rgba(124,131,247,0.15);color:var(--accent);padding:1px 4px;border-radius:3px;font-size:11px}.cm-md-ta{width:100%;box-sizing:border-box;padding:10px 12px;border:none;background:transparent;color:var(--text);font-size:13px;line-height:1.7;resize:vertical;min-height:120px;outline:none;font-family:inherit}
-/* 折叠态（默认） */
-.cm-row{border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color 0.15s,box-shadow 0.15s}
-.cm-row:hover{border-color:rgba(124,131,247,0.3)}
-.cm-row-collapsed{display:flex;align-items:center;gap:8px;padding:9px 10px;min-height:42px}
-.cm-row-grip{color:var(--muted);font-size:15px;flex-shrink:0;cursor:grab;padding:2px 4px;border-radius:4px;transition:color 0.15s,background 0.15s;user-select:none}
-.cm-row-grip:hover{color:var(--accent);background:rgba(124,131,247,0.1)}
-.cm-row-grip:active{cursor:grabbing}
-.cm-row-summary{flex:1;min-width:0;overflow:hidden}
-.cm-row-label{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cm-row-preview{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
-.cm-row-edit{flex-shrink:0;padding:3px 7px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;border-radius:5px;transition:all 0.15s}
-.cm-row-edit:hover{border-color:var(--accent);color:var(--accent);background:rgba(124,131,247,0.08)}
-.cm-row-del{flex-shrink:0;padding:3px 7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;border-radius:5px;transition:color 0.15s,background 0.15s}
-.cm-row-del:hover{color:#e05c5c;background:rgba(224,92,92,0.1)}
-/* 展开态 */
-.cm-row-expanded{display:flex;flex-direction:column;border-top:1px solid var(--border)}
-.cm-row-expanded-hdr{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(124,131,247,0.04);border-bottom:1px solid var(--border)}
-.cm-row-title{flex:1;border:none;background:transparent;color:var(--text);font-size:13px;font-weight:500;outline:none;padding:0}
-.cm-row-collapse,.cm-row-add-child{flex-shrink:0;padding:3px 8px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:11px;border-radius:4px;transition:all 0.15s;white-space:nowrap}
-.cm-row-collapse:hover,.cm-row-add-child:hover{color:var(--accent);background:rgba(124,131,247,0.08)}
-.cm-row-expanded textarea{width:100%;box-sizing:border-box;padding:10px 12px;border:none;background:transparent;color:var(--text);font-size:13px;line-height:1.6;resize:vertical;min-height:80px;outline:none;font-family:inherit}
-/* 拖拽中 */
-.cm-row-dragging{opacity:0.4;border:2px dashed var(--accent)}
-.cm-row-drag-over{border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,131,247,0.25)}
-/* ── 모달 공통 ── */
-.tl-select{position:relative;width:100%;margin-bottom:14px}.tl-select-trigger{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;font-size:13px;transition:border-color 0.2s,box-shadow 0.2s;user-select:none}.tl-select-trigger:hover{border-color:rgba(124,131,247,0.5)}.tl-select.open .tl-select-trigger{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,131,247,0.12)}.tl-select-arrow{font-size:10px;color:var(--muted);transition:transform 0.2s;flex-shrink:0}.tl-select.open .tl-select-arrow{transform:rotate(180deg)}.tl-select-val{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-select-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.3);z-index:200;max-height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(124,131,247,0.2) transparent}.tl-select.open .tl-select-dropdown{display:block}.tl-select-opt{padding:8px 12px;font-size:13px;cursor:pointer;transition:background 0.12s;border-radius:4px;margin:2px 4px}.tl-select-opt:hover{background:rgba(124,131,247,0.1)}.tl-select-opt.selected{color:var(--accent);font-weight:500;background:rgba(124,131,247,0.08)}.modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:8px}
-.modal-actions-right{display:flex;gap:8px}
-.modal-btn{flex:1;min-width:80px}
-.modal-btn-delete{min-width:60px}
-@media (max-width:1024px){.geo-layout{flex-direction:column}}
-</style>
+
 `;
 }
 
@@ -364,24 +198,7 @@ function bindControls() {
 
 function bindSidePanel() {
   const container = State.pageContainer;
-  const panel     = container.querySelector('#chars-panel');
-  const toggle    = container.querySelector('#chars-panel-toggle');
-  const chevron   = container.querySelector('#chars-panel-chevron');
-  const expandBtn = container.querySelector('#chars-panel-expand');
-
-  function collapsePanel() {
-    panel.classList.add('collapsed');
-    if (chevron) chevron.textContent = '▶';
-    if (expandBtn) expandBtn.classList.add('visible');
-  }
-  function expandPanel() {
-    panel.classList.remove('collapsed');
-    if (chevron) chevron.textContent = '◀';
-    if (expandBtn) expandBtn.classList.remove('visible');
-  }
-
-  if (toggle) toggle.addEventListener('click', () => panel.classList.contains('collapsed') ? expandPanel() : collapsePanel());
-  if (expandBtn) expandBtn.addEventListener('click', expandPanel);
+  bindPanelToggle(container, '#chars-panel', '#chars-panel-toggle', '#chars-panel-expand', '#chars-panel-chevron');
 
   // 人物搜索
   const searchInput = container.querySelector('#chars-panel-search');
@@ -437,13 +254,13 @@ function syncPanelHeader(tabName) {
   const searchInput = container.querySelector('#chars-panel-search');
 
   if (tabName === 'characters') {
-    if (title)      title.textContent = '👥 人物列表';
+    if (title)      title.textContent = '人物列表';
     if (charsBody)  charsBody.style.display = 'flex';
     if (geoBody)    geoBody.style.display   = 'none';
     if (searchInput) searchInput.value = '';
     renderPanelList('');
   } else {
-    if (title)     title.textContent = '🗺️ 地理结构';
+    if (title)     title.textContent = '地理结构';
     if (charsBody) charsBody.style.display = 'none';
     if (geoBody)   geoBody.style.display   = 'flex';
   }
@@ -545,31 +362,31 @@ function _filterCharGrid(charId) {
       '</div>' +
       (_parseCharSections(char.description).map(function(s) {
         function childHTML(node, depth) {
-          var ind = depth > 1 ? 'margin-left:' + ((depth-1)*12) + 'px;' : '';
-          var kids = (node.children && node.children.length && depth < 3)
-            ? '<div style="margin-top:6px">' + node.children.map(function(gc){ return childHTML(gc, depth+1); }).join('') + '</div>'
+          if (depth > 1) {
+            var label = node.title ? '<strong>' + escHtml(node.title) + '</strong>' : '';
+            var text  = node.content ? escHtml(node.content) : '';
+            return '<div class="static-text-l3">' + (label && text ? label + '&ensp;' + text : label + text) + '</div>';
+          }
+          var kids = (node.children && node.children.length)
+            ? node.children.map(function(gc){ return childHTML(gc, depth+1); }).join('')
             : '';
-          return '<div class="geo-section-card geo-child-card char-section-card" style="' + ind + 'margin-bottom:6px">' +
-            '<div class="geo-section-toggle">' +
-              '<span class="geo-section-title" style="font-size:' + (13-depth) + 'px">' + escHtml(node.title||'') + '</span>' +
-              '<span class="geo-section-arrow">▼</span>' +
-            '</div>' +
-            '<div class="geo-section-body">' +
-              (node.content ? '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(node.content) + '</div>' : '') +
-              kids +
+          return '<div class="collapse-item">' +
+            '<div class="collapse-header">' + escHtml(node.title||'') + '</div>' +
+            '<div class="collapse-content">' +
+              '<div class="collapse-inner">' +
+                (node.content ? escHtml(node.content) : '') +
+                kids +
+              '</div>' +
             '</div>' +
           '</div>';
         }
         var childrenHTML = (s.children && s.children.length)
-          ? '<div class="geo-section-children">' + s.children.map(function(c){ return childHTML(c,1); }).join('') + '</div>'
+          ? s.children.map(function(c){ return childHTML(c,1); }).join('')
           : '';
-        return '<div class="geo-section-card char-section-card">' +
-          '<div class="geo-section-toggle">' +
-            '<span class="geo-section-title" style="font-size:13px">' + escHtml(s.title || '未命名') + '</span>' +
-            '<span class="geo-section-arrow">▼</span>' +
-          '</div>' +
-          '<div class="geo-section-body">' +
-            (s.content ? '<div class="geo-section-content" style="white-space:pre-wrap">' + escHtml(s.content) + '</div>' : '') +
+        return '<div class="h2-section">' +
+          '<div class="collapse-h2"><span>' + escHtml(s.title || '未命名') + '</span></div>' +
+          '<div class="h2-content">' +
+            (s.content ? '<div class="collapse-inner">' + escHtml(s.content) + '</div>' : '') +
             childrenHTML +
           '</div>' +
         '</div>';
@@ -577,11 +394,16 @@ function _filterCharGrid(charId) {
     '</div>';
 
   // 绑定折叠事件
-  grid.querySelectorAll('.geo-section-toggle').forEach(function(t) {
-    t.addEventListener('click', function(e) {
+  grid.querySelectorAll('.collapse-h2').forEach(function(h) {
+    h.addEventListener('click', function(e) {
       e.stopPropagation();
-      if (e.target.closest('.geo-section-toggle') !== t) return;
-      t.parentElement.classList.toggle('open');
+      h.closest('.h2-section').classList.toggle('active');
+    });
+  });
+  grid.querySelectorAll('.collapse-header').forEach(function(h) {
+    h.addEventListener('click', function(e) {
+      e.stopPropagation();
+      h.closest('.collapse-item').classList.toggle('active');
     });
   });
 

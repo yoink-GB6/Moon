@@ -1,262 +1,277 @@
 // pages/home.js
-// 主页模块：可编辑标题、正文段落、自定义链接列表
+// 主页：全 Markdown 可编辑文档
 
 import { supaClient, setSyncStatus, dbError } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
-import { showToast, escHtml, confirmDialog } from '../core/ui.js';
+import { showToast } from '../core/ui.js';
 
-// ── 状态 ──────────────────────────────────────────
-let content = { home_title: '', home_body: '', home_links: '[]' };
-let links = []; // parsed from home_links JSON
+const KEY = 'home_md';
+let _md = '';
+let _container = null;
 
-// ── 主入口（从 router 调用）────────────────────────
 export async function mount(container) {
-  container.innerHTML = renderSkeleton();
-  bindEvents(container);
-  onAuthChange(() => renderAll(container));
-  await fetchContent(container);
-  subscribeRealtime(container);
+  _container = container;
+  container.innerHTML = _skeleton();
+  _bindEvents(container);
+  onAuthChange(() => _refresh());
+  await _fetch();
+  _subscribe();
 }
 
-export function unmount() {
-  // 实时订阅在 mount 时创建，SPA 导航时可选择性断开
-  // 当前实现：保持订阅（数据量小，无影响）
-}
+export function unmount() {}
 
-// ── 骨架 HTML ────────────────────────────────────
-function renderSkeleton() {
+// ── 骨架 ─────────────────────────────────────────────
+function _skeleton() {
   return `
     <div class="page-home">
-      <div class="home-header">
-        <div id="home-title-view" class="home-title-view"></div>
-        <button id="home-edit-title-btn" class="edit-inline-btn" style="display:none" title="编辑标题">✎</button>
+      <div class="home-md-toolbar" id="home-toolbar" style="display:none">
+        <button class="btn bp" id="home-md-save">保存</button>
+        <button class="btn bn" id="home-md-cancel">取消</button>
       </div>
-      <div id="home-title-editor" class="inline-editor" style="display:none">
-        <input id="home-title-input" type="text" placeholder="网站标题" maxlength="80"/>
-        <div class="inline-editor-btns">
-          <button class="btn bn" id="home-title-cancel">取消</button>
-          <button class="btn bp" id="home-title-save">保存</button>
-        </div>
-      </div>
+      <div id="home-md-view" class="home-md-view"></div>
+      <textarea id="home-md-textarea" class="home-md-textarea" style="display:none"
+        placeholder="用 Markdown 写主页内容…
 
-      <div class="home-body-wrap">
-        <div id="home-body-view" class="home-body-view"></div>
-        <button id="home-edit-body-btn" class="edit-inline-btn" style="display:none" title="编辑正文">✎ 编辑正文</button>
-      </div>
-      <div id="home-body-editor" class="inline-editor" style="display:none">
-        <textarea id="home-body-input" rows="6" placeholder="主页正文内容（支持换行）" maxlength="2000"></textarea>
-        <div class="inline-editor-btns">
-          <button class="btn bn" id="home-body-cancel">取消</button>
-          <button class="btn bp" id="home-body-save">保存</button>
-        </div>
-      </div>
+# 大标题
+## 二级标题
+### 三级标题
 
-      <div class="home-links-section">
-        <div class="home-links-header">
-          <h3>🔗 链接</h3>
-          <button id="home-add-link-btn" class="btn bp" style="display:none;font-size:12px;padding:5px 10px">＋ 添加链接</button>
-        </div>
-        <div id="home-links-list"></div>
-      </div>
+正文段落，空行分段。
 
-      <div id="home-add-link-form" class="add-link-form" style="display:none">
-        <input id="link-label-input" type="text" placeholder="链接文字" maxlength="60"/>
-        <input id="link-url-input" type="text" placeholder="https://..." maxlength="500"/>
-        <div class="inline-editor-btns">
-          <button class="btn bn" id="link-form-cancel">取消</button>
-          <button class="btn bp" id="link-form-save">添加</button>
-        </div>
-      </div>
+[链接文字](https://...)
+![图片描述](https://图片地址)
+
+**粗体**  *斜体*  \`行内代码\`
+
+- 列表项一
+- 列表项二
+
+> 引用文字
+
+---"></textarea>
     </div>
   `;
 }
 
-// ── 渲染所有内容 ──────────────────────────────────
-function renderAll(container) {
-  renderTitle(container);
-  renderBody(container);
-  renderLinks(container);
-  updateEditButtons(container);
-}
+// ── 渲染 ─────────────────────────────────────────────
+function _refresh() {
+  if (!_container) return;
+  const view = _container.querySelector('#home-md-view');
+  if (!view) return;
 
-function renderTitle(container) {
-  const el = container.querySelector('#home-title-view');
-  if (el) el.textContent = content.home_title || '（未设置标题）';
-}
-
-function renderBody(container) {
-  const el = container.querySelector('#home-body-view');
-  if (!el) return;
-  const text = content.home_body || '';
-  el.innerHTML = text
-    ? text.split('\n').map(line => `<p>${escHtml(line) || '&nbsp;'}</p>`).join('')
-    : '<p class="home-placeholder">（暂无内容）</p>';
-}
-
-function renderLinks(container) {
-  const el = container.querySelector('#home-links-list');
-  if (!el) return;
-  if (!links.length) {
-    el.innerHTML = '<p class="home-placeholder">暂无链接</p>';
-    return;
+  if (_md.trim()) {
+    view.innerHTML = _parseMd(_md);
+  } else {
+    view.innerHTML = isEditor()
+      ? '<p class="home-placeholder">点击右上角「编辑」开始写内容（支持 Markdown）</p>'
+      : '<p class="home-placeholder">暂无内容</p>';
   }
-  el.innerHTML = links.map((lk, i) => `
-    <div class="link-item" data-idx="${i}">
-      <a href="${escHtml(lk.url)}" target="_blank" rel="noopener">${escHtml(lk.label)}</a>
-      <span class="link-url-preview">${escHtml(lk.url)}</span>
-      ${isEditor() ? `<button class="link-delete-btn btn br" data-idx="${i}">✕</button>` : ''}
-    </div>
-  `).join('');
 
-  // Delete buttons
-  el.querySelectorAll('.link-delete-btn').forEach(btn => {
-    btn.addEventListener('click', () => deleteLink(parseInt(btn.dataset.idx), container));
+  // 编辑按钮（只在编辑模式且非编辑状态时显示）
+  let editBtn = _container.querySelector('#home-md-edit');
+  if (isEditor() && !editBtn) {
+    editBtn = document.createElement('button');
+    editBtn.id = 'home-md-edit';
+    editBtn.className = 'btn bn home-md-edit-btn';
+    editBtn.textContent = '编辑';
+    editBtn.addEventListener('click', _openEdit);
+    _container.querySelector('.page-home').prepend(editBtn);
+  } else if (!isEditor() && editBtn) {
+    editBtn.remove();
+  }
+}
+
+function _openEdit() {
+  const ta      = _container.querySelector('#home-md-textarea');
+  const view    = _container.querySelector('#home-md-view');
+  const toolbar = _container.querySelector('#home-toolbar');
+  const editBtn = _container.querySelector('#home-md-edit');
+  ta.value = _md;
+  view.style.display = 'none';
+  if (editBtn) editBtn.style.display = 'none';
+  ta.style.display = '';
+  toolbar.style.display = '';
+  ta.focus();
+  // 自动撑高
+  _autoResize(ta);
+}
+
+function _closeEdit() {
+  const ta      = _container.querySelector('#home-md-textarea');
+  const view    = _container.querySelector('#home-md-view');
+  const toolbar = _container.querySelector('#home-toolbar');
+  const editBtn = _container.querySelector('#home-md-edit');
+  ta.style.display = 'none';
+  toolbar.style.display = 'none';
+  view.style.display = '';
+  if (editBtn) editBtn.style.display = '';
+}
+
+function _autoResize(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(ta.scrollHeight, 400) + 'px';
+}
+
+// ── 事件 ─────────────────────────────────────────────
+function _bindEvents(container) {
+  container.querySelector('#home-md-save')?.addEventListener('click', _save);
+  container.querySelector('#home-md-cancel')?.addEventListener('click', () => {
+    _closeEdit();
+    _refresh();
+  });
+  const ta = container.querySelector('#home-md-textarea');
+  ta?.addEventListener('input', () => _autoResize(ta));
+  ta?.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { _closeEdit(); _refresh(); }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = ta.selectionStart;
+      ta.value = ta.value.substring(0, s) + '  ' + ta.value.substring(ta.selectionEnd);
+      ta.selectionStart = ta.selectionEnd = s + 2;
+    }
   });
 }
 
-function updateEditButtons(container) {
-  const ed = isEditor();
-  ['home-edit-title-btn','home-edit-body-btn','home-add-link-btn'].forEach(id => {
-    const el = container.querySelector('#' + id);
-    if (el) el.style.display = ed ? '' : 'none';
-  });
+// ── 保存 ─────────────────────────────────────────────
+async function _save() {
+  const val = _container.querySelector('#home-md-textarea').value;
+  setSyncStatus('syncing');
+  try {
+    const { error } = await supaClient.from('site_content').upsert({ key: KEY, value: val });
+    if (error) throw error;
+    _md = val;
+    setSyncStatus('ok');
+    _closeEdit();
+    _refresh();
+    showToast('已保存');
+  } catch (e) { dbError('保存主页', e); }
 }
 
-// ── 事件绑定 ──────────────────────────────────────
-function bindEvents(container) {
-  // Title
-  container.querySelector('#home-edit-title-btn')?.addEventListener('click', () => {
-    container.querySelector('#home-title-input').value = content.home_title;
-    container.querySelector('#home-title-view').closest('.home-header').style.display = 'none';
-    container.querySelector('#home-title-editor').style.display = '';
-    container.querySelector('#home-title-input').focus();
-  });
-  container.querySelector('#home-title-cancel')?.addEventListener('click', () => {
-    container.querySelector('#home-title-editor').style.display = 'none';
-    container.querySelector('#home-title-view').closest('.home-header').style.display = '';
-  });
-  container.querySelector('#home-title-save')?.addEventListener('click', () => saveTitle(container));
-
-  // Body
-  container.querySelector('#home-edit-body-btn')?.addEventListener('click', () => {
-    container.querySelector('#home-body-input').value = content.home_body;
-    container.querySelector('#home-body-view').style.display = 'none';
-    container.querySelector('#home-edit-body-btn').style.display = 'none';
-    container.querySelector('#home-body-editor').style.display = '';
-    container.querySelector('#home-body-input').focus();
-  });
-  container.querySelector('#home-body-cancel')?.addEventListener('click', () => {
-    container.querySelector('#home-body-editor').style.display = 'none';
-    container.querySelector('#home-body-view').style.display = '';
-    if (isEditor()) container.querySelector('#home-edit-body-btn').style.display = '';
-  });
-  container.querySelector('#home-body-save')?.addEventListener('click', () => saveBody(container));
-
-  // Links
-  container.querySelector('#home-add-link-btn')?.addEventListener('click', () => {
-    container.querySelector('#home-add-link-form').style.display = '';
-    container.querySelector('#link-label-input').focus();
-  });
-  container.querySelector('#link-form-cancel')?.addEventListener('click', () => {
-    container.querySelector('#home-add-link-form').style.display = 'none';
-  });
-  container.querySelector('#link-form-save')?.addEventListener('click', () => addLink(container));
-
-  // Keyboard shortcuts
-  container.querySelector('#home-title-input')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') saveTitle(container);
-    if (e.key === 'Escape') container.querySelector('#home-title-cancel').click();
-  });
-  container.querySelector('#home-body-input')?.addEventListener('keydown', e => {
-    if (e.key === 'Escape') container.querySelector('#home-body-cancel').click();
-  });
-  container.querySelector('#link-url-input')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') addLink(container);
-    if (e.key === 'Escape') container.querySelector('#link-form-cancel').click();
-  });
-}
-
-// ── 数据操作 ──────────────────────────────────────
-async function fetchContent(container) {
+// ── 数据 ─────────────────────────────────────────────
+async function _fetch() {
   setSyncStatus('syncing');
   try {
     const { data, error } = await supaClient
-      .from('site_content')
-      .select('*')
-      .in('key', ['home_title','home_body','home_links']);
-    if (error) throw error;
-    data.forEach(row => { content[row.key] = row.value; });
-    links = JSON.parse(content.home_links || '[]');
-    renderAll(container);
+      .from('site_content').select('*').eq('key', KEY).single();
+    if (error && error.code !== 'PGRST116') throw error;
+    _md = data?.value || '';
+    _refresh();
     setSyncStatus('ok');
-  } catch(e) { dbError('加载主页内容', e); }
+  } catch (e) { dbError('加载主页', e); }
 }
 
-async function upsertContent(key, value) {
-  setSyncStatus('syncing');
-  try {
-    const { error } = await supaClient
-      .from('site_content')
-      .upsert({ key, value });
-    if (error) throw error;
-    content[key] = value;
-    setSyncStatus('ok');
-  } catch(e) { dbError('保存内容', e); }
-}
-
-async function saveTitle(container) {
-  const val = container.querySelector('#home-title-input').value.trim();
-  if (!val) { showToast('标题不能为空'); return; }
-  await upsertContent('home_title', val);
-  container.querySelector('#home-title-editor').style.display = 'none';
-  container.querySelector('#home-title-view').closest('.home-header').style.display = '';
-  renderTitle(container);
-  showToast('标题已保存');
-}
-
-async function saveBody(container) {
-  const val = container.querySelector('#home-body-input').value;
-  await upsertContent('home_body', val);
-  container.querySelector('#home-body-editor').style.display = 'none';
-  container.querySelector('#home-body-view').style.display = '';
-  if (isEditor()) container.querySelector('#home-edit-body-btn').style.display = '';
-  renderBody(container);
-  showToast('正文已保存');
-}
-
-async function addLink(container) {
-  const label = container.querySelector('#link-label-input').value.trim();
-  const url   = container.querySelector('#link-url-input').value.trim();
-  if (!label) { showToast('请填写链接文字'); return; }
-  if (!url || !url.startsWith('http')) { showToast('请填写有效的 URL（以 http 开头）'); return; }
-  links.push({ label, url });
-  await upsertContent('home_links', JSON.stringify(links));
-  container.querySelector('#home-add-link-form').style.display = 'none';
-  container.querySelector('#link-label-input').value = '';
-  container.querySelector('#link-url-input').value = '';
-  renderLinks(container);
-  showToast('链接已添加');
-}
-
-async function deleteLink(idx, container) {
-  if (!confirmDialog(`删除链接「${links[idx]?.label}」？`)) return;
-  links.splice(idx, 1);
-  await upsertContent('home_links', JSON.stringify(links));
-  renderLinks(container);
-  showToast('链接已删除');
-}
-
-// ── 实时订阅 ──────────────────────────────────────
-function subscribeRealtime(container) {
-  supaClient.channel('home-content')
-    .on('postgres_changes', { event:'*', schema:'public', table:'site_content' }, payload => {
-      if (payload.new?.key?.startsWith('home_')) {
-        content[payload.new.key] = payload.new.value;
-        if (payload.new.key === 'home_links') {
-          try { links = JSON.parse(payload.new.value || '[]'); } catch(e) { links = []; }
-        }
-        renderAll(container);
+function _subscribe() {
+  supaClient.channel('home-md')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'site_content' }, payload => {
+      if (payload.new?.key === KEY) {
+        _md = payload.new.value || '';
+        _refresh();
       }
     })
     .subscribe();
+}
+
+// ── Markdown 解析器 ───────────────────────────────────
+function _escAttr(s) {
+  return s.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function _inline(text) {
+  let s = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  // 图片（先于链接处理）
+  s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
+    (_, alt, url) => `<img src="${_escAttr(url)}" alt="${_escAttr(alt)}" class="md-img"/>`);
+  // 链接
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
+    (_, label, url) => `<a href="${_escAttr(url)}" target="_blank" rel="noopener">${label}</a>`);
+  // 粗体
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // 斜体
+  s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // 行内代码
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  return s;
+}
+
+function _parseMd(src) {
+  const lines = src.split('\n');
+  const out = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // 空行跳过
+    if (!line.trim()) { i++; continue; }
+
+    // 分隔线
+    if (/^-{3,}$/.test(line.trim())) {
+      out.push('<hr class="md-hr"/>');
+      i++; continue;
+    }
+
+    // 标题
+    const hm = line.match(/^(#{1,4})\s+(.+)/);
+    if (hm) {
+      const lvl = hm[1].length;
+      out.push(`<h${lvl} class="md-h${lvl}">${_inline(hm[2])}</h${lvl}>`);
+      i++; continue;
+    }
+
+    // 引用块
+    if (line.startsWith('> ')) {
+      const rows = [];
+      while (i < lines.length && lines[i].startsWith('> ')) {
+        rows.push(_inline(lines[i].slice(2)));
+        i++;
+      }
+      out.push(`<blockquote class="md-bq">${rows.join('<br/>')}</blockquote>`);
+      continue;
+    }
+
+    // 无序列表
+    if (/^[-*]\s/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^[-*]\s/.test(lines[i])) {
+        items.push(`<li>${_inline(lines[i].replace(/^[-*]\s/, ''))}</li>`);
+        i++;
+      }
+      out.push(`<ul class="md-ul">${items.join('')}</ul>`);
+      continue;
+    }
+
+    // 有序列表
+    if (/^\d+\.\s/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
+        items.push(`<li>${_inline(lines[i].replace(/^\d+\.\s+/, ''))}</li>`);
+        i++;
+      }
+      out.push(`<ol class="md-ol">${items.join('')}</ol>`);
+      continue;
+    }
+
+    // 段落：连续非特殊行合并
+    const pLines = [];
+    while (
+      i < lines.length &&
+      lines[i].trim() &&
+      !/^#{1,4}\s/.test(lines[i]) &&
+      !/^[-*]\s/.test(lines[i]) &&
+      !/^\d+\.\s/.test(lines[i]) &&
+      !lines[i].startsWith('> ') &&
+      !/^-{3,}$/.test(lines[i].trim())
+    ) {
+      pLines.push(lines[i]);
+      i++;
+    }
+    if (pLines.length) {
+      out.push(`<p class="md-p">${pLines.map(_inline).join('<br/>')}</p>`);
+    }
+  }
+
+  return out.join('\n');
 }

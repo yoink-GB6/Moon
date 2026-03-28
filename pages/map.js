@@ -3,7 +3,7 @@
 
 import { supaClient, setSyncStatus, dbError } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
-import { showToast, escHtml, confirmDialog } from '../core/ui.js';
+import { showToast, escHtml, confirmDialog, bindPanelToggle } from '../core/ui.js';
 
 // ── 状态 ──────────────────────────────────────────
 let regions   = [];
@@ -18,7 +18,6 @@ let editMode   = 'none';
 let drawingPts = [];
 let hoverId    = null;
 let popupData  = null;
-let panelOpen  = true;
 let modalEditItem = null;
 
 let ptr   = { active:false, sx:0, sy:0, px:0, py:0, moved:false };
@@ -62,7 +61,7 @@ function buildHTML() {
     <canvas id="map-canvas"></canvas>
 
     <!-- Floating expand button (shows when panel collapsed) -->
-    <button id="map-expand" class="expand-btn-float" title="展开面板">◀</button>
+    <button id="map-expand" class="expand-btn-float" title="展开面板">‹</button>
 
     <div class="map-toolbar">
       <button class="map-tb-btn" id="map-zoom-in"  title="放大">＋</button>
@@ -90,7 +89,7 @@ function buildHTML() {
 
   <div id="map-panel" class="map-panel">
     <div class="map-panel-hdr" id="map-panel-toggle">
-      <span>🗺 地图</span><span id="map-panel-chevron">◀</span>
+      <span>🗺 地图</span><span id="map-panel-chevron">‹</span>
     </div>
     <div class="tl-tabs">
       <button class="tl-tab active" data-tab="list">📋 列表</button>
@@ -346,17 +345,7 @@ function bindPointer(container) {
 
 // ── Panel bindings ─────────────────────────────────
 function bindPanel(container) {
-  function toggleMapPanel() {
-    panelOpen=!panelOpen;
-    const panel = container.querySelector('#map-panel');
-    const chevron = container.querySelector('#map-panel-chevron');
-    const expandBtn = container.querySelector('#map-expand');
-    panel.classList.toggle('collapsed',!panelOpen);
-    chevron.textContent = panelOpen?'◀':'▶';
-    if (expandBtn) expandBtn.classList.toggle('show', !panelOpen);
-  }
-  container.querySelector('#map-panel-toggle').addEventListener('click', toggleMapPanel);
-  container.querySelector('#map-expand')?.addEventListener('click', toggleMapPanel);
+  bindPanelToggle(container, '#map-panel', '#map-panel-toggle', '#map-expand', '#map-panel-chevron');
   container.querySelectorAll('.tl-tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
       container.querySelectorAll('.tl-tab').forEach(t=>t.classList.remove('active'));

@@ -159,7 +159,7 @@ function buildHTML() {
 
 <!-- 画布右键菜单 -->
 <div id="rel-board-menu" class="rel-board-menu" style="display:none">
-  <button id="rel-bmenu-rename">✏️ 重命名</button>
+  <button id="rel-bmenu-rename">✎ 重命名</button>
   <button id="rel-bmenu-delete" style="color:var(--red)">🗑 删除画布</button>
 </div>
 
@@ -1087,7 +1087,7 @@ function renderCharacterList() {
       ? `<img src="${char.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'" />`
       : char.name.charAt(0).toUpperCase();
     const avBg = char.avatar_url ? 'transparent' : (char.color || '#7c83f7');
-    const editBtn  = editor ? `<button class="rel-char-edit-btn" data-edit-id="${char.id}" title="编辑关系">✏️</button>` : '';
+    const editBtn  = editor ? `<button class="rel-char-edit-btn" data-edit-id="${char.id}" title="编辑关系">✎</button>` : '';
     const removeBtn = (editor && isOnBoard)
       ? `<button class="rel-char-remove-btn" data-remove-id="${char.id}" title="从画布移除">✕</button>`
       : '';

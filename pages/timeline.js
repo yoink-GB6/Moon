@@ -3,7 +3,7 @@
 
 import { supaClient, setSyncStatus, dbError } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
-import { showToast, escHtml, confirmDialog } from '../core/ui.js';
+import { showToast, escHtml, confirmDialog, bindPanelToggle } from '../core/ui.js';
 
 // ── 状态 ──────────────────────────────────────────
 let characters = [];
@@ -75,18 +75,18 @@ function buildHTML() {
   </div>
 
   <!-- Floating expand button (shows when panel collapsed) -->
-  <button id="tl-expand" class="expand-btn-float" title="展开面板">◀</button>
+  <button id="tl-expand" class="expand-btn-float" title="展开面板">‹</button>
 
   <!-- Right panel -->
   <div id="tl-panel" class="tl-panel">
     <div class="map-panel-hdr" id="tl-panel-toggle">
       <span>⏱ 时间轴</span>
-      <span id="tl-panel-chevron">◀</span>
+      <span id="tl-panel-chevron">‹</span>
     </div>
 
     <!-- Tab bar removed - only one tab, so hide tabs -->
     <div style="display:none" class="tl-tabs">
-      <button class="tl-tab active" data-tab="list">📋 列表</button>
+      <button class="tl-tab active" data-tab="list">≡ 列表</button>
     </div>
 
     <!-- TAB: 列表 -->
@@ -94,7 +94,7 @@ function buildHTML() {
       <!-- Age offset (collapsible) -->
       <div class="tl-section">
         <div class="tl-section-hdr" id="tl-offset-hdr">
-          <span>🕐 年龄偏移</span>
+          <span>⏱ 年龄偏移</span>
           <span class="tl-chevron">▾</span>
         </div>
         <div class="tl-section-body" id="tl-offset-body">
@@ -115,7 +115,7 @@ function buildHTML() {
       <!-- Quick add character (editor only) -->
       <div class="tl-section" id="tl-quick-add-section" style="display:none">
         <div class="tl-section-hdr">
-          <span>➕ 快速添加人物</span>
+          <span> + 快速添加人物</span>
         </div>
         <div class="tl-section-body" style="padding:10px 13px">
           <input id="tl-quick-name" type="text" placeholder="名字" autocomplete="off" style="width:100%;margin-bottom:8px"/>
@@ -124,7 +124,7 @@ function buildHTML() {
             <button class="btn bp" id="tl-quick-add-btn" style="flex-shrink:0">添加</button>
           </div>
           <div style="font-size:11px;color:#889;line-height:1.5">
-            💡 输入当前显示年龄（已含偏移 <span id="tl-quick-offset-hint">+0</span>）
+            || 输入当前显示年龄（已含偏移 <span id="tl-quick-offset-hint">+0</span>）
           </div>
         </div>
       </div>
@@ -144,7 +144,7 @@ function buildHTML() {
 <!-- Edit modal (scoped inside timeline) -->
 <div id="tl-modal-overlay" class="tl-modal-overlay">
   <div class="tl-modal" id="tl-modal">
-    <h2 id="tl-modal-title">✏️ 修改人物</h2>
+    <h2 id="tl-modal-title">✎ 修改人物</h2>
     <label>名字</label>
     <input id="tl-edit-name" type="text" autocomplete="off"/>
     <label>年龄（当前显示年龄）</label>
@@ -185,7 +185,7 @@ function buildHTML() {
       <button class="btn bn" id="tl-modal-cancel">取消</button>
       <button class="btn bp" id="tl-modal-save">保存</button>
     </div>
-    <div class="mbtns" style="justify-content:center;margin-top:8px;padding-top:8px;border-top:1px solid #2d3048">
+    <div class="mbtns" style="justify-content:center;margin-top:8px;padding-top:8px;border-top:1px solid #2a2418">
       <button class="btn br" id="tl-modal-delete" style="min-width:120px">🗑 删除此人物</button>
     </div>
   </div>
@@ -242,16 +242,7 @@ function bindControls(container) {
   });
 
   // Panel toggle
-  function toggleTimelinePanel() {
-    const panel = container.querySelector('#tl-panel');
-    const chevron = container.querySelector('#tl-panel-chevron');
-    const expandBtn = container.querySelector('#tl-expand');
-    const collapsed = panel.classList.toggle('collapsed');
-    chevron.textContent = collapsed ? '▶' : '◀';
-    if (expandBtn) expandBtn.classList.toggle('show', collapsed);
-  }
-  container.querySelector('#tl-panel-toggle')?.addEventListener('click', toggleTimelinePanel);
-  container.querySelector('#tl-expand')?.addEventListener('click', toggleTimelinePanel);
+  bindPanelToggle(container, '#tl-panel', '#tl-panel-toggle', '#tl-expand', '#tl-panel-chevron');
 }
 
 function updateEditUI(container) {
@@ -375,7 +366,7 @@ function refreshAvatarPreview(scope, src, name, color) {
                ? scope.querySelector('#tl-avatar-preview') : null;
   if (!p) return;
   const xBtn = p.querySelector('#tl-avatar-clear-x') || document.querySelector('#tl-avatar-clear-x');
-  p.style.background = color || '#252840';
+  p.style.background = color || '#1a1508';
   const initial = ((name || editTarget?.name || '?').charAt(0).toUpperCase());
   if (src) {
     p.innerHTML = `<img src="${src}" onerror="this.parentElement.innerHTML='<span style=color:#e74c3c>✕</span>'" style="width:100%;height:100%;object-fit:cover"/>`;
@@ -511,8 +502,8 @@ function draw() {
   }
   // Axis
   const gr=ctx.createLinearGradient(0,0,canvas.width,0);
-  gr.addColorStop(0,'rgba(124,131,247,0)'); gr.addColorStop(.12,'rgba(124,131,247,.55)');
-  gr.addColorStop(.88,'rgba(124,131,247,.55)'); gr.addColorStop(1,'rgba(124,131,247,0)');
+  gr.addColorStop(0,'rgba(168,137,58,0)'); gr.addColorStop(.12,'rgba(168,137,58,.55)');
+  gr.addColorStop(.88,'rgba(168,137,58,.55)'); gr.addColorStop(1,'rgba(168,137,58,0)');
   ctx.strokeStyle=gr; ctx.lineWidth=2;
   ctx.beginPath(); ctx.moveTo(0,ay); ctx.lineTo(canvas.width,ay); ctx.stroke();
   // Ticks
@@ -522,19 +513,19 @@ function draw() {
     if (!maj2&&!mid2&&scale<30) continue;
     if (!maj2&&scale<14) continue;
     const x2=dispAgeToX(a2);
-    ctx.strokeStyle=maj2?'rgba(124,131,247,.85)':'rgba(124,131,247,.35)';
+    ctx.strokeStyle=maj2?'rgba(168,137,58,.85)':'rgba(168,137,58,.35)';
     ctx.lineWidth=maj2?1.5:1;
     const th=maj2?13:7;
     ctx.beginPath(); ctx.moveTo(x2,ay-th); ctx.lineTo(x2,ay+th); ctx.stroke();
     if (maj2||(mid2&&scale>22)) {
-      ctx.fillStyle=maj2?'rgba(200,202,255,.82)':'rgba(200,202,255,.38)';
-      ctx.font=(maj2?12:10)+'px system-ui'; ctx.textAlign='center';
+      ctx.fillStyle=maj2?'rgba(214,207,192,.82)':'rgba(214,207,192,.38)';
+      ctx.font=(maj2?12:10)+'px "Noto Sans SC",system-ui'; ctx.textAlign='center';
       ctx.fillText(a2,x2,ay+26);
     }
   }
   // Center line
   ctx.save();
-  ctx.strokeStyle='rgba(124,131,247,.18)'; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(168,137,58,.18)'; ctx.setLineDash([4,4]); ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(canvas.width/2,0); ctx.lineTo(canvas.width/2,canvas.height);
   ctx.stroke(); ctx.setLineDash([]); ctx.restore();
   // Limit markers
@@ -582,9 +573,6 @@ function lighten(hex,amt) {
 function drawNode(c,x,cy) {
   const r=NODE_R, da=dispAge(c), gone=isGone(c);
   ctx.save(); if(gone) ctx.globalAlpha=0.28;
-  const glow=ctx.createRadialGradient(x,cy,0,x,cy,r*2.4);
-  glow.addColorStop(0,(gone?'#888888':c.color)+'40'); glow.addColorStop(1,(gone?'#888888':c.color)+'00');
-  ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(x,cy,r*2.4,0,Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.arc(x,cy,r,0,Math.PI*2); ctx.save(); ctx.clip();
   const img=c.avatar?getImg(c):null;
   if (img&&img.complete&&img.naturalWidth>0) {
@@ -613,16 +601,11 @@ function drawNode(c,x,cy) {
     ctx.beginPath(); ctx.moveTo(x+q,cy-q); ctx.lineTo(x-q,cy+q); ctx.stroke();
   }
   ctx.restore();
-  ctx.save(); ctx.fillStyle=gone?'#888':'#e8eaed';
-  ctx.font='bold '+Math.round(r*.67)+'px system-ui';
+  ctx.save(); ctx.fillStyle=gone?'#6a6058':'#d6cfc0';
+  ctx.font='bold '+Math.round(r*.67)+'px "Noto Sans SC",system-ui';
   ctx.textAlign='center'; ctx.textBaseline='bottom';
   ctx.shadowColor='rgba(0,0,0,.9)'; ctx.shadowBlur=7;
   ctx.fillText(c.name,x,cy-r-4); ctx.restore();
-  ctx.save(); ctx.fillStyle=gone?'#e74c3c':c.color;
-  ctx.font=Math.round(r*.6)+'px system-ui';
-  ctx.textAlign='center'; ctx.textBaseline='top';
-  ctx.shadowColor='rgba(0,0,0,.8)'; ctx.shadowBlur=5;
-  ctx.fillText(da+'岁'+(gone?' †':''),x,cy+r+3); ctx.restore();
 }
 
 // ── Hit test ───────────────────────────────────────
@@ -733,7 +716,7 @@ function updateSidebar() {
     return `<div class="tl-ci" onclick="(()=>{const m=document.querySelector('#tl-modal-overlay');if(m){}})()">
       ${av}
       <div class="tl-ci-info">
-        <div class="tl-cname" style="color:${gone?'#888':'#cdd'}">${escHtml(c.name)}</div>
+        <div class="tl-cname" style="color:${gone?'#6a6058':'#d6cfc0'}">${escHtml(c.name)}</div>
         ${meta?`<div class="tl-cmeta">${meta}</div>`:''}
       </div>
       <div class="tl-cage${gone?' faded':''}">${da}</div>
