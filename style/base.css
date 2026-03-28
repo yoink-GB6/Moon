@@ -1,0 +1,45 @@
+/* ════════════════════════════════════════
+   全局变量 & 重置
+════════════════════════════════════════ */
+:root {
+  --bg:           #0e0d0b;
+  --panel:        #161410;
+  --surface-2:    #1c1a15;
+  --surface-3:    #211f18;
+  --border:       #2a2418;
+  --border-hi:    #3d3420;
+  --accent:       #a8893a;
+  --accent-bright:#deb96a;
+  --accent-dim:   #6b5926;
+  --accent-muted: #2e2516;
+  --accent-bg:    #1a1508;
+  --green:        #4a7a42;
+  --green-bright: #7aba72;
+  --green-dim:    #3a6130;
+  --green-muted:  #142110;
+  --red:          #8a3a32;
+  --red-bright:   #e07070;
+  --red-dim:      #6b2626;
+  --red-muted:    #2a1010;
+  --amber:        #a87830;
+  --ib:           #1a1508;
+  --ibr:          #3d3420;
+  --text:         #d6cfc0;
+  --muted:        #8a8070;
+  --text-faint:   #4a4438;
+  --sidebar-w:    220px;
+  --topbar-h:     50px;
+  /* 字体栈（无需外部加载） */
+  --font-body:    'PingFang SC','Microsoft YaHei UI','Microsoft YaHei','Hiragino Sans GB',system-ui,sans-serif;
+  --font-title:   'Palatino Linotype','Palatino','Book Antiqua','Georgia',serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text)}
+
+/* 全局微弱颗粒感 */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size:180px;opacity:.028;mix-blend-mode:overlay;
+}
