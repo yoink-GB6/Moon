@@ -192,7 +192,7 @@
 /* 内容文本区 */
 .collapse-inner{padding:0 0 0 16px;font-size:13px;line-height:1.75;color:var(--muted);white-space:pre-wrap}
 /* 第三层：静态文本，不折叠 */
-.static-text-l3{display:flex;align-items:flex-start;padding:8px 0 8px 34px;font-size:13px;color:var(--muted);line-height:1.6}
+.static-text-l3{display:flex;align-items:flex-start;padding:8px 0 8px 26px;font-size:13px;color:var(--muted);line-height:1.6}
 .static-text-l3::before{content:'';width:4px;height:4px;flex-shrink:0;border:1px solid var(--accent-dim);background:transparent;margin-right:12px;margin-top:7px;transform:rotate(45deg)}
 /* 装饰 Tag */
 .sec-tag{font-family:var(--font-body);font-size:9px;background:var(--accent-muted);color:var(--accent);border:1px solid var(--accent-dim);padding:1px 5px;margin-left:8px;text-transform:uppercase;vertical-align:middle}
@@ -212,6 +212,9 @@
 .tl-modal-overlay.modal-center .tl-modal{border-radius:4px;width:calc(100% - 32px);max-height:90vh;box-shadow:0 0 0 1px var(--accent-muted),0 24px 80px rgba(0,0,0,.65)}
 /* 人物卡片：随屏幕比例伸缩，宽屏不再受限于固定像素 */
 .char-modal-box{max-width:clamp(300px,72vw,860px)}
+/* 人物只读弹窗：让遮罩层滚动，模态框不截断，确保装饰角跟随卡片底部 */
+#char-readonly-modal{overflow-y:auto;align-items:flex-start;padding:20px 0}
+#char-readonly-modal .tl-modal{max-height:none;overflow-y:visible;margin:auto}
 /* 人物只读弹窗及地区编辑弹窗装饰角 */
 #char-readonly-modal .tl-modal::before,
 #char-readonly-modal .tl-modal::after,
@@ -290,6 +293,16 @@
 .tl-select-opt{padding:8px 12px;font-size:13px;cursor:pointer;transition:background 0.12s;border-radius:4px;margin:2px 4px}
 .tl-select-opt:hover{background:rgba(168,137,58,0.1)}
 .tl-select-opt.selected{color:var(--accent);font-weight:500;background:rgba(168,137,58,0.08)}
+
+/* ── 桌面端字号放大（移动端不受影响）── */
+@media(min-width:769px){
+  .collapse-h2 span   { font-size:17px; }
+  .collapse-header    { font-size:15px; }
+  .collapse-inner     { font-size:14px; }
+  .static-text-l3     { font-size:14px; }
+  .geo-detail-value   { font-size:15px; }
+  .geo-detail-section h3 { font-size:19px; }
+}
 
 /* ── 模态框操作按钮行 ── */
 .modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:8px}
