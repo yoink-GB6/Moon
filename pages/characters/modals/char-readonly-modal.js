@@ -75,18 +75,15 @@ export function openCharReadonly(char, expandPath) {
         '</div>' +
         '<div style="flex:1">' +
           '<h2 style="margin:0 0 4px">' + escHtml(char.name) + '</h2>' +
-          (age      ? '<div style="font-size:13px;color:var(--muted)">' + age + '</div>' : '') +
-          (location ? '<div style="font-size:13px;color:var(--muted)">' + escHtml(location) + '</div>' : '') +
+          (age      ? '<div style="font-size:14px;color:var(--muted)">' + age + '</div>' : '') +
+          (location ? '<div style="font-size:14px;color:var(--muted)">' + escHtml(location) + '</div>' : '') +
         '</div>' +
       '</div>' +
       (function() {
         const secs = _parseCharSections(char.description);
-        if (!secs.length) return '<div style="font-size:13px;color:var(--muted);font-style:italic">暂无介绍</div>';
+        if (!secs.length) return '<div style="font-size:14px;color:var(--muted);font-style:italic">暂无介绍</div>';
         return '<div id="char-ro-sections">' + _sectionsHTML(secs) + '</div>';
       })() +
-      '<div style="margin-top:20px;text-align:right">' +
-        '<button class="btn bn" id="char-readonly-close">关闭</button>' +
-      '</div>' +
     '</div>';
 
   overlay.classList.add('show');
@@ -118,10 +115,6 @@ export function openCharReadonly(char, expandPath) {
       cur = target.querySelector('.h2-content') || target.querySelector('.collapse-inner') || null;
     }
   }
-
-  overlay.querySelector('#char-readonly-close').addEventListener('click', function() {
-    overlay.classList.remove('show');
-  });
 
   // 关闭弹窗需要完整的一次点击（mousedown + mouseup 均在遮罩上）
   // 用 AbortController 避免每次打开重复累积监听器
