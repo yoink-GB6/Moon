@@ -56,7 +56,7 @@ function buildHTML() {
     <div class="lib-header">
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn bn" id="lib-sort-btn" title="切换排序方式">点赞排序</button>
-        <button class="btn bn" id="lib-unlock-btn">解锁指令编辑</button>
+        <button class="btn bn" id="lib-unlock-btn"> 添加指令 / 更新tag </button>
         <button class="btn bp" id="lib-add-btn" style="display:none">＋ 新建</button>
       </div>
     </div>
@@ -176,7 +176,7 @@ function buildHTML() {
 <!-- Read-only preview modal -->
 <div id="lib-preview-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:600px" onmousedown="event.stopPropagation()">
-    <h2>查看指令</h2>
+    <h2>查看完整指令</h2>
     
     <div style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:12px;max-height:400px;overflow-y:auto">
       <div id="lib-preview-content" style="white-space:pre-wrap;word-break:break-word;line-height:1.7;font-size:14px"></div>
@@ -194,7 +194,7 @@ function buildHTML() {
 <!-- Password unlock modal (library-specific) -->
 <div id="lib-password-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:400px" onmousedown="event.stopPropagation()">
-    <h2>🔓 解锁指令编辑</h2>
+    <h2>解锁</h2>
     <p style="color:#889;font-size:13px;margin-bottom:16px">裴献之是公主吗？(y/n)</p>
     
     <input 
@@ -1217,7 +1217,7 @@ function submitPassword(container) {
     isLibraryEditable = true;
     updateLibraryUI(container);
     closePasswordModal(container);
-    showToast('✅ 已解锁指令编辑');
+    showToast('已解锁指令编辑');
   } else {
     container.querySelector('#lib-password-error').style.display = 'block';
     container.querySelector('#lib-password-input').value = '';
@@ -1342,7 +1342,7 @@ function updateLibraryUI(container) {
     }
     addBtn.style.display = '';
   } else {
-    unlockBtn.textContent = '解锁指令编辑';
+    unlockBtn.textContent = ' 添加指令 / 更新tag ';
     unlockBtn.className = 'btn bn';
     unlockBtn.disabled = false;
     addBtn.style.display = 'none';

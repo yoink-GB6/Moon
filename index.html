@@ -23,7 +23,6 @@
 <link rel="stylesheet" href="styles/components.css">
 <link rel="stylesheet" href="styles/home.css">
 <link rel="stylesheet" href="styles/timeline.css">
-<link rel="stylesheet" href="styles/map.css">
 <link rel="stylesheet" href="styles/characters.css">
 <link rel="stylesheet" href="styles/library.css">
 <link rel="stylesheet" href="styles/responsive.css">
@@ -236,6 +235,7 @@
 
 <div id="toast"></div>
 
+<script src="core/starfield.js"></script>
 <script type="module">
 const _V = Date.now(); // 缓存破坏版本号，每次加载页面时生成
 import { showToast, initSidebar, closeSidebar, confirmDialog, bindPanelToggle } from './core/ui.js';
@@ -268,18 +268,6 @@ const ROUTES = [
     label: '⏱ 时间轴',
     icon: '⏱',
     loader: () => import('./pages/timeline.js?v='+_V),
-  },
-  {
-    id: 'map',
-    label: '🗺 地图',
-    icon: '🗺',
-    loader: () => import('./pages/map.js?v='+_V),
-  },
-  {
-    id: 'relationships',
-    label: '🕸 关系图谱',
-    icon: '🕸',
-    loader: () => import('./pages/relationships.js?v='+_V),
   },
   // 未来在这里添加更多页面：
   // { id: 'gallery', label: '🖼 图库', icon: '🖼', loader: () => import('./pages/gallery.js'), placeholder: true },

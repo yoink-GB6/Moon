@@ -6,7 +6,7 @@
   position:absolute;top:0;left:0;right:0;bottom:0;
   overflow:hidden;touch-action:none;cursor:grab;user-select:none;
   background:radial-gradient(ellipse at 20% 40%,rgba(168,137,58,.06) 0%,transparent 60%),
-             radial-gradient(ellipse at 80% 70%,rgba(168,137,58,.03) 0%,transparent 55%),var(--bg);
+             radial-gradient(ellipse at 80% 70%,rgba(168,137,58,.03) 0%,transparent 55%);
 }
 .tl-cw.grabbing{cursor:grabbing}
 .tl-cw canvas{display:block}

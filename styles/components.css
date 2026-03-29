@@ -123,3 +123,9 @@ input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(
 .page-placeholder .placeholder-icon{font-size:56px;margin-bottom:16px;opacity:.4}
 .page-placeholder h2{font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text-faint)}
 .page-placeholder p{font-size:14px;line-height:1.8}
+
+/* ── 弹窗桌面端字号 ── */
+@media(min-width:769px){
+  .tl-modal h2    { font-size:18px; }
+  .tl-modal label { font-size:13px; }
+}
