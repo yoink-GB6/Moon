@@ -40,6 +40,8 @@ function _skeleton() {
 
 [链接文字](https://...)
 ![图片描述](https://图片地址)
+![缩放示例](https://图片地址 =50%)
+![固定宽度](https://图片地址 =300x)
 
 **粗体**  *斜体*  \`行内代码\`
 
@@ -181,9 +183,21 @@ function _inline(text) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
-  // 图片（先于链接处理）
-  s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
-    (_, alt, url) => `<img src="${_escAttr(url)}" alt="${_escAttr(alt)}" class="md-img"/>`);
+  // 图片（先于链接处理）支持 =宽x高 缩放，如 =50% / =300x / =x200 / =50%x30%
+  s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+=([^)]*))?\)/g, (_, alt, url, size) => {
+    let style = '';
+    if (size) {
+      const dim = size.trim().split('x');
+      const toUnit = v => !v ? '' : (v.includes('%') ? v : /^\d+$/.test(v) ? v + 'px' : v);
+      const w = toUnit(dim[0]);
+      const h = dim.length > 1 ? toUnit(dim[1]) : '';
+      if (w) style += `width:${w};`;
+      if (h) style += `height:${h};`;
+      if (w && !h) style += 'height:auto;';
+      if (h && !w) style += 'width:auto;';
+    }
+    return `<img src="${_escAttr(url)}" alt="${_escAttr(alt)}" class="md-img"${style ? ` style="${style}"` : ''}/>`;
+  });
   // 链接
   s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
     (_, label, url) => `<a href="${_escAttr(url)}" target="_blank" rel="noopener">${label}</a>`);
