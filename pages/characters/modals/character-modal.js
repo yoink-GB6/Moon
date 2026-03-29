@@ -47,7 +47,7 @@ function _charRowHTML(sec) {
         '<span class="cm-row-label">' + escHtml(sec.title || '未命名') + '</span>' +
         '<span class="cm-row-preview">' + previewHTML + '</span>' +
       '</div>' +
-      '<button class="cm-row-edit" title="编辑此小节">✏️</button>' +
+      '<button class="cm-row-edit" title="编辑此小节">✎</button>' +
       '<button class="cm-row-del"  title="删除此小节">✕</button>' +
     '</div>' +
     '<div class="cm-row-expanded" style="display:none">' +
@@ -55,7 +55,7 @@ function _charRowHTML(sec) {
         '<input class="cm-row-title" type="text" value="' + escHtml(sec.title || '') + '" placeholder="小节标题" maxlength="30"/>' +
         '<button class="cm-row-collapse">▲ 收起</button>' +
       '</div>' +
-      '<div class="cm-md-guide"># 子小节 &nbsp; ## 子子小节 &nbsp; ### 三级</div>' +
+      '<div class="cm-md-guide"># 一级折叠 &nbsp;&nbsp; ## 带菱形框的文本段</div>' +
       '<textarea class="cm-row-body" rows="6" placeholder="' + escHtml(ph) + '">' + escHtml(mdText) + '</textarea>' +
     '</div>' +
   '</div>';
@@ -299,7 +299,7 @@ export function openCharModal(char) {
   const secContainer = modal.querySelector('#char-sec-container');
   if (secContainer) {
     secContainer.innerHTML =
-      '<div class="cm-sec-hdr"><span>人物介绍</span><span class="cm-hint">点 ✏️ 展开编辑；拖 ⠿ 可排序</span></div>' +
+      '<div class="cm-sec-hdr"><span>人物介绍</span><span class="cm-hint">点 ✎ 展开编辑；拖 ⠿ 可排序</span></div>' +
       '<div class="cm-tags" id="char-sec-tags">' + (presetBtns || '<span class="cm-tags-empty">所有预设已添加</span>') + '</div>' +
       '<div class="cm-custom-row">' +
         '<input type="text" id="char-sec-custom" placeholder="自定义小节标题..." maxlength="30" autocomplete="off"/>' +
