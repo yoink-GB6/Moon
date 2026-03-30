@@ -7,7 +7,7 @@
 #topbar{
   display:flex;align-items:center;gap:10px;
   padding:0 14px;height:var(--topbar-h);
-  background:rgba(22,20,16,.88);border-bottom:1px solid var(--border);
+  background:rgba(18,17,17,.88);border-bottom:1px solid var(--border);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   flex-shrink:0;z-index:100;
 }
@@ -36,7 +36,7 @@
 /* ── Left sidebar ── */
 #sidebar{
   position:absolute;left:0;top:0;bottom:0;z-index:100;
-  width:var(--sidebar-w);background:rgba(22,20,16,.85);border-right:1px solid var(--border);
+  width:var(--sidebar-w);background:rgba(18,17,17,.85);border-right:1px solid var(--border);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   display:flex;flex-direction:column;overflow:hidden;
   transition:transform .28s cubic-bezier(0.4,0,0.2,1);
@@ -70,8 +70,8 @@
 #main-content{
   flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative;
   background:
-    radial-gradient(ellipse at 15% 35%, rgba(168,137,58,.07) 0%, transparent 58%),
-    radial-gradient(ellipse at 82% 72%, rgba(168,137,58,.04) 0%, transparent 52%),
+    radial-gradient(ellipse at 15% 35%, rgba(55,50,75,.05)  0%, transparent 58%),
+    radial-gradient(ellipse at 82% 72%, rgba(150,85,25,.05) 0%, transparent 52%),
     var(--bg);
 }
 

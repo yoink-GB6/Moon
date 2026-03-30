@@ -3,16 +3,16 @@
 ════════════════════════════════════════ */
 :root {
   --bg:           #0c0c0c;
-  --panel:        #161410;
-  --surface-2:    #1c1a15;
-  --surface-3:    #211f18;
-  --border:       #2a2418;
-  --border-hi:    #3d3420;
+  --panel:        #141313;  /* 去掉暖褐偏，接近中性深灰 */
+  --surface-2:    #1a1918;  /* 极轻微暖，比原来中性得多 */
+  --surface-3:    #201f1d;
+  --border:       #272421;  /* 边框降低暖饱和度 */
+  --border-hi:    #363028;
   --accent:       #a8893a;
   --accent-bright:#deb96a;
   --accent-dim:   #6b5926;
-  --accent-muted: #2e2516;
-  --accent-bg:    #1a1508;
+  --accent-muted: #2a2215;
+  --accent-bg:    #181510;
   --green:        #4a7a42;
   --green-bright: #7aba72;
   --green-dim:    #3a6130;
@@ -22,11 +22,11 @@
   --red-dim:      #6b2626;
   --red-muted:    #2a1010;
   --amber:        #a87830;
-  --ib:           #1a1508;
-  --ibr:          #3d3420;
+  --ib:           #181510;
+  --ibr:          #363028;
   --text:         #d6cfc0;
-  --muted:        #8a8070;
-  --text-faint:   #4a4438;
+  --muted:        #877f78;  /* 降低黄绿偏，更接近中性暖灰 */
+  --text-faint:   #4a4540;
   --sidebar-w:    220px;
   --topbar-h:     50px;
   /* 字体栈（无需外部加载） */

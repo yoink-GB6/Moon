@@ -10,7 +10,7 @@
 .tl-cw canvas{display:block}
 .tl-panel{
   position:absolute;right:0;top:0;bottom:0;z-index:50;
-  width:240px;background:rgba(22,20,16,.85);border-left:1px solid var(--border);
+  width:240px;background:rgba(18,17,17,.85);border-left:1px solid var(--border);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   display:flex;flex-direction:column;overflow:hidden;
   transition:transform .28s cubic-bezier(0.4,0,0.2,1);
