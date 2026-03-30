@@ -276,6 +276,7 @@ const ROUTES = [
 // ── State ──────────────────────────────────────────
 let currentRoute = null;
 let currentModule = null;
+let _navSeq = 0;  // 导航序号，用于取消过期的异步操作
 
 // ── Page Lock State ────────────────────────────────
 let pageLocks = {};          // { pageId: sha256Hash }
@@ -376,8 +377,10 @@ async function navigate(id) {
     return;
   }
 
+  const seq = ++_navSeq;
   try {
     const mod = await route.loader();
+    if (seq !== _navSeq) return;  // 已切换到其他页面，丢弃本次结果
     if (!mod) {
       root.innerHTML = `<div class="page-placeholder"><div class="placeholder-icon">${route.icon}</div><h2>页面暂未实现</h2><p>对应的 pages/${route.id}.js 文件尚不存在。</p></div>`;
       return;
@@ -385,6 +388,7 @@ async function navigate(id) {
     currentModule = mod;
     await mod.mount(root);
   } catch(e) {
+    if (seq !== _navSeq) return;  // 切走了，忽略报错
     console.error(`页面 ${route.id} 加载失败`, e);
     root.innerHTML = `<div class="page-placeholder"><div class="placeholder-icon">⚠️</div><h2>加载失败</h2><p>${e.message}</p></div>`;
   }

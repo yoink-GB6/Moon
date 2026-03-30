@@ -42,7 +42,7 @@
 .geo-main::-webkit-scrollbar-thumb{background:rgba(168,137,58,0.2);border-radius:2px}
 
 /* ── 右侧面板（覆盖 timeline.css 中的 .tl-panel，仅在 .intro-body 内生效）── */
-.intro-body .tl-panel{width:260px;flex-shrink:0;background:var(--bg);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width 0.28s ease;position:static;transform:none}
+.intro-body .tl-panel{width:260px;flex-shrink:0;background:rgba(22,20,16,.85);border-left:1px solid var(--border);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;overflow:hidden;transition:width 0.28s ease;position:static;transform:none}
 .intro-body .tl-panel.collapsed{width:0;transform:none}
 
 .map-panel-hdr{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border-bottom:1px solid var(--border);flex-shrink:0;user-select:none;font-weight:600;font-size:13px}

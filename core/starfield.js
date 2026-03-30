@@ -1,40 +1,42 @@
 // core/starfield.js
-// 星空粒子背景特效 ——
-//   • 粒子数按屏幕面积自动计算
-//   • 桌面端：鼠标移动带动整体偏移（透镜视差）
-//   • 移动端：陀螺仪重力感应带动整体偏移
-//   • 邻近粒子连线（金色）
+// 星空粒子背景特效
+//   • 极点在屏幕右下方外，星星从左下缓缓流向右上
+//   • 无拖尾，每帧清空重绘；独立闪烁；邻近连线
+//   • 鼠标/陀螺仪视差通过 CSS transform 整体平移
 
 (function () {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  /* ── Canvas ── */
-  const canvas = document.createElement('canvas');
-  canvas.id = 'star-canvas';
-  canvas.style.cssText = 'position:fixed;inset:0;z-index:600;pointer-events:none;mix-blend-mode:screen;';
-  document.body.prepend(canvas);
-  const ctx = canvas.getContext('2d');
+  const cv = document.createElement('canvas');
+  cv.style.cssText = 'position:fixed;inset:0;z-index:600;pointer-events:none;mix-blend-mode:screen;';
+  document.body.prepend(cv);
+  const ctx = cv.getContext('2d');
 
-  /* ── 参数 ── */
-  const DENSITY    = 16000;  // 每 N 像素²一颗星，调小=更密
-  const COUNT_MIN  = 38;
-  const COUNT_MAX  = 140;
-  const MAX_DIST   = 80;     // 连线触发距离 px
-  const MAX_LINKS  = 3;      // 每颗粒子最多连几条线
-  const DRIFT      = 0.22;   // 漂移速度上限
-  const MOUSE_AMP  = 45;     // 鼠标视差最大偏移 px
-  const GYRO_AMP   = 38;     // 陀螺仪最大偏移 px
-  const LERP       = 0.055;  // 偏移插值速度（越小越缓）
+  const DENSITY        = 16000;
+  const COUNT_MIN      = 38;
+  const COUNT_MAX      = 140;
+  const MAX_DIST       = 80;
+  const MAX_LINKS      = 3;
+  const ROT_SPEED      = 0.00006;  // 极慢
+  const RECYCLE_MARGIN = 220;
+  const MOUSE_AMP      = 45;
+  const GYRO_AMP       = 38;
+  const LERP           = 0.055;
+  const PAD            = Math.ceil(Math.max(MOUSE_AMP, GYRO_AMP) * 1.2);
 
-  let W, H, stars;
-  let targetOx = 0, targetOy = 0;  // 目标偏移量
-  let currentOx = 0, currentOy = 0; // 当前插值偏移量
-  let gyroActive = false;            // 是否由陀螺仪控制
+  let W, H, stars, rotAngle = 0, frame = 0;
+  let targetOx = 0, targetOy = 0, currentOx = 0, currentOy = 0;
+  let gyroActive = false;
 
-  /* ── 尺寸 & 粒子数 ── */
+  function poleX() { return W * 2.2 + PAD; }
+  function poleY() { return H * 3.5 + PAD; }  // 抬高极点 → 运动角度更平（约45°）
+
   function resize() {
-    W = canvas.width  = window.innerWidth;
-    H = canvas.height = window.innerHeight;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    cv.width  = W + PAD * 2;
+    cv.height = H + PAD * 2;
+    cv.style.left = cv.style.top = `-${PAD}px`;
   }
 
   function calcCount() {
@@ -43,54 +45,61 @@
 
   function rand(a, b) { return a + Math.random() * (b - a); }
 
-  function makeStar() {
+  function makeStarAt(sx, sy) {
+    const px = poleX(), py = poleY();
+    const dx = sx - px, dy = sy - py;
     return {
-      x:     Math.random() * W,
-      y:     Math.random() * H,
-      vx:    rand(-DRIFT, DRIFT),
-      vy:    rand(-DRIFT, DRIFT),
-      r:     rand(0.7, 2.0),
-      alpha: rand(0.28, 0.68),
+      r:          Math.sqrt(dx * dx + dy * dy),
+      angle:      Math.atan2(dy, dx) - rotAngle,
+      dotR:       rand(0.6, 1.5),
+      alphaBase:  rand(0.45, 0.75),
+      alphaAmp:   rand(0.10, 0.22),
+      alphaSpeed: rand(0.007, 0.020),
+      alphaPhase: rand(0, Math.PI * 2),
     };
   }
 
+  function makeStar() {
+    return makeStarAt(Math.random() * W + PAD, Math.random() * H + PAD);
+  }
+
+  // 星星离屏后从上游方向重新注入，保证全屏均匀分布
+  // 上方离屏 → 从底部边缘重生；右侧离屏 → 从左侧边缘重生
+  function makeStarFromEdge(exitedTop, exitedRight) {
+    if (exitedTop) {
+      return makeStarAt(Math.random() * W + PAD, H + PAD + rand(5, 40));
+    }
+    if (exitedRight) {
+      return makeStarAt(PAD - rand(5, 40), Math.random() * H + PAD);
+    }
+    return makeStar();
+  }
+
   function initStars() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
     stars = Array.from({ length: calcCount() }, makeStar);
   }
 
-  /* ── 鼠标视差（桌面端） ── */
   window.addEventListener('mousemove', function (e) {
     if (gyroActive) return;
-    // 以屏幕中心为原点归一化到 [-1, 1]
-    const nx = (e.clientX - W * 0.5) / (W * 0.5);
-    const ny = (e.clientY - H * 0.5) / (H * 0.5);
-    targetOx = nx * MOUSE_AMP;
-    targetOy = ny * MOUSE_AMP;
+    targetOx = (e.clientX - W * 0.5) / (W * 0.5) * MOUSE_AMP;
+    targetOy = (e.clientY - H * 0.5) / (H * 0.5) * MOUSE_AMP;
   });
 
-  /* ── 陀螺仪（移动端） ── */
   function handleOrientation(e) {
     if (e.gamma === null || e.beta === null) return;
     gyroActive = true;
-    // gamma: 左右倾 ±90°，beta: 前后倾 -180~180°（正常持握约 45°）
-    const nx = Math.max(-1, Math.min(1, e.gamma / 25));
-    const ny = Math.max(-1, Math.min(1, (e.beta - 45) / 40));
-    targetOx = nx * GYRO_AMP;
-    targetOy = ny * GYRO_AMP;
+    targetOx = Math.max(-1, Math.min(1, e.gamma / 25)) * GYRO_AMP;
+    targetOy = Math.max(-1, Math.min(1, (e.beta - 45) / 40)) * GYRO_AMP;
   }
 
-  // iOS 13+ 需要显式申请权限；Android / 其他直接监听
   if (typeof DeviceOrientationEvent !== 'undefined') {
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-      // iOS 13+：首次用户交互时申请
       document.addEventListener('click', function reqGyro() {
         DeviceOrientationEvent.requestPermission()
-          .then(function (state) {
-            if (state === 'granted') {
-              window.addEventListener('deviceorientation', handleOrientation, false);
-            }
-          })
-          .catch(function () {});
+          .then(function (s) {
+            if (s === 'granted') window.addEventListener('deviceorientation', handleOrientation, false);
+          }).catch(function () {});
         document.removeEventListener('click', reqGyro);
       }, { once: true });
     } else {
@@ -98,49 +107,61 @@
     }
   }
 
-  /* ── 每帧逻辑 ── */
-  function update() {
-    // 偏移量缓动插值
+  function loop() {
+    rotAngle  += ROT_SPEED;
+    frame++;
     currentOx += (targetOx - currentOx) * LERP;
     currentOy += (targetOy - currentOy) * LERP;
 
-    for (const s of stars) {
-      s.x += s.vx;
-      s.y += s.vy;
-      // 环绕边界
-      if (s.x < -14) s.x = W + 14;
-      else if (s.x > W + 14) s.x = -14;
-      if (s.y < -14) s.y = H + 14;
-      else if (s.y > H + 14) s.y = -14;
+    const cw = cv.width, ch = cv.height;
+    ctx.clearRect(0, 0, cw, ch);
+
+    const px = poleX(), py = poleY();
+
+    /* 计算位置 */
+    const pos = new Array(stars.length);
+    for (let i = 0; i < stars.length; i++) {
+      const s = stars[i];
+      const a = s.angle + rotAngle;
+      const alpha = s.alphaBase + s.alphaAmp * Math.sin(frame * s.alphaSpeed + s.alphaPhase);
+      pos[i] = {
+        x:     px + s.r * Math.cos(a),
+        y:     py + s.r * Math.sin(a),
+        alpha: Math.max(0.08, Math.min(1, alpha)),
+        r:     s.dotR,
+      };
     }
-  }
 
-  function draw() {
-    ctx.clearRect(0, 0, W, H);
+    /* 回收离屏星 */
+    for (let i = 0; i < stars.length; i++) {
+      const vx = pos[i].x - PAD, vy = pos[i].y - PAD;
+      const exitedTop   = vy < -RECYCLE_MARGIN;
+      const exitedRight = vx > W + RECYCLE_MARGIN;
+      if (exitedTop || exitedRight || vx < -RECYCLE_MARGIN || vy > H + RECYCLE_MARGIN) {
+        stars[i] = makeStarFromEdge(exitedTop, exitedRight);
+        const s = stars[i], a = s.angle + rotAngle;
+        pos[i] = { x: px + s.r * Math.cos(a), y: py + s.r * Math.sin(a),
+                   alpha: s.alphaBase, r: s.dotR };
+      }
+    }
 
-    const ox = currentOx;
-    const oy = currentOy;
-
-    // 连线（每颗星最多连 MAX_LINKS 条，按距离优先）
+    /* 连线 */
     const linkCount = new Uint8Array(stars.length);
     const maxDist2  = MAX_DIST * MAX_DIST;
-    for (let i = 0; i < stars.length; i++) {
+    for (let i = 0; i < pos.length; i++) {
       if (linkCount[i] >= MAX_LINKS) continue;
-      const ax = stars[i].x + ox;
-      const ay = stars[i].y + oy;
-      for (let j = i + 1; j < stars.length; j++) {
+      const ax = pos[i].x, ay = pos[i].y;
+      if (ax < -MAX_DIST || ax > cw + MAX_DIST || ay < -MAX_DIST || ay > ch + MAX_DIST) continue;
+      for (let j = i + 1; j < pos.length; j++) {
         if (linkCount[i] >= MAX_LINKS || linkCount[j] >= MAX_LINKS) continue;
-        const bx = stars[j].x + ox;
-        const by = stars[j].y + oy;
-        const dx = ax - bx;
-        const dy = ay - by;
+        const dx = ax - pos[j].x, dy = ay - pos[j].y;
         const dist2 = dx * dx + dy * dy;
         if (dist2 < maxDist2) {
-          const a = (1 - Math.sqrt(dist2) / MAX_DIST) * 0.42;
+          const la = (1 - Math.sqrt(dist2) / MAX_DIST) * 0.38;
           ctx.beginPath();
           ctx.moveTo(ax, ay);
-          ctx.lineTo(bx, by);
-          ctx.strokeStyle = `rgba(168,137,58,${a.toFixed(3)})`;
+          ctx.lineTo(pos[j].x, pos[j].y);
+          ctx.strokeStyle = `rgba(168,137,58,${la.toFixed(3)})`;
           ctx.lineWidth = 0.75;
           ctx.stroke();
           linkCount[i]++;
@@ -149,33 +170,24 @@
       }
     }
 
-    // 光点
-    for (const s of stars) {
+    /* 星点 */
+    for (let i = 0; i < pos.length; i++) {
+      const p = pos[i];
+      if (p.x < -12 || p.x > cw + 12 || p.y < -12 || p.y > ch + 12) continue;
       ctx.beginPath();
-      ctx.arc(s.x + ox, s.y + oy, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(168,137,58,${s.alpha.toFixed(3)})`;
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(168,137,58,${p.alpha.toFixed(3)})`;
       ctx.fill();
     }
-  }
 
-  function loop() {
-    update();
-    draw();
+    /* 视差 */
+    cv.style.transform = `translate(${currentOx.toFixed(2)}px,${currentOy.toFixed(2)}px)`;
+
     requestAnimationFrame(loop);
   }
 
-  /* ── 窗口缩放：动态增减粒子 ── */
-  window.addEventListener('resize', function () {
-    resize();
-    const target = calcCount();
-    if (target > stars.length) {
-      while (stars.length < target) stars.push(makeStar());
-    } else {
-      stars.length = target;
-    }
-  });
+  window.addEventListener('resize', function () { resize(); initStars(); });
 
-  /* ── 启动 ── */
   resize();
   initStars();
   loop();
