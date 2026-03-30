@@ -3,6 +3,7 @@
 
 import { escHtml } from '../../../core/ui.js';
 import * as State from '../state.js';
+import { parseAvatarUrls, pickRandomUrl, openImageViewer } from '../utils.js';
 
 function _parseCharSections(raw) {
   if (!raw) return [];
@@ -65,12 +66,15 @@ export function openCharReadonly(char, expandPath) {
   const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
   const age = (char.base_age != null && char.base_age !== '') ? String(char.base_age) + ' 岁' : '';
 
+  const avatarUrls = parseAvatarUrls(char.avatar_url);
+  const avatarUrl  = pickRandomUrl(avatarUrls);
+
   overlay.innerHTML =
     '<div class="tl-modal char-modal-box" onmousedown="event.stopPropagation()">' +
       '<div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px">' +
-        '<div class="geo-person-av" style="width:56px;height:56px;font-size:22px;flex-shrink:0">' +
-          (char.avatar_url
-            ? '<img src="' + escHtml(char.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>'
+        '<div class="geo-person-av" style="width:56px;height:56px;font-size:22px;flex-shrink:0' + (avatarUrl ? ';cursor:pointer' : '') + '"' + (avatarUrl ? ' data-viewimg="' + escHtml(avatarUrl) + '"' : '') + '>' +
+          (avatarUrl
+            ? '<img src="' + escHtml(avatarUrl) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>'
             : escHtml(char.name.charAt(0))) +
         '</div>' +
         '<div style="flex:1">' +
@@ -87,6 +91,15 @@ export function openCharReadonly(char, expandPath) {
     '</div>';
 
   overlay.classList.add('show');
+
+  // 点击头像查看原图
+  const viewTarget = overlay.querySelector('[data-viewimg]');
+  if (viewTarget) {
+    viewTarget.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openImageViewer(viewTarget.dataset.viewimg);
+    });
+  }
 
   overlay.querySelectorAll('.collapse-h2').forEach(function(h) {
     h.addEventListener('click', function(e) {

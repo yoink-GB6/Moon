@@ -2,6 +2,44 @@
 // 工具函数
 
 /**
+ * 解析 avatar_url 字段：兼容旧单URL字符串和新JSON数组
+ */
+export function parseAvatarUrls(raw) {
+  if (!raw) return [];
+  try {
+    const p = JSON.parse(raw);
+    if (Array.isArray(p)) return p.filter(Boolean);
+    return [raw];
+  } catch (_) {
+    return [raw];
+  }
+}
+
+/**
+ * 从图片数组随机取一张
+ */
+export function pickRandomUrl(urls) {
+  if (!urls || !urls.length) return null;
+  return urls[Math.floor(Math.random() * urls.length)];
+}
+
+/**
+ * 弹出全屏图片查看器
+ */
+export function openImageViewer(url) {
+  let viewer = document.getElementById('char-img-viewer');
+  if (!viewer) {
+    viewer = document.createElement('div');
+    viewer.id = 'char-img-viewer';
+    viewer.className = 'char-img-viewer';
+    document.body.appendChild(viewer);
+  }
+  viewer.innerHTML = '<img src="' + url.replace(/"/g, '&quot;') + '" class="char-img-viewer-img"/>';
+  viewer.classList.add('show');
+  viewer.addEventListener('click', function() { viewer.classList.remove('show'); }, { once: true });
+}
+
+/**
  * 关闭模态框
  */
 export function closeModal(modal) {

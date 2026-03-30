@@ -1,6 +1,7 @@
 // pages/characters.js
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { escHtml, bindPanelToggle } from '../core/ui.js';
+import { parseAvatarUrls, pickRandomUrl } from './characters/utils.js';
 import * as State from './characters/state.js';
 import { loadAllData, subscribeRealtime, unsubscribeRealtime } from './characters/data-loader.js';
 import { renderCharactersTab, bindCharactersTab } from './characters/characters-tab.js';
@@ -125,18 +126,19 @@ function buildHTML() {
     <label>年龄</label><input id="char-age" type="number" min="0" placeholder="0"/>
     <label>所属国家 / 势力</label><div class="tl-select" id="char-country-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-country"/><label>所属城市</label><div class="tl-select" id="char-city-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-city"/>
     <div id="char-sec-container"></div>
-    <label>头像</label>
-    <div style="display:flex;gap:12px;margin-bottom:16px">
-      <div id="char-avatar-preview" style="width:80px;height:80px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:600;overflow:hidden">
-        <span id="char-avatar-letter">?</span>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px">
+    <label>图片</label>
+    <div id="char-images-section" style="margin-bottom:16px">
+      <div id="char-images-grid" class="char-images-grid"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
         <button class="btn bn" id="char-upload-btn">📁 上传</button>
         <button class="btn bn" id="char-url-btn">🔗 URL</button>
       </div>
-      <input type="file" id="char-file-input" accept="image/*" style="display:none"/>
-      <div id="char-url-row" style="display:none;margin-top:8px;flex:1">
-        <input id="char-url-input" type="url" placeholder="https://..." style="width:100%"/>
+      <input type="file" id="char-file-input" accept="image/*" multiple style="display:none"/>
+      <div id="char-url-row" style="display:none;margin-top:8px">
+        <div style="display:flex;gap:6px">
+          <input id="char-url-input" type="url" placeholder="https://..." style="flex:1"/>
+          <button class="btn bn" id="char-url-confirm">添加</button>
+        </div>
       </div>
     </div>
     <div class="modal-actions">
@@ -314,8 +316,9 @@ function _renderCharPanel(list, query) {
     const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
     const ageStr   = (c.base_age != null && c.base_age !== '') ? String(c.base_age) : '';
     const meta     = [ageStr ? ageStr + '岁' : '', location].filter(Boolean).join(' · ');
-    const av = c.avatar_url
-      ? '<div class="tl-ci-av"><img src="' + escHtml(c.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div>'
+    const avatarUrl = pickRandomUrl(parseAvatarUrls(c.avatar_url));
+    const av = avatarUrl
+      ? '<div class="tl-ci-av"><img src="' + escHtml(avatarUrl) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div>'
       : '<div class="tl-ci-av">' + escHtml(c.name.charAt(0).toUpperCase()) + '</div>';
     return '<div class="tl-ci" data-char-id="' + c.id + '">' +
       av + '<div class="tl-ci-info">' +
@@ -355,12 +358,13 @@ function _filterCharGrid(charId) {
   const country = city ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null;
   const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
   const hasAge = char.base_age != null && char.base_age !== '';
+  const charAvatarUrl = pickRandomUrl(parseAvatarUrls(char.avatar_url));
 
   grid.innerHTML =
     '<div class="intro-card" data-id="' + char.id + '">' +
       '<div style="display:flex;gap:12px;margin-bottom:12px">' +
         '<div class="intro-avatar">' +
-          (char.avatar_url ? '<img src="' + escHtml(char.avatar_url) + '"/>' : escHtml(char.name.charAt(0))) +
+          (charAvatarUrl ? '<img src="' + escHtml(charAvatarUrl) + '"/>' : escHtml(char.name.charAt(0))) +
         '</div>' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-weight:600;margin-bottom:4px;font-size:15px">' + escHtml(char.name) + '</div>' +

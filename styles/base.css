@@ -8,8 +8,9 @@
   --surface-3:    #201f1d;
   --border:       #272421;  /* 边框降低暖饱和度 */
   --border-hi:    #363028;
+  --border-hover: #a8893a;  /* 可交互元素 hover 边框色 */
   --accent:       #cbbca8;
-  --accent-bright:#d8cfa8;
+  --accent-bright:#c9c092;
   --accent-dim:   #6b5926;
   --accent-muted: #2a2215;
   --accent-bg:    #181510;

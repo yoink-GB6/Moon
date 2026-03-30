@@ -7,6 +7,7 @@ import { openCityModal } from './modals/city-modal.js';
 import { openLandmarkModal } from './modals/landmark-modal.js';
 import { openCharModal } from './modals/character-modal.js';
 import { openCharReadonly } from './modals/char-readonly-modal.js';
+import { parseAvatarUrls, pickRandomUrl } from './utils.js';
 import { renderGeoTree } from './geo-tree.js';
 
 export function renderGeoDetail() {
@@ -172,9 +173,10 @@ function renderCityDetail(detail) {
   const peopleHTML = people.length
     ? people.map(function(p) {
         const age = (p.base_age != null && p.base_age !== '') ? String(p.base_age) + '岁' : '';
+        const pAvatarUrl = pickRandomUrl(parseAvatarUrls(p.avatar_url));
         return '<div class="geo-person-item" data-char-id="' + p.id + '">' +
           '<div class="geo-person-av">' +
-            (p.avatar_url ? '<img src="' + escHtml(p.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>' : escHtml(p.name.charAt(0))) +
+            (pAvatarUrl ? '<img src="' + escHtml(pAvatarUrl) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>' : escHtml(p.name.charAt(0))) +
           '</div>' +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-size:13px;font-weight:500">' + escHtml(p.name) + '</div>' +

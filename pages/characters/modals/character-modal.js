@@ -2,8 +2,11 @@
 import { supaClient } from '../../../core/supabase-client.js';
 import { showToast, escHtml, confirmDialog } from '../../../core/ui.js';
 import * as State from '../state.js';
-import { closeModal } from '../utils.js';
+import { closeModal, parseAvatarUrls } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
+
+// 编辑中的图片列表：[{ type: 'existing'|'file'|'url', url: string|null, file: File|null, preview: string }]
+let _editImages = [];
 import { renderCharactersTab } from '../characters-tab.js';
 import { renderGeoDetail } from '../geo-detail.js';
 import { mdToChildren, childrenToMd } from './md-utils.js';
@@ -229,7 +232,10 @@ export function initTlSelect(wrapEl, options, selectedValue, onChange) {
 
   render(selectedValue != null ? String(selectedValue) : '');
 
-  trigger.addEventListener('click', function(e) {
+  // clone 替换 trigger，清除历次积累的旧监听器
+  const freshTrigger = trigger.cloneNode(true);
+  trigger.parentNode.replaceChild(freshTrigger, trigger);
+  freshTrigger.addEventListener('click', function(e) {
     e.stopPropagation();
     const wasOpen = wrapEl.classList.contains('open');
     // 关掉其他所有下拉
@@ -246,6 +252,31 @@ export function initTlSelect(wrapEl, options, selectedValue, onChange) {
   wrapEl._cleanupTlSelect = function() { document.removeEventListener('click', onOutside); };
 }
 
+// ── 图片列表渲染 ──────────────────────────────────────────────
+
+function _renderImagesGrid(container) {
+  const grid = container.querySelector('#char-images-grid');
+  if (!grid) return;
+  if (!_editImages.length) {
+    grid.innerHTML = '<span class="char-images-empty">暂无图片</span>';
+    return;
+  }
+  grid.innerHTML = _editImages.map(function(img, i) {
+    return '<div class="char-img-thumb" data-index="' + i + '">' +
+      '<img src="' + escHtml(img.preview) + '" />' +
+      '<button class="char-img-del" title="移除">✕</button>' +
+    '</div>';
+  }).join('');
+  grid.querySelectorAll('.char-img-del').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const idx = parseInt(btn.closest('.char-img-thumb').dataset.index);
+      _editImages.splice(idx, 1);
+      _renderImagesGrid(container);
+    });
+  });
+}
+
 // ── setupCharModal ────────────────────────────────────────────
 
 export function setupCharModal() {
@@ -256,16 +287,33 @@ export function setupCharModal() {
     container.querySelector('#char-file-input').click();
   });
   container.querySelector('#char-file-input')?.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) { State.setPendingAvatar(file, true); previewAvatar(file, container); }
+    Array.from(e.target.files).forEach(function(file) {
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        _editImages.push({ type: 'file', file: file, preview: ev.target.result, url: null });
+        _renderImagesGrid(container);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
   });
   container.querySelector('#char-url-btn')?.addEventListener('click', function() {
     const row = container.querySelector('#char-url-row');
     row.style.display = row.style.display === 'none' ? 'block' : 'none';
+    if (row.style.display !== 'none') container.querySelector('#char-url-input')?.focus();
   });
-  container.querySelector('#char-url-input')?.addEventListener('change', function(e) {
-    const url = e.target.value.trim();
-    if (url) { State.setPendingAvatar(url, false); updateAvatarPreview(url, container); }
+  function _addUrlImage() {
+    const input = container.querySelector('#char-url-input');
+    const url = input ? input.value.trim() : '';
+    if (!url) return;
+    _editImages.push({ type: 'url', url: url, preview: url, file: null });
+    _renderImagesGrid(container);
+    input.value = '';
+    container.querySelector('#char-url-row').style.display = 'none';
+  }
+  container.querySelector('#char-url-confirm')?.addEventListener('click', _addUrlImage);
+  container.querySelector('#char-url-input')?.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); _addUrlImage(); }
   });
   container.querySelector('#char-save-btn')?.addEventListener('click', saveCharacter);
   container.querySelector('#char-delete-btn')?.addEventListener('click', deleteCharacter);
@@ -280,7 +328,6 @@ export function setupCharModal() {
 export function openCharModal(char) {
   const container = State.pageContainer;
   State.setEditingCharId(char ? char.id : null);
-  State.setPendingAvatar(undefined, false);
 
   const modal = container.querySelector('#char-modal');
   container.querySelector('#char-modal-title').textContent = char ? '编辑人物' : '新建人物';
@@ -341,34 +388,14 @@ export function openCharModal(char) {
   });
   refreshCitySelect(initCountry ? String(initCountry) : '');
 
-  updateAvatarPreview(char ? char.avatar_url : null, container, char ? char.name : '');
+  _editImages = parseAvatarUrls(char ? char.avatar_url : null)
+    .map(function(u) { return { type: 'existing', url: u, preview: u, file: null }; });
+  _renderImagesGrid(container);
+  container.querySelector('#char-url-row').style.display = 'none';
   container.querySelector('#char-delete-btn').style.display = char ? 'block' : 'none';
 
   modal.classList.add('show');
   setTimeout(function() { container.querySelector('#char-name').focus(); }, 100);
-}
-
-// ── 头像预览 ──────────────────────────────────────────────────
-
-function previewAvatar(file, container) {
-  const reader = new FileReader();
-  reader.onload = function(e) { updateAvatarPreview(e.target.result, container); };
-  reader.readAsDataURL(file);
-}
-
-function updateAvatarPreview(url, container, name) {
-  const preview = container.querySelector('#char-avatar-preview');
-  const letter  = container.querySelector('#char-avatar-letter');
-  if (url) {
-    preview.style.backgroundImage = 'url(' + url + ')';
-    preview.style.backgroundSize = 'cover';
-    preview.style.backgroundPosition = 'center';
-    letter.style.display = 'none';
-  } else {
-    preview.style.backgroundImage = 'none';
-    letter.style.display = 'block';
-    letter.textContent = (name && name.charAt(0)) || '?';
-  }
 }
 
 // ── 保存/删除 ─────────────────────────────────────────────────
@@ -385,27 +412,44 @@ async function saveCharacter() {
   const desc      = sections.length ? JSON.stringify(sections) : null;
 
   try {
-    let avatarUrl = null;
-    if (State.pendingAvatar) {
-      if (State.pendingAvatarIsFile) {
-        const file = State.pendingAvatar;
-        const ext  = file.name.split('.').pop();
-        const filename = Date.now() + '_' + Math.random().toString(36).substr(2,9) + '.' + ext;
-        const { data, error } = await supaClient.storage.from('avatars').upload(filename, file, { upsert: true });
+    const uploadedUrls = [];
+    for (const img of _editImages) {
+      if (img.type === 'file') {
+        const ext      = img.file.name.split('.').pop();
+        const filename = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.' + ext;
+        const { data, error } = await supaClient.storage.from('avatars').upload(filename, img.file, { upsert: true });
         if (error) throw error;
-        avatarUrl = supaClient.storage.from('avatars').getPublicUrl(data.path).data.publicUrl;
+        uploadedUrls.push(supaClient.storage.from('avatars').getPublicUrl(data.path).data.publicUrl);
+      } else if (img.type === 'url') {
+        // 从外部 URL 下载后转存到 storage
+        let blob;
+        try {
+          const resp = await fetch(img.url);
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          blob = await resp.blob();
+        } catch (fetchErr) {
+          throw new Error('无法获取图片 ' + img.url + '：' + fetchErr.message);
+        }
+        const mimeExt = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp', 'image/avif': 'avif' };
+        const ext      = mimeExt[blob.type] || 'jpg';
+        const filename = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.' + ext;
+        const { data, error } = await supaClient.storage.from('avatars').upload(filename, blob, { upsert: true, contentType: blob.type });
+        if (error) throw error;
+        uploadedUrls.push(supaClient.storage.from('avatars').getPublicUrl(data.path).data.publicUrl);
       } else {
-        avatarUrl = State.pendingAvatar;
+        // existing：已在 storage 中的 URL，直接保留
+        uploadedUrls.push(img.url);
       }
     }
+    const avatarUrlValue = uploadedUrls.length ? JSON.stringify(uploadedUrls) : null;
 
     const payload = {
       name,
       base_age:    ageVal !== '' ? parseInt(ageVal) : null,
       city_id:     cityIdVal ? parseInt(cityIdVal) : null,
       description: desc,
+      avatar_url:  avatarUrlValue,
     };
-    if (State.pendingAvatar !== undefined) payload.avatar_url = avatarUrl;
 
     if (State.editingCharId) {
       const { error } = await supaClient.from('characters').update(payload).eq('id', State.editingCharId);

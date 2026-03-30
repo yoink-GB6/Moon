@@ -6,7 +6,7 @@ import { escHtml } from '../../core/ui.js';
 import * as State from './state.js';
 import { openCharModal } from './modals/character-modal.js';
 import { openCharReadonly } from './modals/char-readonly-modal.js';
-import { getLocationPath } from './utils.js';
+import { getLocationPath, parseAvatarUrls, pickRandomUrl } from './utils.js';
 
 // ── 解析人物 description（JSON 数组 or 旧纯文本）────────────
 function _parseCharSections(raw) {
@@ -95,15 +95,15 @@ export function renderCharactersTab() {
   }
 
   grid.innerHTML = State.allChars.map(char => {
-    const location = getLocationPath(char.city_id, State.allCities, State.allCountries);
-    // 修复：age 可能是字符串 "0" 或数字 0，不能用 truthy 判断，要用 != null && !== ''
-    const hasAge = char.base_age != null && char.base_age !== '';
+    const location  = getLocationPath(char.city_id, State.allCities, State.allCountries);
+    const hasAge    = char.base_age != null && char.base_age !== '';
+    const avatarUrl = pickRandomUrl(parseAvatarUrls(char.avatar_url));
 
     return `
       <div class="intro-card" data-id="${char.id}">
         <div class="intro-card-header">
           <div class="intro-avatar">
-            ${char.avatar_url ? `<img src="${escHtml(char.avatar_url)}"/>` : escHtml(char.name.charAt(0))}
+            ${avatarUrl ? `<img src="${escHtml(avatarUrl)}"/>` : escHtml(char.name.charAt(0))}
           </div>
           <div class="intro-card-info">
             <div class="intro-card-name">${escHtml(char.name)}</div>
