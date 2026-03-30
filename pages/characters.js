@@ -28,6 +28,7 @@ let _unsubAuth = null;
 let _dataLoaded = false;
 
 export async function mount(container) {
+  State.setCurrentTab('characters'); // 每次挂载重置为默认 tab，防止上次状态污染
   State.setPageContainer(container);
   container.innerHTML = buildHTML();
   setupCharModal();
@@ -57,7 +58,7 @@ function buildHTML() {
 <div class="intro-body">
   <div class="intro-tabs">
     <button class="intro-tab active" data-tab="characters"><span class="tab-label">人物介绍</span></button>
-    <button class="intro-tab" data-tab="geography"><span class="tab-label">国家及势力</span></button>
+    <button class="intro-tab" data-tab="geography"><span class="tab-label">国家介绍</span></button>
   </div>
   <div class="intro-row">
   <div class="intro-main">
@@ -91,7 +92,7 @@ function buildHTML() {
     <div id="panel-chars-body" class="panel-body-section">
       <div class="panel-search-box">
         <div class="panel-search-wrap">
-          <input type="text" id="chars-panel-search" placeholder="输入名字搜索..." autocomplete="off"/>
+          <input type="text" id="chars-panel-search" placeholder="输入国家/城市/名字搜索..." autocomplete="off"/>
           <button id="chars-search-clear" class="panel-search-clear" title="清除">✕</button>
         </div>
       </div>
@@ -102,7 +103,7 @@ function buildHTML() {
     <div id="panel-geo-body" class="panel-body-section" style="display:none">
       <div class="geo-panel-search-box">
         <div class="geo-panel-search-wrap">
-          <span class="geo-panel-search-icon">🔍</span>
+          <span class="geo-panel-search-icon">⚲</span>
           <input type="text" id="geo-panel-search" placeholder="搜索国家、城市、地标..." autocomplete="off"/>
         </div>
         <div id="geo-panel-results" class="geo-panel-results"></div>
@@ -292,7 +293,14 @@ export function renderPanelList(query) {
 
 function _renderCharPanel(list, query) {
   const chars = query
-    ? State.allChars.filter(c => c.name.toLowerCase().includes(query))
+    ? State.allChars.filter(function(c) {
+        if (c.name.toLowerCase().includes(query)) return true;
+        const city    = State.allCities.find(function(ci) { return ci.id === c.city_id; });
+        const country = city ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null;
+        if (city    && city.name.toLowerCase().includes(query))    return true;
+        if (country && country.name.toLowerCase().includes(query)) return true;
+        return false;
+      })
     : [...State.allChars];
 
   if (!chars.length) {

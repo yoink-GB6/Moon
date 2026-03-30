@@ -73,10 +73,17 @@ input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(
 #pw-box h2::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--accent-dim),transparent)}
 #pw-error{color:var(--red);font-size:12px;margin-top:-8px;margin-bottom:8px;display:none}
 
+/* ── 弹窗遮罩背景（独立层，夹在星空画布之下）── */
+#modal-backdrop{
+  position:fixed;inset:0;z-index:30;
+  background:rgba(0,0,0,.7);display:none;pointer-events:none;
+}
+body:has(.tl-modal-overlay.show) #modal-backdrop{display:block}
+
 /* ── Shared modal overlay + box (used by timeline & characters) ── */
 .tl-modal-overlay{
-  display:none;position:absolute;inset:0;background:rgba(0,0,0,.7);
-  z-index:500;align-items:flex-end;justify-content:center;
+  display:none;position:absolute;inset:0;
+  z-index:520;align-items:flex-end;justify-content:center;
 }
 .tl-modal-overlay.show{display:flex}
 .tl-modal{

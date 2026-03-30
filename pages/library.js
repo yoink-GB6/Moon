@@ -20,15 +20,18 @@ let unlockedKeys = new Set(); // Track unlocked privacy keys (resets on page ref
 // Library-specific edit mode (independent from global edit mode)
 let isLibraryEditable = false;
 const LIBRARY_PASSWORD = 'y';  // Simple password for library editing
+let _pressState = null;        // 模块级，供 unmount 清理长按定时器
+let _unsubAuth = null;         // 模块级，供 unmount 取消 auth 订阅
 
 export async function mount(container) {
   pageContainer = container;  // Save container reference
   container.innerHTML = buildHTML();
   bindControls(container);
-  
+
   // Listen to global auth changes
-  onAuthChange(() => updateLibraryUI(container));
-  
+  if (_unsubAuth) _unsubAuth();
+  _unsubAuth = onAuthChange(() => updateLibraryUI(container));
+
   updateSortButton(container);      // Initialize sort button
   updateLibraryUI(container);       // Initialize library-specific edit UI
   updateUnlockedKeysDisplay(container);  // Initialize privacy status
@@ -37,8 +40,11 @@ export async function mount(container) {
 }
 
 export function unmount() {
+  // 清理长按定时器，防止导航走后定时器仍触发
+  if (_pressState?.timer) { clearTimeout(_pressState.timer); _pressState.timer = null; }
+  if (_unsubAuth) { _unsubAuth(); _unsubAuth = null; }
   realtimeCh && supaClient.removeChannel(realtimeCh);
-  
+
   // Security: Clear decrypted content cache on unmount
   items.forEach(item => {
     if (item.privacyLevel === 'private') {
@@ -632,8 +638,8 @@ function bindGridItemEvents(grid) {
   if (grid._itemEventsBound) return;
   grid._itemEventsBound = true;
   
-  // 长按状态管理
-  const pressState = {
+  // 长按状态管理（指向模块级变量，供 unmount 清理定时器）
+  _pressState = {
     timer: null,
     start: 0,
     startX: 0,
@@ -642,6 +648,7 @@ function bindGridItemEvents(grid) {
     triggered: false,
     targetCard: null
   };
+  const pressState = _pressState;
   
   const resetPressState = () => {
     if (pressState.timer) {

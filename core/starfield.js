@@ -8,7 +8,7 @@
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   const cv = document.createElement('canvas');
-  cv.style.cssText = 'position:fixed;inset:0;z-index:600;pointer-events:none;mix-blend-mode:screen;';
+  cv.style.cssText = 'position:fixed;inset:0;z-index:50;pointer-events:none;mix-blend-mode:screen;';
   document.body.prepend(cv);
   const ctx = cv.getContext('2d');
 
@@ -28,8 +28,8 @@
   let targetOx = 0, targetOy = 0, currentOx = 0, currentOy = 0;
   let gyroActive = false;
 
-  function poleX() { return W * 2.2 + PAD; }
-  function poleY() { return H * 3.5 + PAD; }  // 抬高极点 → 运动角度更平（约45°）
+  function poleX() { return W * 1.2 + PAD; }
+  function poleY() { return H * 2.2 + PAD; }
 
   function resize() {
     W = window.innerWidth;

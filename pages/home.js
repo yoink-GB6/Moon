@@ -111,8 +111,11 @@ function _closeEdit() {
 }
 
 function _autoResize(ta) {
+  const scroller = ta.closest('.page-home');
+  const savedTop = scroller ? scroller.scrollTop : 0;
   ta.style.height = 'auto';
   ta.style.height = Math.max(ta.scrollHeight, 400) + 'px';
+  if (scroller) scroller.scrollTop = savedTop;
 }
 
 // ── 事件 ─────────────────────────────────────────────

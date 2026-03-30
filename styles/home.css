@@ -86,6 +86,7 @@
 .home-md-view .md-img{
   max-width:100%;border-radius:4px;
   margin:10px 0;display:block;
+  position:relative;z-index:60;
 }
 
 .home-md-view a{color:var(--accent);text-decoration:none;transition:color .2s}
