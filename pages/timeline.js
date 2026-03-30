@@ -757,7 +757,7 @@ async function fetchAll() {
     if (cfgRes.error) throw cfgRes.error;
     characters = (charRes.data||[]).map((r,i) => ({
       id:r.id, name:r.name, baseAge:r.base_age, ageLimit:r.age_limit,
-      color:r.color||PALETTE[i%PALETTE.length], avatar:r.avatar_url||undefined, sortOrder:r.sort_order||0
+      color:r.color||PALETTE[i%PALETTE.length], avatar:(function(v){if(!v)return undefined;try{const p=JSON.parse(v);return Array.isArray(p)?p[0]||undefined:v;}catch(_){return v;}})(r.avatar_url), sortOrder:r.sort_order||0
     }));
     const cfg=cfgRes.data;
     ageOffset=0; scale=cfg.scale||60; viewOffX=cfg.view_off_x||0;  // ageOffset always resets to 0 on page load
