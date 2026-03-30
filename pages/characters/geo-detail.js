@@ -174,7 +174,7 @@ function renderCityDetail(detail) {
     ? people.map(function(p) {
         const age = (p.base_age != null && p.base_age !== '') ? String(p.base_age) + '岁' : '';
         const pAvatarUrl = pickRandomUrl(parseAvatarUrls(p.avatar_url));
-        return '<div class="geo-person-item" data-char-id="' + p.id + '">' +
+        return '<div class="geo-person-item" data-char-id="' + p.id + '"' + (pAvatarUrl ? ' data-avatar="' + escHtml(pAvatarUrl) + '"' : '') + '>' +
           '<div class="geo-person-av">' +
             (pAvatarUrl ? '<img src="' + escHtml(pAvatarUrl) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>' : escHtml(p.name.charAt(0))) +
           '</div>' +
@@ -217,7 +217,7 @@ function renderCityDetail(detail) {
       const id   = parseInt(item.dataset.charId);
       const char = State.allChars.find(function(c) { return c.id === id; });
       if (!char) return;
-      if (isEditor()) { openCharModal(char); } else { openCharReadonly(char); }
+      if (isEditor()) { openCharModal(char); } else { openCharReadonly(char, undefined, item.dataset.avatar || undefined); }
     });
   });
 
