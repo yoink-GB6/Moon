@@ -51,7 +51,7 @@ function _sectionsHTML(sections) {
   }).join('');
 }
 
-export function openCharReadonly(char, expandPath) {
+export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
   const container = State.pageContainer;
   let overlay = container.querySelector('#char-readonly-modal');
   if (!overlay) {
@@ -66,8 +66,7 @@ export function openCharReadonly(char, expandPath) {
   const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
   const age = (char.base_age != null && char.base_age !== '') ? String(char.base_age) + ' 岁' : '';
 
-  const avatarUrls = parseAvatarUrls(char.avatar_url);
-  const avatarUrl  = pickRandomUrl(avatarUrls);
+  const avatarUrl = fixedAvatarUrl !== undefined ? fixedAvatarUrl : pickRandomUrl(parseAvatarUrls(char.avatar_url));
 
   overlay.innerHTML =
     '<div class="tl-modal char-modal-box" onmousedown="event.stopPropagation()">' +

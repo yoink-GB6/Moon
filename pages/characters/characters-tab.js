@@ -100,7 +100,7 @@ export function renderCharactersTab() {
     const avatarUrl = pickRandomUrl(parseAvatarUrls(char.avatar_url));
 
     return `
-      <div class="intro-card" data-id="${char.id}">
+      <div class="intro-card" data-id="${char.id}"${avatarUrl ? ` data-avatar="${escHtml(avatarUrl)}"` : ''}>
         <div class="intro-card-header">
           <div class="intro-avatar">
             ${avatarUrl ? `<img src="${escHtml(avatarUrl)}"/>` : escHtml(char.name.charAt(0))}
@@ -129,11 +129,12 @@ export function renderCharactersTab() {
         openCharModal(char);
       } else {
         // 只读模式：若点击的是折叠栏，则带路径打开（自动展开对应小节）；否则正常打开
+        const fixedAvatar = card.dataset.avatar || undefined;
         const toggle = e.target.closest('.collapse-h2, .collapse-header');
         if (toggle && card.contains(toggle)) {
-          openCharReadonly(char, _getTogglePath(toggle, card));
+          openCharReadonly(char, _getTogglePath(toggle, card), fixedAvatar);
         } else {
-          openCharReadonly(char);
+          openCharReadonly(char, undefined, fixedAvatar);
         }
       }
     });
