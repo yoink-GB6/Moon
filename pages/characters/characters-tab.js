@@ -58,13 +58,8 @@ function _sectionsHTML(sections) {
   }).join('');
 }
 
-function _bindSectionToggles(_container) {
-  // 卡片视图中折叠栏不展开——所有点击一律冒泡到 .intro-card 处理器
-  // 编辑模式：打开编辑框；只读模式：打开只读弹窗并展开对应小节
-}
-
 // 计算 toggle 在卡片内的层级索引路径，供只读弹窗定位对应小节
-function _getTogglePath(toggle, cardEl) {
+export function getTogglePath(toggle, cardEl) {
   const section = toggle.closest('.h2-section, .collapse-item');
   if (!section || !cardEl.contains(section)) return null;
   const path = [];
@@ -83,6 +78,48 @@ function _getTogglePath(toggle, cardEl) {
 }
 
 /**
+ * 生成单张人物卡片的 HTML 字符串
+ */
+export function buildCharCardHTML(char, avatarUrl) {
+  const location = getLocationPath(char.city_id, State.allCities, State.allCountries);
+  const hasAge   = char.base_age != null && char.base_age !== '';
+  return `
+    <div class="intro-card" data-id="${char.id}"${avatarUrl ? ` data-avatar="${escHtml(avatarUrl)}"` : ''}>
+      <div class="intro-card-header">
+        <div class="intro-avatar">
+          ${avatarUrl ? `<img src="${escHtml(avatarUrl)}"/>` : escHtml(char.name.charAt(0))}
+        </div>
+        <div class="intro-card-info">
+          <div class="intro-card-name">${escHtml(char.name)}</div>
+          ${location !== '未知' ? `<div class="intro-card-meta">${escHtml(location)}</div>` : ''}
+          ${hasAge ? `<div class="intro-card-meta">年龄：${escHtml(String(char.base_age))}</div>` : ''}
+        </div>
+      </div>
+      ${_sectionsHTML(_parseCharSections(char.description))}
+    </div>
+  `;
+}
+
+/**
+ * 为单张人物卡片绑定点击事件
+ */
+export function bindCharCard(card, char) {
+  card.addEventListener('click', (e) => {
+    if (isEditor()) {
+      openCharModal(char);
+    } else {
+      const fixedAvatar = card.dataset.avatar || undefined;
+      const toggle = e.target.closest('.collapse-h2, .collapse-header');
+      if (toggle && card.contains(toggle)) {
+        openCharReadonly(char, getTogglePath(toggle, card), fixedAvatar);
+      } else {
+        openCharReadonly(char, undefined, fixedAvatar);
+      }
+    }
+  });
+}
+
+/**
  * 渲染人物标签页
  */
 export function renderCharactersTab(avatarCache) {
@@ -95,49 +132,14 @@ export function renderCharactersTab(avatarCache) {
   }
 
   grid.innerHTML = State.allChars.map(char => {
-    const location  = getLocationPath(char.city_id, State.allCities, State.allCountries);
-    const hasAge    = char.base_age != null && char.base_age !== '';
     const avatarUrl = (avatarCache && avatarCache.has(char.id)) ? avatarCache.get(char.id) : pickRandomUrl(parseAvatarUrls(char.avatar_url));
-
-    return `
-      <div class="intro-card" data-id="${char.id}"${avatarUrl ? ` data-avatar="${escHtml(avatarUrl)}"` : ''}>
-        <div class="intro-card-header">
-          <div class="intro-avatar">
-            ${avatarUrl ? `<img src="${escHtml(avatarUrl)}"/>` : escHtml(char.name.charAt(0))}
-          </div>
-          <div class="intro-card-info">
-            <div class="intro-card-name">${escHtml(char.name)}</div>
-            ${location !== '未知' ? `<div class="intro-card-meta">${escHtml(location)}</div>` : ''}
-            ${hasAge ? `<div class="intro-card-meta">年龄：${escHtml(String(char.base_age))}</div>` : ''}
-          </div>
-        </div>
-        ${_sectionsHTML(_parseCharSections(char.description))}
-      </div>
-    `;
+    return buildCharCardHTML(char, avatarUrl);
   }).join('');
 
-  // 绑定折叠事件
-  _bindSectionToggles(grid);
-
-  // 绑定点击事件：编辑模式打开编辑框，只读模式打开介绍弹窗
   grid.querySelectorAll('.intro-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-      const id = parseInt(card.dataset.id);
-      const char = State.allChars.find(c => c.id === id);
-      if (!char) return;
-      if (isEditor()) {
-        openCharModal(char);
-      } else {
-        // 只读模式：若点击的是折叠栏，则带路径打开（自动展开对应小节）；否则正常打开
-        const fixedAvatar = card.dataset.avatar || undefined;
-        const toggle = e.target.closest('.collapse-h2, .collapse-header');
-        if (toggle && card.contains(toggle)) {
-          openCharReadonly(char, _getTogglePath(toggle, card), fixedAvatar);
-        } else {
-          openCharReadonly(char, undefined, fixedAvatar);
-        }
-      }
-    });
+    const id   = parseInt(card.dataset.id);
+    const char = State.allChars.find(c => c.id === id);
+    if (char) bindCharCard(card, char);
   });
 }
 

@@ -5,26 +5,15 @@ import { parseAvatarUrls, pickRandomUrl } from './characters/utils.js';
 
 import * as State from './characters/state.js';
 import { loadAllData, subscribeRealtime, unsubscribeRealtime } from './characters/data-loader.js';
-import { renderCharactersTab, bindCharactersTab } from './characters/characters-tab.js';
+import { renderCharactersTab, bindCharactersTab, buildCharCardHTML, bindCharCard } from './characters/characters-tab.js';
 import { initGeographyTab } from './characters/geography-tab.js';
 import { renderGeoTree } from './characters/geo-tree.js';
 import { renderGeoDetail } from './characters/geo-detail.js';
-import { openCharModal } from './characters/modals/character-modal.js';
 import { setupCharModal } from './characters/modals/character-modal.js';
 import { setupCountryModal } from './characters/modals/country-modal.js';
 import { setupCityModal } from './characters/modals/city-modal.js';
 import { setupLandmarkModal } from './characters/modals/landmark-modal.js';
 
-function _parseCharSections(raw) {
-  if (!raw) return [];
-  try {
-    const p = JSON.parse(raw);
-    if (Array.isArray(p)) return p;
-    return [{ title: '个人简介', content: raw }];
-  } catch (_) {
-    return [{ title: '个人简介', content: raw }];
-  }
-}
 
 let _unsubAuth = null;
 let _dataLoaded = false;
@@ -376,75 +365,13 @@ function _filterCharGrid(charId) {
   const grid = container.querySelector('#chars-grid');
   if (!grid) return;
 
-  const city    = State.allCities.find(function(ci) { return ci.id === char.city_id; });
-  const country = city ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null;
-  const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
-  const hasAge = char.base_age != null && char.base_age !== '';
-  const charAvatarUrl = pickRandomUrl(parseAvatarUrls(char.avatar_url));
+  const avatarUrl = (_avatarCache && _avatarCache.has(char.id))
+    ? _avatarCache.get(char.id)
+    : pickRandomUrl(parseAvatarUrls(char.avatar_url));
 
-  grid.innerHTML =
-    '<div class="intro-card" data-id="' + char.id + '">' +
-      '<div style="display:flex;gap:12px;margin-bottom:12px">' +
-        '<div class="intro-avatar">' +
-          (charAvatarUrl ? '<img src="' + escHtml(charAvatarUrl) + '"/>' : escHtml(char.name.charAt(0))) +
-        '</div>' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="font-weight:600;margin-bottom:4px;font-size:15px">' + escHtml(char.name) + '</div>' +
-          (location ? '<div style="font-size:12px;color:var(--muted)">' + escHtml(location) + '</div>' : '') +
-          (hasAge ? '<div style="font-size:12px;color:var(--muted)">年龄：' + escHtml(String(char.base_age)) + '</div>' : '') +
-        '</div>' +
-      '</div>' +
-      (_parseCharSections(char.description).map(function(s) {
-        function childHTML(node, depth) {
-          if (depth > 1) {
-            var label = node.title ? '<strong>' + escHtml(node.title) + '</strong>' : '';
-            var text  = node.content ? escHtml(node.content) : '';
-            return '<div class="static-text-l3">' + (label && text ? label + '&ensp;' + text : label + text) + '</div>';
-          }
-          var kids = (node.children && node.children.length)
-            ? node.children.map(function(gc){ return childHTML(gc, depth+1); }).join('')
-            : '';
-          return '<div class="collapse-item">' +
-            '<div class="collapse-header">' + escHtml(node.title||'') + '</div>' +
-            '<div class="collapse-content">' +
-              '<div class="collapse-inner">' +
-                (node.content ? escHtml(node.content) : '') +
-                kids +
-              '</div>' +
-            '</div>' +
-          '</div>';
-        }
-        var childrenHTML = (s.children && s.children.length)
-          ? s.children.map(function(c){ return childHTML(c,1); }).join('')
-          : '';
-        return '<div class="h2-section">' +
-          '<div class="collapse-h2"><span>' + escHtml(s.title || '未命名') + '</span></div>' +
-          '<div class="h2-content">' +
-            (s.content ? '<div class="collapse-inner">' + escHtml(s.content) + '</div>' : '') +
-            childrenHTML +
-          '</div>' +
-        '</div>';
-      }).join('')) +
-    '</div>';
-
-  // 绑定折叠事件
-  grid.querySelectorAll('.collapse-h2').forEach(function(h) {
-    h.addEventListener('click', function(e) {
-      e.stopPropagation();
-      h.closest('.h2-section').classList.toggle('active');
-    });
-  });
-  grid.querySelectorAll('.collapse-header').forEach(function(h) {
-    h.addEventListener('click', function(e) {
-      e.stopPropagation();
-      h.closest('.collapse-item').classList.toggle('active');
-    });
-  });
-
-  if (isEditor()) {
-    const card = grid.querySelector('.intro-card');
-    if (card) card.addEventListener('click', function() { openCharModal(char); });
-  }
+  grid.innerHTML = buildCharCardHTML(char, avatarUrl);
+  const card = grid.querySelector('.intro-card');
+  if (card) bindCharCard(card, char);
 }
 
 // ── 지리 검색 ──────────────────────────────────────────────────
