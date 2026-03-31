@@ -27,6 +27,8 @@
   let W, H, stars, rotAngle = 0, frame = 0;
   let targetOx = 0, targetOy = 0, currentOx = 0, currentOy = 0;
   let gyroActive = false;
+  const meteors = [];
+  let nextMeteor = 0;
 
   function poleX() { return W * 1.2 + PAD; }
   function poleY() { return H * 2.2 + PAD; }
@@ -80,11 +82,37 @@
     stars = Array.from({ length: calcCount() }, makeStar);
   }
 
+  function spawnMeteor() {
+    // 从屏幕四条边随机一条边的随机位置出发，方向偏向屏幕中心，再加随机偏转
+    const edge  = Math.floor(Math.random() * 4); // 0上 1右 2下 3左
+    let sx, sy;
+    if      (edge === 0) { sx = rand(PAD, W + PAD);     sy = PAD; }
+    else if (edge === 1) { sx = W + PAD;                sy = rand(PAD, H + PAD); }
+    else if (edge === 2) { sx = rand(PAD, W + PAD);     sy = H + PAD; }
+    else                 { sx = PAD;                    sy = rand(PAD, H + PAD); }
+
+    // 朝向屏幕中心方向，再偏转 ±50°
+    const toCenterAngle = Math.atan2((H / 2 + PAD) - sy, (W / 2 + PAD) - sx);
+    const angle = toCenterAngle + rand(-Math.PI / 3.6, Math.PI / 3.6);
+    const speed = 7 + Math.random() * 7;
+    meteors.push({
+      x:     sx,
+      y:     sy,
+      vx:    Math.cos(angle) * speed,
+      vy:    Math.sin(angle) * speed,
+      len:   70 + Math.random() * 90,
+      life:  1.0,
+      decay: 0.018 + Math.random() * 0.012,
+    });
+    nextMeteor = performance.now() + rand(3500, 9000);
+  }
+
   window.addEventListener('mousemove', function (e) {
     if (gyroActive) return;
     targetOx = (e.clientX - W * 0.5) / (W * 0.5) * MOUSE_AMP;
     targetOy = (e.clientY - H * 0.5) / (H * 0.5) * MOUSE_AMP;
   });
+
 
   function handleOrientation(e) {
     if (e.gamma === null || e.beta === null) return;
@@ -180,6 +208,30 @@
       ctx.fill();
     }
 
+    /* 流星 */
+    const now = performance.now();
+    if (now >= nextMeteor) spawnMeteor();
+    for (let i = meteors.length - 1; i >= 0; i--) {
+      const m = meteors[i];
+      m.x    += m.vx;
+      m.y    += m.vy;
+      m.life -= m.decay;
+      if (m.life <= 0 || m.x > cw + 60 || m.y > ch + 60) { meteors.splice(i, 1); continue; }
+      const spd = Math.hypot(m.vx, m.vy);
+      const tx  = m.x - (m.vx / spd) * m.len;
+      const ty  = m.y - (m.vy / spd) * m.len;
+      const g   = ctx.createLinearGradient(tx, ty, m.x, m.y);
+      g.addColorStop(0, 'rgba(168,137,58,0)');
+      g.addColorStop(1, `rgba(255,245,210,${(m.life * 0.95).toFixed(3)})`);
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(m.x, m.y);
+      ctx.strokeStyle = g;
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
+    }
+
+
     /* 视差 */
     cv.style.transform = `translate(${currentOx.toFixed(2)}px,${currentOy.toFixed(2)}px)`;
 
@@ -190,5 +242,6 @@
 
   resize();
   initStars();
+  nextMeteor = performance.now() + 2000;
   loop();
 })();
