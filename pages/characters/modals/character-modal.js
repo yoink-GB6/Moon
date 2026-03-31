@@ -2,7 +2,7 @@
 import { supaClient } from '../../../core/supabase-client.js';
 import { showToast, escHtml, confirmDialog } from '../../../core/ui.js';
 import * as State from '../state.js';
-import { closeModal, parseAvatarUrls } from '../utils.js';
+import { closeModal, parseAvatarUrls, parseCharSections } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
 
 // 编辑中的图片列表：[{ type: 'existing'|'file'|'url', url: string|null, file: File|null, preview: string }]
@@ -37,18 +37,6 @@ const CHAR_PRESETS = [
   { title: '目标动机', ph: '追求的目标、内心动机...' },
   { title: '外貌特征', ph: '外貌描述、着装风格...' },
 ];
-
-// ── 解析 description 字段（JSON 数组 or 旧纯文本）────────────
-function _parseCharSections(raw) {
-  if (!raw) return [];
-  try {
-    const p = JSON.parse(raw);
-    if (Array.isArray(p)) return p;
-    return [{ title: '个人简介', content: raw }];
-  } catch (_) {
-    return [{ title: '个人简介', content: raw }];
-  }
-}
 
 // ── 小节行 HTML（复用 cm-row 体系）──────────────────────────
 function _charRowHTML(sec) {
@@ -223,10 +211,17 @@ function _bindCharSectionEvents(modal) {
 // options: [{ value, label }]，selectedValue: 当前选中值
 // onChange(value) 回调
 export function initTlSelect(wrapEl, options, selectedValue, onChange) {
+  // 清理上一次绑定的 outside 监听器，防止累积
+  if (wrapEl._cleanupTlSelect) { wrapEl._cleanupTlSelect(); wrapEl._cleanupTlSelect = null; }
+
   const trigger  = wrapEl.querySelector('.tl-select-trigger');
-  const valEl    = wrapEl.querySelector('.tl-select-val');
   const dropdown = wrapEl.querySelector('.tl-select-dropdown');
   const hidden   = wrapEl.nextElementSibling; // <input type="hidden">
+
+  // clone 替换 trigger，清除历次积累的旧监听器；之后从新节点取 valEl
+  const freshTrigger = trigger.cloneNode(true);
+  trigger.parentNode.replaceChild(freshTrigger, trigger);
+  const valEl = freshTrigger.querySelector('.tl-select-val');
 
   function render(sel) {
     const found = options.find(function(o) { return String(o.value) === String(sel); });
@@ -248,9 +243,6 @@ export function initTlSelect(wrapEl, options, selectedValue, onChange) {
 
   render(selectedValue != null ? String(selectedValue) : '');
 
-  // clone 替换 trigger，清除历次积累的旧监听器
-  const freshTrigger = trigger.cloneNode(true);
-  trigger.parentNode.replaceChild(freshTrigger, trigger);
   freshTrigger.addEventListener('click', function(e) {
     e.stopPropagation();
     const wasOpen = wrapEl.classList.contains('open');
@@ -261,7 +253,8 @@ export function initTlSelect(wrapEl, options, selectedValue, onChange) {
 
   // 点外部关闭
   function onOutside(e) {
-    if (!wrapEl.contains(e.target)) wrapEl.classList.remove('open');
+    const path = e.composedPath ? e.composedPath() : [];
+    if (!path.includes(wrapEl) && !wrapEl.contains(e.target)) wrapEl.classList.remove('open');
   }
   document.addEventListener('click', onOutside);
   // modal 关闭时自动清理监听
@@ -351,7 +344,7 @@ export function openCharModal(char) {
   // 使用 base_age 字段
   container.querySelector('#char-age').value  = (char && char.base_age != null) ? char.base_age : '';
   // ── 初始化小节编辑器 ──
-  const sections = _parseCharSections(char ? char.description : null);
+  const sections = parseCharSections(char ? char.description : null);
   const usedTitles = new Set(sections.map(function(s) { return s.title; }));
   const presetBtns = CHAR_PRESETS
     .filter(function(p) { return !usedTitles.has(p.title); })
@@ -373,8 +366,8 @@ export function openCharModal(char) {
   }
 
   // 推算当前人物所属国家
-  const initCity    = char && char.city_id ? State.allCities.find(function(c) { return c.id === char.city_id; }) : null;
-  const initCountry = initCity ? initCity.country_id : (char && char.country_id ? char.country_id : null);
+  const initCity    = char && char.city_id    ? State.allCities.find(function(c) { return c.id === char.city_id; }) : null;
+  const initCountry = char ? char.country_id : null;
 
   // 国家下拉
   const countryOptions = [{ value: '', label: '无' }].concat(
@@ -384,7 +377,8 @@ export function openCharModal(char) {
   if (countryWrap._cleanupTlSelect) countryWrap._cleanupTlSelect();
 
   // 城市下拉（根据国家过滤）
-  function refreshCitySelect(countryId) {
+  // fixedCityId: 初始化时强制设定的城市（不从 DOM 读，避免读到上一个人物的残留值）
+  function refreshCitySelect(countryId, fixedCityId) {
     const filtered = countryId
       ? State.allCities.filter(function(c) { return String(c.country_id) === String(countryId); })
       : State.allCities;
@@ -393,16 +387,16 @@ export function openCharModal(char) {
     );
     const cityWrap = container.querySelector('#char-city-select');
     if (cityWrap._cleanupTlSelect) cityWrap._cleanupTlSelect();
-    // 如果当前选中城市不在新列表里就清空
-    const curCityId = container.querySelector('#char-city').value;
-    const keep = cityOptions.find(function(o) { return o.value === curCityId; });
-    initTlSelect(cityWrap, cityOptions, keep ? curCityId : '', null);
+    // 用户手动切换国家时（fixedCityId 为 undefined），尝试保留当前城市；初始化时用传入值
+    const curCityId = fixedCityId !== undefined ? fixedCityId : container.querySelector('#char-city').value;
+    const keep = cityOptions.find(function(o) { return o.value === String(curCityId); });
+    initTlSelect(cityWrap, cityOptions, keep ? String(curCityId) : '', null);
   }
 
   initTlSelect(countryWrap, countryOptions, initCountry ? String(initCountry) : '', function(val) {
     refreshCitySelect(val);
   });
-  refreshCitySelect(initCountry ? String(initCountry) : '');
+  refreshCitySelect(initCountry ? String(initCountry) : '', initCity ? String(initCity.id) : '');
 
   const existingUrls = parseAvatarUrls(char ? char.avatar_url : null);
   _originalStorageUrls = existingUrls.filter(_isStorageUrl);
@@ -422,8 +416,9 @@ async function saveCharacter() {
   const name = container.querySelector('#char-name').value.trim();
   if (!name) return showToast('请输入名字');
 
-  const ageVal    = container.querySelector('#char-age').value.trim();
-  const cityIdVal = container.querySelector('#char-city').value; // hidden input
+  const ageVal      = container.querySelector('#char-age').value.trim();
+  const cityIdVal   = container.querySelector('#char-city').value;
+  const countryIdVal = container.querySelector('#char-country').value;
   const modal     = container.querySelector('#char-modal');
   const sections  = _collectCharSections(modal);
   const desc      = sections.length ? JSON.stringify(sections) : null;
@@ -463,7 +458,8 @@ async function saveCharacter() {
     const payload = {
       name,
       base_age:    ageVal !== '' ? parseInt(ageVal) : null,
-      city_id:     cityIdVal ? parseInt(cityIdVal) : null,
+      city_id:     cityIdVal   ? parseInt(cityIdVal)    : null,
+      country_id:  countryIdVal ? parseInt(countryIdVal) : null,
       description: desc,
       avatar_url:  avatarUrlValue,
     };

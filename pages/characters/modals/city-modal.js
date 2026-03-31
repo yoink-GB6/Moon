@@ -71,7 +71,7 @@ function _buildHTML(city, sections, preselectedCountryId) {
     '<label>所属国家</label>' +
     '<div class="tl-select" id="cm-city-country-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div>' +
     '<input type="hidden" id="cm-city-country" data-init="' + escHtml(selCountryId) + '" value="' + escHtml(selCountryId) + '"/>' +
-    '<div class="cm-sec-hdr"><span>内容小节</span><span class="cm-hint">点 ✏️ 展开编辑；拖 ⠿ 可排序</span></div>' +
+    '<div class="cm-sec-hdr"><span>内容小节</span><span class="cm-hint">点 ✎ 展开编辑；拖 ⠿ 可排序</span></div>' +
     '<div class="cm-tags" id="cm-city-tags">' + presets + '</div>' +
     '<div class="cm-custom-row">' +
       '<input type="text" id="cm-city-custom" placeholder="自定义小节标题..." maxlength="30" autocomplete="off"/>' +
@@ -106,7 +106,7 @@ function _rowHTML(sec) {
         '<span class="cm-row-label">' + titleLabel + '</span>' +
         '<span class="cm-row-preview">' + preview + '</span>' +
       '</div>' +
-      '<button class="cm-row-edit" title="编辑此小节">✏️</button>' +
+      '<button class="cm-row-edit" title="编辑此小节">✎</button>' +
       '<button class="cm-row-del"  title="删除此小节">✕</button>' +
     '</div>' +
     '<div class="cm-row-expanded" style="display:none">' +

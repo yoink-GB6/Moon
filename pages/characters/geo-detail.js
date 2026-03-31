@@ -7,7 +7,7 @@ import { openCityModal } from './modals/city-modal.js';
 import { openLandmarkModal } from './modals/landmark-modal.js';
 import { openCharModal } from './modals/character-modal.js';
 import { openCharReadonly } from './modals/char-readonly-modal.js';
-import { parseAvatarUrls, pickRandomUrl } from './utils.js';
+import { parseAvatarUrls, pickRandomUrl, childHTML } from './utils.js';
 import { renderGeoTree } from './geo-tree.js';
 
 export function renderGeoDetail() {
@@ -35,27 +35,6 @@ function _isJSON(str) {
   try { return Array.isArray(JSON.parse(str)); } catch (_) { return false; }
 }
 
-// 递归渲染子节点（depth 1/2），内层折叠项
-function _childHTML(node, depth) {
-  if (depth > 1) {
-    const label = node.title ? '<strong>' + escHtml(node.title) + '</strong>' : '';
-    const text  = node.content ? escHtml(node.content) : '';
-    return '<div class="static-text-l3">' + (label && text ? label + '&ensp;' + text : label + text) + '</div>';
-  }
-  const kids = (node.children && node.children.length)
-    ? node.children.map(function(gc) { return _childHTML(gc, depth + 1); }).join('')
-    : '';
-  return '<div class="collapse-item">' +
-    '<div class="collapse-header">' + escHtml(node.title || '') + '</div>' +
-    '<div class="collapse-content">' +
-      '<div class="collapse-inner">' +
-        (node.content ? escHtml(node.content) : '') +
-        kids +
-      '</div>' +
-    '</div>' +
-  '</div>';
-}
-
 function _sectionsHTML(sections) {
   if (!sections.length) return '';
   return sections.map(function(s) {
@@ -68,7 +47,7 @@ function _sectionsHTML(sections) {
       '<div class="collapse-h2"><span>' + escHtml(s.title || '未命名') + '</span></div>' +
       '<div class="h2-content">' +
         (content ? '<div class="collapse-inner">' + escHtml(content) + '</div>' : '') +
-        children.map(function(c) { return _childHTML(c, 1); }).join('') +
+        children.map(function(c) { return childHTML(c, 1); }).join('') +
       '</div>' +
     '</div>';
   }).join('');
@@ -165,7 +144,7 @@ function renderCityDetail(detail) {
             '<div class="geo-landmark-name">' + escHtml(lm.name) + '</div>' +
             descParas +
           '</blockquote>' +
-          (isEditor() ? '<div class="geo-item-actions"><button class="btn bn" data-edit-landmark="' + lm.id + '">✏️</button></div>' : '') +
+          (isEditor() ? '<div class="geo-item-actions"><button class="btn bn" data-edit-landmark="' + lm.id + '">✎</button></div>' : '') +
         '</div>';
       }).join('')
     : '<div class="geo-empty" style="padding:16px 0">暂无地标</div>';

@@ -27,129 +27,6 @@
 <link rel="stylesheet" href="styles/library.css">
 <link rel="stylesheet" href="styles/responsive.css">
 
-<style>
-/* ── 页面加密面板 ── */
-#sidebar-footer {
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-.editor-status {
-  padding: 8px 12px;
-  font-size: 12px;
-  color: var(--muted);
-  border-top: 1px solid var(--border);
-}
-#page-lock-panel {
-  padding: 10px 12px 14px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.page-lock-header {
-  font-size: 12px;
-  color: var(--accent-bright);
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-#page-lock-select {
-  width: 100%;
-  background: var(--surface-2);
-  border: 1px solid var(--border-hi);
-  color: var(--text);
-  border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 13px;
-  cursor: pointer;
-}
-#page-lock-select:focus {
-  outline: none;
-  border-color: var(--accent-bright);
-}
-.page-lock-btns {
-  display: flex;
-  gap: 6px;
-}
-.page-lock-btns .btn {
-  flex: 1;
-  padding: 5px 8px;
-  font-size: 12px;
-}
-/* ── 导航栏锁图标 ── */
-.nav-lock-icon {
-  margin-left: auto;
-  font-size: 11px;
-  opacity: 0.55;
-  flex-shrink: 0;
-}
-/* ── 页面密码模态框（通用复用样式） ── */
-#page-pw-modal,
-#set-lock-modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.72);
-  z-index: 900;
-  align-items: center;
-  justify-content: center;
-}
-#page-pw-modal.show,
-#set-lock-modal.show {
-  display: flex;
-}
-#page-pw-box,
-#set-lock-box {
-  background: var(--panel);
-  border: 1px solid var(--border-hi);
-  border-radius: 12px;
-  padding: 28px 28px 22px;
-  width: min(340px, 90vw);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-#page-pw-box h2,
-#set-lock-box h2 {
-  margin: 0;
-  font-size: 18px;
-  color: var(--text);
-}
-#page-pw-box label,
-#set-lock-box label {
-  font-size: 13px;
-  color: var(--muted);
-}
-#page-pw-input,
-#set-lock-input {
-  width: 100%;
-  box-sizing: border-box;
-  background: var(--surface-2);
-  border: 1px solid var(--border-hi);
-  color: var(--text);
-  border-radius: 7px;
-  padding: 9px 12px;
-  font-size: 15px;
-}
-#page-pw-input:focus,
-#set-lock-input:focus {
-  outline: none;
-  border-color: var(--accent-bright);
-}
-#page-pw-error,
-#set-lock-error {
-  display: none;
-  color: var(--red-bright);
-  font-size: 13px;
-  margin-top: -4px;
-}
-.page-name-tag {
-  font-size: 13px;
-  color: var(--accent-bright);
-  font-weight: 600;
-}
-</style>
-
 </head>
 <body>
 
@@ -202,37 +79,6 @@
   </div>
 </div>
 
-<!-- 访问加密页面的密码弹窗 -->
-<div id="page-pw-modal">
-  <div id="page-pw-box">
-    <h2>该页面已加密</h2>
-    <div class="page-name-tag" id="page-pw-page-name"></div>
-    <label>请输入访问密码</label>
-    <input id="page-pw-input" type="password" placeholder="请输入密码" autocomplete="off"/>
-    <div id="page-pw-error">密码错误，请重试</div>
-    <div class="mbtns" style="justify-content:flex-end;margin-top:4px">
-      <button class="btn bn" onclick="closePagePwModal()">取消</button>
-      <button class="btn bp" onclick="submitPagePw()">确认</button>
-    </div>
-  </div>
-</div>
-
-<!-- 设置页面加密密码的弹窗（编辑模式） -->
-<div id="set-lock-modal">
-  <div id="set-lock-box">
-    <h2>设置页面密码</h2>
-    <div class="page-name-tag" id="set-lock-page-name"></div>
-    <input type="hidden" id="set-lock-page-id"/>
-    <label>新密码</label>
-    <input id="set-lock-input" type="password" placeholder="请输入要设置的密码" autocomplete="new-password"/>
-    <div id="set-lock-error"></div>
-    <div class="mbtns" style="justify-content:flex-end;margin-top:4px">
-      <button class="btn bn" onclick="closeSetLockModal()">取消</button>
-      <button class="btn bp" onclick="submitSetLock()">确认</button>
-    </div>
-  </div>
-</div>
-
 <div id="toast"></div>
 
 <script src="core/starfield.js"></script>
@@ -240,7 +86,6 @@
 const _V = Date.now(); // 缓存破坏版本号，每次加载页面时生成
 import { showToast, initSidebar, closeSidebar, confirmDialog, bindPanelToggle } from './core/ui.js';
 import { isEditor, tryUnlock, lock, onAuthChange } from './core/auth.js';
-import { supaClient } from './core/supabase-client.js';
 
 // ── Router config ──────────────────────────────────
 // 添加新页面：在这里加一条记录，并在 pages/ 目录下建对应 .js 文件
@@ -269,59 +114,12 @@ const ROUTES = [
     icon: '⏱',
     loader: () => import('./pages/timeline.js?v='+_V),
   },
-  // 未来在这里添加更多页面：
-  // { id: 'gallery', label: '🖼 图库', icon: '🖼', loader: () => import('./pages/gallery.js'), placeholder: true },
 ];
 
 // ── State ──────────────────────────────────────────
 let currentRoute = null;
 let currentModule = null;
-let _navSeq = 0;  // 导航序号，用于取消过期的异步操作
-
-// ── Page Lock State ────────────────────────────────
-let pageLocks = {};          // { pageId: sha256Hash }
-const sessionUnlocked = new Set(); // 本次会话中已解锁的页面
-
-// SHA-256 工具函数
-async function sha256(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
-
-// 从 Supabase 加载页面锁定配置
-async function loadPageLocks() {
-  try {
-    const { data } = await supaClient.from('site_content').select('value').eq('key','page_locks').single();
-    if (data?.value) pageLocks = JSON.parse(data.value);
-  } catch(e) { /* 首次使用时可能没有记录，忽略 */ }
-  buildNav();
-  updateLockPanelSelects();
-}
-
-// 保存页面锁定配置到 Supabase
-async function savePageLocks() {
-  await supaClient.from('site_content')
-    .upsert({ key: 'page_locks', value: JSON.stringify(pageLocks) }, { onConflict: 'key' });
-}
-
-// 更新加密面板中的 select 选项和按钮状态
-function updateLockPanelSelects() {
-  const sel = document.getElementById('page-lock-select');
-  if (!sel) return;
-  // 更新每个 option 的显示（加/去锁图标）
-  ROUTES.forEach(r => {
-    const opt = sel.querySelector(`option[value="${r.id}"]`);
-    if (opt) opt.textContent = pageLocks[r.id] ? `${r.label}  🔒` : r.label;
-  });
-  updateLockBtns(sel.value);
-}
-
-// 根据选中的 page 显示/隐藏「移除」按钮
-function updateLockBtns(pageId) {
-  const removeBtn = document.getElementById('page-lock-remove-btn');
-  if (!removeBtn) return;
-  removeBtn.style.display = pageLocks[pageId] ? '' : 'none';
-}
+let _navSeq = 0;
 
 // ── Build nav ──────────────────────────────────────
 function buildNav() {
@@ -331,7 +129,6 @@ function buildNav() {
       <span class="nav-icon">${r.icon}</span>
       <span class="nav-label">${r.label.replace(r.icon,'').trim()}</span>
       ${r.placeholder ? '<span style="font-size:10px;color:#555;margin-left:auto">soon</span>' : ''}
-      ${pageLocks[r.id] && !isEditor() ? '<span class="nav-lock-icon">🔒</span>' : ''}
     </div>
   `).join('');
   nav.querySelectorAll('.nav-item').forEach(el => {
@@ -347,23 +144,14 @@ async function navigate(id) {
   const route = ROUTES.find(r => r.id === id) || ROUTES[0];
   if (currentRoute?.id === route.id) return;
 
-  // 检查该页面是否加密（编辑者和本次已解锁的页面直接通过）
-  if (pageLocks[route.id] && !isEditor() && !sessionUnlocked.has(route.id)) {
-    showPagePasswordModal(route);
-    return;
-  }
-
-  // Unmount current
   if (currentModule?.unmount) currentModule.unmount();
 
   currentRoute = route;
   currentModule = null;
   buildNav();
 
-  // Update topbar title
   document.getElementById('topbar-title').textContent = route.label;
 
-  // Mount new page
   const root = document.getElementById('page-root');
   root.innerHTML = '';
 
@@ -380,7 +168,7 @@ async function navigate(id) {
   const seq = ++_navSeq;
   try {
     const mod = await route.loader();
-    if (seq !== _navSeq) return;  // 已切换到其他页面，丢弃本次结果
+    if (seq !== _navSeq) return;
     if (!mod) {
       root.innerHTML = `<div class="page-placeholder"><div class="placeholder-icon">${route.icon}</div><h2>页面暂未实现</h2><p>对应的 pages/${route.id}.js 文件尚不存在。</p></div>`;
       return;
@@ -388,7 +176,7 @@ async function navigate(id) {
     currentModule = mod;
     await mod.mount(root);
   } catch(e) {
-    if (seq !== _navSeq) return;  // 切走了，忽略报错
+    if (seq !== _navSeq) return;
     console.error(`页面 ${route.id} 加载失败`, e);
     root.innerHTML = `<div class="page-placeholder"><div class="placeholder-icon">⚠️</div><h2>加载失败</h2><p>${e.message}</p></div>`;
   }
@@ -403,57 +191,17 @@ onAuthChange(editor => {
     btn.textContent = '-- EDITING --';
     btn.classList.add('unlocked');
     if (banner) banner.classList.remove('show');
-    // 显示编辑状态 + 页面加密管理面板
-    footer.innerHTML = `
-      <div class="editor-status"> 编辑模式已解锁</div>
-      <div id="page-lock-panel">
-        <div class="page-lock-header"> 页面加密</div>
-        <select id="page-lock-select">
-          ${ROUTES.map(r => `<option value="${r.id}">${pageLocks[r.id] ? r.label + '  🔒' : r.label}</option>`).join('')}
-        </select>
-        <div class="page-lock-btns">
-          <button id="page-lock-set-btn" class="btn bp">设置密码</button>
-          <button id="page-lock-remove-btn" class="btn br" style="${pageLocks[ROUTES[0]?.id] ? '' : 'display:none'}">移除加密</button>
-        </div>
-      </div>`;
-    bindLockPanel();
+    footer.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--muted);border-top:1px solid var(--border)">编辑模式已解锁</div>';
   } else {
     btn.textContent = 'READONLY';
     btn.classList.remove('unlocked');
     if (banner) banner.classList.add('show');
     footer.innerHTML = '';
-    buildNav(); // 重新构建导航（可能需要显示锁图标）
+    buildNav();
   }
 });
 
-// 绑定加密面板的事件
-function bindLockPanel() {
-  const sel = document.getElementById('page-lock-select');
-  // 初始化按钮状态
-  updateLockBtns(sel?.value);
-
-  sel?.addEventListener('change', () => updateLockBtns(sel.value));
-
-  document.getElementById('page-lock-set-btn')?.addEventListener('click', () => {
-    const pageId = document.getElementById('page-lock-select').value;
-    window.showSetLockModal(pageId);
-  });
-
-  document.getElementById('page-lock-remove-btn')?.addEventListener('click', async () => {
-    const pageId = document.getElementById('page-lock-select').value;
-    const route = ROUTES.find(r => r.id === pageId);
-    if (confirmDialog(`确定移除「${route.label}」的加密吗？`)) {
-      delete pageLocks[pageId];
-      sessionUnlocked.delete(pageId);
-      await savePageLocks();
-      showToast('✅ 已移除页面加密');
-      buildNav();
-      updateLockPanelSelects();
-    }
-  });
-}
-
-// ── Password modal (global) ────────────────────────
+// ── Password modal ─────────────────────────────────
 window.showPwModal = function() {
   if (isEditor()) { lock(); return; }
   document.getElementById('pw-input').value = '';
@@ -483,100 +231,11 @@ window.submitPw = async function() {
   }
 };
 document.getElementById('pw-input').addEventListener('keydown', e => {
-  if (e.key==='Enter') {
-    e.preventDefault();
-    e.stopPropagation();
-    window.submitPw();
-  }
-  if (e.key==='Escape') {
-    e.stopPropagation();
-    window.closePwModal();
-  }
+  if (e.key==='Enter') { e.preventDefault(); e.stopPropagation(); window.submitPw(); }
+  if (e.key==='Escape') { e.stopPropagation(); window.closePwModal(); }
 });
 document.getElementById('pw-modal').addEventListener('click', e => {
   if (e.target===document.getElementById('pw-modal')) window.closePwModal();
-});
-
-// ── 访问加密页面的弹窗 ─────────────────────────────
-let _pendingNavRoute = null;
-
-function showPagePasswordModal(route) {
-  _pendingNavRoute = route;
-  document.getElementById('page-pw-page-name').textContent = route.label;
-  document.getElementById('page-pw-input').value = '';
-  document.getElementById('page-pw-error').style.display = 'none';
-  document.getElementById('page-pw-modal').classList.add('show');
-  setTimeout(() => document.getElementById('page-pw-input').focus(), 60);
-}
-
-window.closePagePwModal = function() {
-  document.getElementById('page-pw-modal').classList.remove('show');
-  document.getElementById('page-pw-input').value = '';
-  _pendingNavRoute = null;
-};
-
-window.submitPagePw = async function() {
-  if (!_pendingNavRoute) return;
-  const pw = document.getElementById('page-pw-input').value;
-  const hash = await sha256(pw);
-  if (hash === pageLocks[_pendingNavRoute.id]) {
-    sessionUnlocked.add(_pendingNavRoute.id);
-    const route = _pendingNavRoute;
-    window.closePagePwModal();
-    navigate(route.id);
-  } else {
-    document.getElementById('page-pw-error').style.display = 'block';
-    document.getElementById('page-pw-input').value = '';
-    document.getElementById('page-pw-input').focus();
-  }
-};
-
-document.getElementById('page-pw-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') { e.preventDefault(); window.submitPagePw(); }
-  if (e.key === 'Escape') { e.stopPropagation(); window.closePagePwModal(); }
-});
-document.getElementById('page-pw-modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('page-pw-modal')) window.closePagePwModal();
-});
-
-// ── 设置页面加密密码的弹窗 ─────────────────────────
-window.showSetLockModal = function(pageId) {
-  const route = ROUTES.find(r => r.id === pageId);
-  document.getElementById('set-lock-page-name').textContent = route.label;
-  document.getElementById('set-lock-page-id').value = pageId;
-  document.getElementById('set-lock-input').value = '';
-  document.getElementById('set-lock-error').style.display = 'none';
-  document.getElementById('set-lock-modal').classList.add('show');
-  setTimeout(() => document.getElementById('set-lock-input').focus(), 60);
-};
-
-window.closeSetLockModal = function() {
-  document.getElementById('set-lock-modal').classList.remove('show');
-  document.getElementById('set-lock-input').value = '';
-};
-
-window.submitSetLock = async function() {
-  const pw = document.getElementById('set-lock-input').value.trim();
-  if (!pw) {
-    document.getElementById('set-lock-error').textContent = '密码不能为空';
-    document.getElementById('set-lock-error').style.display = 'block';
-    return;
-  }
-  const pageId = document.getElementById('set-lock-page-id').value;
-  pageLocks[pageId] = await sha256(pw);
-  await savePageLocks();
-  showToast('✅ 页面加密已设置');
-  window.closeSetLockModal();
-  buildNav();
-  updateLockPanelSelects();
-};
-
-document.getElementById('set-lock-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') { e.preventDefault(); window.submitSetLock(); }
-  if (e.key === 'Escape') { e.stopPropagation(); window.closeSetLockModal(); }
-});
-document.getElementById('set-lock-modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('set-lock-modal')) window.closeSetLockModal();
 });
 
 // ── Left sidebar toggle ────────────────────────────
@@ -585,8 +244,7 @@ bindPanelToggle(document, '#sidebar', '#sidebar-toggle', '#sidebar-expand', '#si
 // ── Init ───────────────────────────────────────────
 initSidebar();
 buildNav();
-navigate('library');  // 默认进入指令集页面
-loadPageLocks();      // 异步加载页面加密配置
+navigate('library');
 </script>
 
 </body>

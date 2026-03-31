@@ -3,53 +3,7 @@
 
 import { escHtml } from '../../../core/ui.js';
 import * as State from '../state.js';
-import { parseAvatarUrls, pickRandomUrl, openImageViewer } from '../utils.js';
-
-function _parseCharSections(raw) {
-  if (!raw) return [];
-  try {
-    const p = JSON.parse(raw);
-    if (Array.isArray(p)) return p;
-    return [{ title: '个人简介', content: raw }];
-  } catch (_) {
-    return [{ title: '个人简介', content: raw }];
-  }
-}
-
-function _childHTML(node, depth) {
-  if (depth > 1) {
-    const label = node.title ? '<strong>' + escHtml(node.title) + '</strong>' : '';
-    const text  = node.content ? escHtml(node.content) : '';
-    return '<div class="static-text-l3">' + (label && text ? label + '&ensp;' + text : label + text) + '</div>';
-  }
-  const kids = (node.children && node.children.length)
-    ? node.children.map(function(gc) { return _childHTML(gc, depth + 1); }).join('')
-    : '';
-  return '<div class="collapse-item">' +
-    '<div class="collapse-header">' + escHtml(node.title || '') + '</div>' +
-    '<div class="collapse-content">' +
-      '<div class="collapse-inner">' +
-        (node.content ? escHtml(node.content) : '') +
-        kids +
-      '</div>' +
-    '</div>' +
-  '</div>';
-}
-
-function _sectionsHTML(sections) {
-  return sections.map(function(s) {
-    const childrenHTML = (s.children && s.children.length)
-      ? s.children.map(function(c) { return _childHTML(c, 1); }).join('')
-      : '';
-    return '<div class="h2-section">' +
-      '<div class="collapse-h2"><span>' + escHtml(s.title || '未命名') + '</span></div>' +
-      '<div class="h2-content">' +
-        (s.content ? '<div class="collapse-inner">' + escHtml(s.content) + '</div>' : '') +
-        childrenHTML +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
+import { parseAvatarUrls, pickRandomUrl, openImageViewer, parseCharSections, sectionsHTML } from '../utils.js';
 
 export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
   const container = State.pageContainer;
@@ -61,8 +15,8 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
     container.appendChild(overlay);
   }
 
-  const city    = State.allCities.find(function(c) { return c.id === char.city_id; });
-  const country = city ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null;
+  const city    = char.city_id    ? State.allCities.find(function(c)  { return c.id  === char.city_id;    }) : null;
+  const country = char.country_id ? State.allCountries.find(function(co) { return co.id === char.country_id; }) : null;
   const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
   const age = (char.base_age != null && char.base_age !== '') ? String(char.base_age) + ' 岁' : '';
 
@@ -77,15 +31,15 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
             : escHtml(char.name.charAt(0))) +
         '</div>' +
         '<div style="flex:1">' +
-          '<h2 style="margin:0 0 4px">' + escHtml(char.name) + '</h2>' +
+          '<h2 style="margin:0 0 4px;color:var(--border-hover)">' + escHtml(char.name) + '</h2>' +
           (age      ? '<div style="font-size:14px;color:var(--muted)">' + age + '</div>' : '') +
           (location ? '<div style="font-size:14px;color:var(--muted)">' + escHtml(location) + '</div>' : '') +
         '</div>' +
       '</div>' +
       (function() {
-        const secs = _parseCharSections(char.description);
+        const secs = parseCharSections(char.description);
         if (!secs.length) return '<div style="font-size:14px;color:var(--muted);font-style:italic">暂无介绍</div>';
-        return '<div id="char-ro-sections">' + _sectionsHTML(secs) + '</div>';
+        return '<div id="char-ro-sections">' + sectionsHTML(secs) + '</div>';
       })() +
     '</div>';
 

@@ -102,7 +102,7 @@ function _rowHTML(sec) {
         '<span class="cm-row-label">' + escHtml(sec.title || '未命名') + '</span>' +
         '<span class="cm-row-preview">' + previewHTML + '</span>' +
       '</div>' +
-      '<button class="cm-row-edit" title="编辑">✏️</button>' +
+      '<button class="cm-row-edit" title="编辑">✎</button>' +
       '<button class="cm-row-del" title="删除">✕</button>' +
     '</div>' +
     // 展开态：textarea + 提示

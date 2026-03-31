@@ -81,7 +81,7 @@ function buildHTML() {
       <div id="map-popup-desc"  class="map-popup-desc" style="display:none"></div>
       <div id="map-popup-chars" class="map-popup-chars" style="display:none"></div>
       <div id="map-popup-actions" class="map-popup-actions" style="display:none">
-        <button class="btn bp" id="map-popup-edit"   style="font-size:12px;padding:5px 10px">✏️ 编辑</button>
+        <button class="btn bp" id="map-popup-edit"   style="font-size:12px;padding:5px 10px">✎ 编辑</button>
         <button class="btn br" id="map-popup-delete" style="font-size:12px;padding:5px 10px">🗑 删除</button>
       </div>
     </div>
@@ -93,7 +93,7 @@ function buildHTML() {
     </div>
     <div class="tl-tabs">
       <button class="tl-tab active" data-tab="list">📋 列表</button>
-      <button class="tl-tab"        data-tab="edit">✏️ 编辑</button>
+      <button class="tl-tab"        data-tab="edit">✎ 编辑</button>
     </div>
 
     <div id="map-tab-list" class="tl-tab-content map-tab-scroll">
@@ -118,7 +118,7 @@ function buildHTML() {
           </div>
         </div>
         <div id="map-drawing-panel" style="display:none;padding:12px 13px;background:rgba(124,131,247,.07);border-bottom:1px solid var(--border)">
-          <div class="ctrl-label" style="color:var(--accent)">✏️ 绘制区域中</div>
+          <div class="ctrl-label" style="color:var(--accent)">✎ 绘制区域中</div>
           <div style="font-size:12px;color:#889;margin-bottom:8px">在画布单击添加顶点，至少3个点后可完成；右键快速完成</div>
           <div id="map-draw-count" style="font-size:12px;color:var(--accent);margin-bottom:8px">已添加 0 个顶点</div>
           <div style="display:flex;gap:6px">

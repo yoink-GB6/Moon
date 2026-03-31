@@ -322,8 +322,8 @@ function _renderCharPanel(list, query, avatarCache) {
   }
 
   list.innerHTML = chars.map(function(c) {
-    const city    = State.allCities.find(function(ci) { return ci.id === c.city_id; });
-    const country = city ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null;
+    const city    = c.city_id    ? State.allCities.find(function(ci) { return ci.id  === c.city_id;    }) : null;
+    const country = c.country_id ? State.allCountries.find(function(co) { return co.id === c.country_id; }) : null;
     const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
     const ageStr   = (c.base_age != null && c.base_age !== '') ? String(c.base_age) : '';
     const meta     = [ageStr ? ageStr + '岁' : '', location].filter(Boolean).join(' · ');

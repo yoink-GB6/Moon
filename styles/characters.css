@@ -137,7 +137,8 @@
 .geo-detail{max-width:800px;margin:0 auto}
 .geo-detail h2{margin:0 0 24px 0;display:flex;justify-content:space-between;align-items:center}
 .geo-detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.geo-detail-header h2{margin:0;color:var(--text)}
+.geo-detail-header h2{margin:0;color:var(--text);font-size:20px}
+.geo-detail-header .btn,.geo-detail-section h3 .btn{padding:4px 12px;font-size:12px;line-height:1.5}
 .geo-detail-section{margin-bottom:24px}
 .geo-detail-section h3{font-size:17px;margin:32px 0 12px 0;color:var(--text);letter-spacing:.08em;display:flex;justify-content:space-between;align-items:center}
 .geo-detail-value{font-size:14px;line-height:1.6}
@@ -149,13 +150,14 @@
 .geo-landmark-item{display:flex;justify-content:space-between;align-items:flex-start;margin:6px 0}
 .geo-landmark-block{flex:1;border-left:2px solid var(--accent-dim);padding:.4em 0 .4em 18px;margin:.6em 0}
 .geo-landmark-item:hover .geo-landmark-block{border-left-color:var(--accent)}
-.geo-landmark-name{font-weight:600;margin-bottom:4px}
+.geo-landmark-name{font-weight:600;margin-bottom:4px;color:var(--border-hover);font-family:var(--font-title);letter-spacing:.1em}
 .geo-landmark-desc{font-size:13px;color:var(--muted);margin-bottom:.5em}
 .geo-landmark-desc:last-child{margin-bottom:0}
 .geo-person-item{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:6px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:border-color 0.15s,background 0.15s}
 .geo-person-item:hover{border-color:var(--accent);background:rgba(168,137,58,0.06)}
 .geo-person-av{width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;overflow:hidden;flex-shrink:0}
 .geo-item-actions{opacity:0;display:flex;gap:4px}
+.geo-item-actions .btn{font-size:15px;padding:2px 8px}
 .geo-landmark-item:hover .geo-item-actions,.geo-person-item:hover .geo-item-actions{opacity:1}
 .geo-empty{text-align:center;padding:40px;color:var(--muted)}
 
@@ -174,9 +176,9 @@
 
 /* ── 折叠小节 ── */
 @keyframes glow-pulse {
-  0%  {opacity:.6;text-shadow:0 0 2px transparent}
-  50% {opacity:1; text-shadow:0 0 8px rgba(168,137,58,.5)}
-  100%{opacity:.6;text-shadow:0 0 2px transparent}
+  0%  {text-shadow:0 0 4px rgba(168,137,58,.3)}
+  50% {text-shadow:0 0 12px rgba(168,137,58,.85),0 0 24px rgba(168,137,58,.35)}
+  100%{text-shadow:0 0 4px rgba(168,137,58,.3)}
 }
 @keyframes box-glow {
   0%  {box-shadow:0 0 2px var(--accent-dim);   background:var(--accent-dim)}
@@ -205,7 +207,7 @@
 /* 内容文本区 */
 .collapse-inner{padding:0 0 0 16px;font-size:13px;line-height:1.75;color:var(--muted);white-space:pre-wrap}
 /* 第三层：静态文本，不折叠 */
-.static-text-l3{display:flex;align-items:flex-start;padding:8px 0 8px 26px;font-size:13px;color:var(--muted);line-height:1.6}
+.static-text-l3{display:flex;align-items:flex-start;padding:8px 0 8px 13px;font-size:13px;color:var(--muted);line-height:1.6}
 .static-text-l3::before{content:'';width:4px;height:4px;flex-shrink:0;border:1px solid var(--accent-dim);background:transparent;margin-right:12px;margin-top:7px;transform:rotate(45deg)}
 /* 装饰 Tag */
 .sec-tag{font-family:var(--font-body);font-size:9px;background:var(--accent-muted);color:var(--accent);border:1px solid var(--accent-dim);padding:1px 5px;margin-left:8px;text-transform:uppercase;vertical-align:middle}
@@ -221,6 +223,7 @@
 .cm-custom-row{display:flex;gap:8px;margin-bottom:12px}
 .cm-custom-row input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none}
 .cm-custom-row input:focus{border-color:var(--accent)}
+.cm-custom-row .btn{padding:6px 10px;font-size:12px;line-height:normal}
 .tl-modal-overlay.modal-center{align-items:center;justify-content:center}
 .tl-modal-overlay.modal-center .tl-modal{border-radius:4px;width:calc(100% - 32px);max-height:90vh;box-shadow:0 0 0 1px var(--accent-muted),0 24px 80px rgba(0,0,0,.65)}
 /* 人物卡片：随屏幕比例伸缩，宽屏不再受限于固定像素 */
