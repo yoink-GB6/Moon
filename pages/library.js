@@ -179,6 +179,19 @@ function buildHTML() {
   </div>
 </div>
 
+<!-- Duplicate check modal -->
+<div id="lib-dup-modal" class="tl-modal-overlay">
+  <div class="tl-modal" style="max-width:420px;text-align:center" onmousedown="event.stopPropagation()">
+    <h2 style="justify-content:center">这个指令有点眼熟</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:20px">已有一条内容相同的指令，要怎么处理？</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn bp" id="lib-dup-update">更新</button>
+      <button class="btn bn" id="lib-dup-view">查看</button>
+      <button class="btn bn" id="lib-dup-cancel">放弃</button>
+    </div>
+  </div>
+</div>
+
 <!-- Read-only preview modal -->
 <div id="lib-preview-modal" class="tl-modal-overlay">
   <div class="tl-modal" style="max-width:600px" onmousedown="event.stopPropagation()">
@@ -234,6 +247,15 @@ function bindControls(container) {
   let _mdOnLibModal = false;
   _libModal.addEventListener('mousedown', e => { _mdOnLibModal = (e.target === _libModal); });
   _libModal.addEventListener('mouseup', e => { if (_mdOnLibModal && e.target === _libModal) closeModal(container); _mdOnLibModal = false; });
+
+  // Duplicate modal buttons
+  container.querySelector('#lib-dup-update').addEventListener('click', () => _dupAction(container, 'update'));
+  container.querySelector('#lib-dup-view').addEventListener('click',   () => _dupAction(container, 'view'));
+  container.querySelector('#lib-dup-cancel').addEventListener('click', () => _dupAction(container, 'cancel'));
+  const _libDupModal = container.querySelector('#lib-dup-modal');
+  let _mdOnDupModal = false;
+  _libDupModal.addEventListener('mousedown', e => { _mdOnDupModal = (e.target === _libDupModal); });
+  _libDupModal.addEventListener('mouseup', e => { if (_mdOnDupModal && e.target === _libDupModal) _dupAction(container, 'cancel'); _mdOnDupModal = false; });
 
   // Preview modal buttons
   container.querySelector('#lib-preview-close').addEventListener('click', () => closePreviewModal(container));
@@ -924,6 +946,26 @@ function addNewTag(container) {
   showToast(`已添加标签：${tag}`);
 }
 
+// 查重用的临时状态
+let _dupPendingContainer = null;
+let _dupFoundItem = null;
+let _dupPendingSave = null; // 保存当前编辑框内容的函数引用
+
+function _dupAction(container, action) {
+  container.querySelector('#lib-dup-modal').classList.remove('show');
+  if (action === 'update') {
+    // 用当前编辑框信息覆盖已有条目
+    if (_dupPendingSave) _dupPendingSave();
+  } else if (action === 'view') {
+    // 把已有条目的信息填回编辑框
+    if (_dupFoundItem) openModal(_dupFoundItem, container);
+  }
+  // 'cancel' 什么都不做
+  _dupPendingContainer = null;
+  _dupFoundItem = null;
+  _dupPendingSave = null;
+}
+
 async function saveItem(container) {
   const content = container.querySelector('#lib-content').value.trim();
   if (!content) { showToast('内容不能为空'); return; }
@@ -959,7 +1001,44 @@ async function saveItem(container) {
     setTimeout(() => container.querySelector('#lib-privacy-key').focus(), 100);
     return;
   }
-  
+
+  // 查重：仅对公开指令、新建或内容有变化的编辑做检查
+  if (!isPrivate) {
+    const dupItem = items.find(function(x) {
+      if (x.privacyLevel === 'private') return false;
+      if (savingId && x.id === savingId) return false; // 排除自身
+      return (x.decryptedContent || x.content).trim() === content;
+    });
+    if (dupItem) {
+      _dupFoundItem = dupItem;
+      _dupPendingContainer = container;
+      // 把"确认覆盖"后的实际保存操作包成闭包，让 _dupAction 调用
+      _dupPendingSave = async function() {
+        const overrideId = dupItem.id;
+        closeModal(container);
+        setSyncStatus('syncing');
+        try {
+          let row;
+          if (isPrivate) {
+            const encryptedContent = await encryptContent(content, privacyKey);
+            const hashedKey = await hashPassword(privacyKey);
+            row = { content: encryptedContent, author: author || 'unknown', tags_json: JSON.stringify(selectedItemTags), privacy_level: 'private', privacy_key: hashedKey };
+          } else {
+            row = { content, author: author || 'unknown', tags_json: JSON.stringify(selectedItemTags), privacy_level: 'public', privacy_key: null };
+          }
+          const { error } = await supaClient.from('library_items').update(row).eq('id', overrideId);
+          if (error) throw error;
+          showToast('已更新');
+          await fetchAll();
+          setSyncStatus('ok');
+        } catch(e) { dbError('保存指令', e); }
+      };
+      closeModal(container);
+      container.querySelector('#lib-dup-modal').classList.add('show');
+      return;
+    }
+  }
+
   closeModal(container);
   
   setSyncStatus('syncing');

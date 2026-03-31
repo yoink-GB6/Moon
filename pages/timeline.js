@@ -19,7 +19,7 @@ const PALETTE = ['#7c83f7','#27ae60','#e67e22','#e74c3c','#9b59b6',
 let canvas, ctx, wrap;
 let NODE_R = 18, STACK_GAP = 46;
 let imgCache = {};
-let editTarget = null, pendingAvatar = undefined, pendingAvatarIsFile = false;
+let editTarget = null;
 let cfgTimer = null;
 let resizeObserver = null;
 let realtimeChannel = null;
@@ -150,27 +150,6 @@ function buildHTML() {
     <label>年龄（当前显示年龄）</label>
     <input id="tl-edit-age" type="number" min="0" max="200"/>
 
-    <div class="tl-avatar-section">
-      <label>头像</label>
-      <div class="tl-avatar-wrap">
-        <div id="tl-avatar-preview" class="tl-avatar-preview">
-          <span id="tl-avatar-letter">?</span>
-          <div id="tl-avatar-clear-x" title="移除头像">✕</div>
-        </div>
-        <div class="tl-avatar-btns-col">
-          <div class="tl-avatar-btns">
-            <button class="btn bn" id="tl-upload-btn">📁 上传</button>
-            <button class="btn bn" id="tl-url-btn">🔗 链接</button>
-          </div>
-          <div id="tl-url-row" style="display:none" class="tl-url-row">
-            <input id="tl-url-input" type="text" placeholder="https://..."/>
-            <button class="btn bp" id="tl-url-confirm">确认</button>
-          </div>
-          <div id="tl-avatar-error" style="display:none;color:#e74c3c;font-size:11px">图片加载失败</div>
-        </div>
-      </div>
-    </div>
-
     <div class="tl-limit-section">
       <label>年龄上限（可选）</label>
       <div class="tl-limit-row">
@@ -180,7 +159,6 @@ function buildHTML() {
       <div class="ctrl-note">超过上限后节点停留在上限位置并呈灰色「消逝」状态。</div>
     </div>
 
-    <input type="file" id="tl-file-input" accept="image/*"/>
     <div class="mbtns" style="justify-content:flex-end">
       <button class="btn bn" id="tl-modal-cancel">取消</button>
       <button class="btn bp" id="tl-modal-save">保存</button>
@@ -310,25 +288,6 @@ function bindModal(container) {
   container.querySelector('#tl-modal-overlay').addEventListener('click', e => {
     if (e.target === container.querySelector('#tl-modal-overlay')) closeModal();
   });
-  container.querySelector('#tl-upload-btn').addEventListener('click', () => container.querySelector('#tl-file-input').click());
-  container.querySelector('#tl-url-btn').addEventListener('click', () => {
-    const row = container.querySelector('#tl-url-row');
-    row.style.display = row.style.display==='none' ? '' : 'none';
-    if (row.style.display !== 'none') container.querySelector('#tl-url-input').focus();
-  });
-  container.querySelector('#tl-url-confirm').addEventListener('click', () => {
-    const url = container.querySelector('#tl-url-input').value.trim();
-    if (!url) return;
-    pendingAvatar = url; pendingAvatarIsFile = false;
-    refreshAvatarPreview(container, url);
-    container.querySelector('#tl-url-row').style.display = 'none';
-  });
-  container.querySelector('#tl-avatar-clear-x').addEventListener('click', () => {
-    pendingAvatar = null; pendingAvatarIsFile = false;
-    refreshAvatarPreview(container, null);
-    showToast('头像已清除');
-  });
-  container.querySelector('#tl-file-input').addEventListener('change', e => handleFileUpload(e, container));
   container.querySelector('#tl-limit-toggle').addEventListener('click', () => toggleLimit(container));
 
   document.addEventListener('keydown', e => {
@@ -340,13 +299,9 @@ function bindModal(container) {
 
 function openModal(c) {
   if (!isEditor()) return;
-  editTarget = c; pendingAvatar = undefined; pendingAvatarIsFile = false;
+  editTarget = c;
   document.querySelector('#tl-edit-name').value = c.name;
   document.querySelector('#tl-edit-age').value  = c.baseAge + ageOffset;
-  document.querySelector('#tl-url-input').value  = '';
-  document.querySelector('#tl-url-row').style.display = 'none';
-  document.querySelector('#tl-avatar-error').style.display = 'none';
-  refreshAvatarPreview(document, c.avatar, c.name, c.color);
   const hasLimit = c.ageLimit != null;
   const tog = document.querySelector('#tl-limit-toggle');
   const li  = document.querySelector('#tl-limit-input');
@@ -358,48 +313,9 @@ function openModal(c) {
 
 function closeModal() {
   document.querySelector('#tl-modal-overlay')?.classList.remove('show');
-  editTarget = null; pendingAvatar = undefined; pendingAvatarIsFile = false;
+  editTarget = null;
 }
 
-function refreshAvatarPreview(scope, src, name, color) {
-  const p    = (scope.querySelector || scope.getElementById.bind(scope))
-               ? scope.querySelector('#tl-avatar-preview') : null;
-  if (!p) return;
-  const xBtn = p.querySelector('#tl-avatar-clear-x') || document.querySelector('#tl-avatar-clear-x');
-  p.style.background = color || '#1a1508';
-  const initial = ((name || editTarget?.name || '?').charAt(0).toUpperCase());
-  if (src) {
-    p.innerHTML = `<img src="${src}" onerror="this.parentElement.innerHTML='<span style=color:#e74c3c>✕</span>'" style="width:100%;height:100%;object-fit:cover"/>`;
-  } else {
-    p.innerHTML = `<span style="color:#fff;font-size:20px;font-weight:700">${initial}</span>`;
-  }
-  p.appendChild(xBtn);
-  xBtn.style.display = src ? '' : 'none';
-}
-
-function handleFileUpload(e, container) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const img2 = new Image();
-    img2.onload = () => {
-      const MAX = 256, cv = document.createElement('canvas');
-      cv.width = MAX; cv.height = MAX;
-      const c2 = cv.getContext('2d');
-      const sc = Math.max(MAX/img2.width, MAX/img2.height);
-      const sw = Math.round(MAX/sc), sh = Math.round(MAX/sc);
-      const sx = Math.round((img2.width-sw)/2), sy = Math.round((img2.height-sh)/2);
-      c2.drawImage(img2, sx, sy, sw, sh, 0, 0, MAX, MAX);
-      const result = cv.toDataURL('image/jpeg', .82);
-      pendingAvatar = result; pendingAvatarIsFile = true;
-      container.querySelector('#tl-avatar-error').style.display = 'none';
-      refreshAvatarPreview(container, result);
-    };
-    img2.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-  e.target.value = '';
-}
 
 function toggleLimit(container) {
   const tog = container.querySelector('#tl-limit-toggle');
@@ -420,20 +336,6 @@ async function confirmEdit(container) {
 
   editTarget.name    = nm;
   editTarget.baseAge = da - ageOffset;
-
-  if (pendingAvatar !== undefined) {
-    if (pendingAvatar === null) {
-      editTarget.avatar = undefined;
-    } else if (pendingAvatarIsFile) {
-      showToast('⏳ 上传图片中…');
-      const url = await uploadImage(pendingAvatar);
-      editTarget.avatar = url || pendingAvatar;
-    } else {
-      editTarget.avatar = pendingAvatar;
-    }
-    clearImgCache(editTarget.id);
-    if (editTarget.avatar) getImg(editTarget);
-  }
 
   const tog = container.querySelector('#tl-limit-toggle');
   const li  = container.querySelector('#tl-limit-input');
@@ -827,36 +729,6 @@ function saveConfigDebounced() {
   },800);
 }
 
-async function uploadImage(base64) {
-  const arr  = base64.split(',');
-  const mime = arr[0].match(/:(.*?);/)[1];
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8 = new Uint8Array(n);
-  while (n--) u8[n] = bstr.charCodeAt(n);
-  const blob = new Blob([u8], {type: mime});
-
-  const filename = `avatar_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-  try {
-    const { data: upData, error: upErr } =
-      await supaClient.storage.from('avatars').upload(filename, blob, {
-        contentType: 'image/jpeg',
-        upsert: false
-      });
-    if (upErr) throw upErr;
-
-    // getPublicUrl 不会失败，但要确保拿到的是字符串
-    const { data: urlData } = supaClient.storage.from('avatars').getPublicUrl(filename);
-    const publicUrl = urlData?.publicUrl;
-    if (!publicUrl) throw new Error('getPublicUrl 返回为空');
-    console.log('[upload] 上传成功，URL：', publicUrl);
-    return publicUrl;
-  } catch (e) {
-    console.error('[upload] 上传失败：', e);
-    dbError('上传图片', e);
-    return null;
-  }
-}
 
 function subscribeRealtime() {
   realtimeChannel = supaClient.channel('timeline-data')
