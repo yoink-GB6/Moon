@@ -7,7 +7,23 @@ import { loadAllData } from '../data-loader.js';
 
 // 编辑中的图片列表：[{ type: 'existing'|'file'|'url', url: string|null, file: File|null, preview: string }]
 let _editImages = [];
-import { renderCharactersTab } from '../characters-tab.js';
+// 打开编辑时原有的 storage URL 列表，用于保存后清理被移除的文件
+let _originalStorageUrls = [];
+
+function _isStorageUrl(url) {
+  return url && url.includes('/storage/v1/object/public/avatars/');
+}
+
+function _storageFilename(url) {
+  return url.split('/avatars/').pop();
+}
+
+async function _deleteStorageUrls(urls) {
+  const filenames = urls.filter(_isStorageUrl).map(_storageFilename).filter(Boolean);
+  if (!filenames.length) return;
+  await supaClient.storage.from('avatars').remove(filenames);
+}
+import { refreshCharactersView } from '../../characters.js';
 import { renderGeoDetail } from '../geo-detail.js';
 import { mdToChildren, childrenToMd } from './md-utils.js';
 
@@ -388,8 +404,9 @@ export function openCharModal(char) {
   });
   refreshCitySelect(initCountry ? String(initCountry) : '');
 
-  _editImages = parseAvatarUrls(char ? char.avatar_url : null)
-    .map(function(u) { return { type: 'existing', url: u, preview: u, file: null }; });
+  const existingUrls = parseAvatarUrls(char ? char.avatar_url : null);
+  _originalStorageUrls = existingUrls.filter(_isStorageUrl);
+  _editImages = existingUrls.map(function(u) { return { type: 'existing', url: u, preview: u, file: null }; });
   _renderImagesGrid(container);
   container.querySelector('#char-url-row').style.display = 'none';
   container.querySelector('#char-delete-btn').style.display = char ? 'block' : 'none';
@@ -461,9 +478,14 @@ async function saveCharacter() {
       showToast('已创建');
     }
 
+    // 删除被移除的 storage 图片（原来有、现在没有的）
+    const keptUrls = new Set(uploadedUrls);
+    const removedUrls = _originalStorageUrls.filter(function(u) { return !keptUrls.has(u); });
+    if (removedUrls.length) _deleteStorageUrls(removedUrls);
+
     closeModal(container.querySelector('#char-modal'));
     await loadAllData();
-    renderCharactersTab();
+    refreshCharactersView();
     if (State.selectedCity) renderGeoDetail();
   } catch (e) {
     showToast('保存失败: ' + e.message);
@@ -475,10 +497,12 @@ async function deleteCharacter() {
   try {
     const { error } = await supaClient.from('characters').delete().eq('id', State.editingCharId);
     if (error) throw error;
+    // 删除该人物在 storage 中的所有图片
+    if (_originalStorageUrls.length) _deleteStorageUrls(_originalStorageUrls);
     showToast('已删除');
     closeModal(State.pageContainer.querySelector('#char-modal'));
     await loadAllData();
-    renderCharactersTab();
+    refreshCharactersView();
     if (State.selectedCity) renderGeoDetail();
   } catch (e) {
     showToast('删除失败: ' + e.message);

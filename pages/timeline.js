@@ -576,7 +576,11 @@ function drawNode(c,x,cy) {
   ctx.beginPath(); ctx.arc(x,cy,r,0,Math.PI*2); ctx.save(); ctx.clip();
   const img=c.avatar?getImg(c):null;
   if (img&&img.complete&&img.naturalWidth>0) {
-    ctx.drawImage(img,x-r,cy-r,r*2,r*2);
+    // object-fit:cover —— 从图片中心截取正方形
+    const iw=img.naturalWidth, ih=img.naturalHeight;
+    const side=Math.min(iw,ih);
+    const sx=(iw-side)/2, sy=(ih-side)/2;
+    ctx.drawImage(img,sx,sy,side,side,x-r,cy-r,r*2,r*2);
     if(gone){ctx.fillStyle='rgba(20,20,30,.55)';ctx.fillRect(x-r,cy-r,r*2,r*2);}
     const ov=ctx.createLinearGradient(x,cy-r,x,cy+r);
     ov.addColorStop(0,'rgba(0,0,0,0)'); ov.addColorStop(1,'rgba(0,0,0,.45)');

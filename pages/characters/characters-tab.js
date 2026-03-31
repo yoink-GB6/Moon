@@ -85,7 +85,7 @@ function _getTogglePath(toggle, cardEl) {
 /**
  * 渲染人物标签页
  */
-export function renderCharactersTab() {
+export function renderCharactersTab(avatarCache) {
   const container = State.pageContainer;
   const grid = container.querySelector('#chars-grid');
 
@@ -97,7 +97,7 @@ export function renderCharactersTab() {
   grid.innerHTML = State.allChars.map(char => {
     const location  = getLocationPath(char.city_id, State.allCities, State.allCountries);
     const hasAge    = char.base_age != null && char.base_age !== '';
-    const avatarUrl = pickRandomUrl(parseAvatarUrls(char.avatar_url));
+    const avatarUrl = (avatarCache && avatarCache.has(char.id)) ? avatarCache.get(char.id) : pickRandomUrl(parseAvatarUrls(char.avatar_url));
 
     return `
       <div class="intro-card" data-id="${char.id}"${avatarUrl ? ` data-avatar="${escHtml(avatarUrl)}"` : ''}>

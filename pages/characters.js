@@ -2,6 +2,7 @@
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { escHtml, bindPanelToggle } from '../core/ui.js';
 import { parseAvatarUrls, pickRandomUrl } from './characters/utils.js';
+
 import * as State from './characters/state.js';
 import { loadAllData, subscribeRealtime, unsubscribeRealtime } from './characters/data-loader.js';
 import { renderCharactersTab, bindCharactersTab } from './characters/characters-tab.js';
@@ -269,11 +270,22 @@ function syncPanelHeader(tabName) {
   }
 }
 
+// 模块级头像缓存，同一次渲染内卡片和侧边栏共用同一张图
+let _avatarCache = new Map();
+
+function _buildAvatarCache() {
+  _avatarCache = new Map();
+  State.allChars.forEach(function(c) {
+    _avatarCache.set(c.id, pickRandomUrl(parseAvatarUrls(c.avatar_url)));
+  });
+}
+
 function renderCurrentTab() {
   if (!_dataLoaded) return;
   const container = State.pageContainer;
   if (State.currentTab === 'characters') {
-    renderCharactersTab();
+    _buildAvatarCache();
+    renderCharactersTab(_avatarCache);
     const searchInput = container.querySelector('#chars-panel-search');
     renderPanelList(searchInput?.value?.trim().toLowerCase() || '');
   } else if (State.currentTab === 'geography') {
@@ -290,10 +302,20 @@ export function renderPanelList(query) {
   const container = State.pageContainer;
   const list = container.querySelector('#chars-panel-list');
   if (!list) return;
-  _renderCharPanel(list, query);
+  _renderCharPanel(list, query, _avatarCache);
 }
 
-function _renderCharPanel(list, query) {
+// 供 character-modal 在保存/删除后调用，重建缓存后刷新卡片和侧边栏
+export function refreshCharactersView() {
+  if (State.currentTab !== 'characters') return;
+  _buildAvatarCache();
+  renderCharactersTab(_avatarCache);
+  const container = State.pageContainer;
+  const searchInput = container.querySelector('#chars-panel-search');
+  renderPanelList(searchInput?.value?.trim().toLowerCase() || '');
+}
+
+function _renderCharPanel(list, query, avatarCache) {
   const chars = query
     ? State.allChars.filter(function(c) {
         if (c.name.toLowerCase().includes(query)) return true;
@@ -316,7 +338,7 @@ function _renderCharPanel(list, query) {
     const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
     const ageStr   = (c.base_age != null && c.base_age !== '') ? String(c.base_age) : '';
     const meta     = [ageStr ? ageStr + '岁' : '', location].filter(Boolean).join(' · ');
-    const avatarUrl = pickRandomUrl(parseAvatarUrls(c.avatar_url));
+    const avatarUrl = (avatarCache && avatarCache.has(c.id)) ? avatarCache.get(c.id) : pickRandomUrl(parseAvatarUrls(c.avatar_url));
     const av = avatarUrl
       ? '<div class="tl-ci-av"><img src="' + escHtml(avatarUrl) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div>'
       : '<div class="tl-ci-av">' + escHtml(c.name.charAt(0).toUpperCase()) + '</div>';
@@ -344,7 +366,7 @@ function _filterCharGrid(charId) {
   if (charId == null) {
     if (clearBtn) clearBtn.style.display = 'none';
     container.querySelectorAll('#chars-panel-list .tl-ci').forEach(function(el) { el.classList.remove('active-item'); });
-    renderCharactersTab();
+    renderCharactersTab(_avatarCache);
     return;
   }
 
