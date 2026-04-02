@@ -376,6 +376,19 @@ export function openCharModal(char) {
   const countryWrap = container.querySelector('#char-country-select');
   if (countryWrap._cleanupTlSelect) countryWrap._cleanupTlSelect();
 
+  // 直接更新国家下拉的显示值和 hidden input，不重新初始化（避免触发城市刷新循环）
+  function _setCountryValue(val) {
+    const hidden = countryWrap.nextElementSibling;
+    hidden.value = val || '';
+    const trig = countryWrap.querySelector('.tl-select-trigger');
+    const valEl = trig ? trig.querySelector('.tl-select-val') : null;
+    const found = countryOptions.find(function(o) { return String(o.value) === String(val); });
+    if (valEl) valEl.textContent = found ? found.label : '无';
+    countryWrap.querySelectorAll('.tl-select-opt').forEach(function(opt) {
+      opt.classList.toggle('selected', String(opt.dataset.val) === String(val));
+    });
+  }
+
   // 城市下拉（根据国家过滤）
   // fixedCityId: 初始化时强制设定的城市（不从 DOM 读，避免读到上一个人物的残留值）
   function refreshCitySelect(countryId, fixedCityId) {
@@ -390,7 +403,16 @@ export function openCharModal(char) {
     // 用户手动切换国家时（fixedCityId 为 undefined），尝试保留当前城市；初始化时用传入值
     const curCityId = fixedCityId !== undefined ? fixedCityId : container.querySelector('#char-city').value;
     const keep = cityOptions.find(function(o) { return o.value === String(curCityId); });
-    initTlSelect(cityWrap, cityOptions, keep ? String(curCityId) : '', null);
+    initTlSelect(cityWrap, cityOptions, keep ? String(curCityId) : '', function(cityVal) {
+      if (!cityVal) return;
+      const city = State.allCities.find(function(c) { return String(c.id) === String(cityVal); });
+      if (!city || !city.country_id) return;
+      const curCountry = container.querySelector('#char-country').value;
+      if (String(curCountry) !== String(city.country_id)) {
+        _setCountryValue(String(city.country_id));
+        refreshCitySelect(String(city.country_id), cityVal);
+      }
+    });
   }
 
   initTlSelect(countryWrap, countryOptions, initCountry ? String(initCountry) : '', function(val) {
