@@ -53,8 +53,10 @@ export function closeModal(modal) {
  * @returns {string} 格式：国家 → 城市
  */
 export function getLocationPath(cityId, allCities, allCountries, countryId) {
-  const city    = cityId    ? allCities.find(c => c.id === cityId)       : null;
-  const country = countryId ? allCountries.find(co => co.id === countryId) : null;
+  const city = cityId ? allCities.find(c => c.id === cityId) : null;
+  const country = countryId
+    ? allCountries.find(co => co.id === countryId)
+    : (city ? allCountries.find(co => co.id === city.country_id) : null);
   return [country?.name, city?.name].filter(Boolean).join(' → ') || '未知';
 }
 
