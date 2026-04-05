@@ -457,7 +457,7 @@ function _openGachaViewer(url, onClose) {
         wrap.innerHTML = `
           <div class="gacha-pending-wrap">
             <img src="${escHtml(url)}" class="gacha-viewer-img gacha-pending-img" draggable="false"/>
-            <div class="gacha-pending-label">猜猜我是谁~</div>
+            <div class="gacha-pending-label">我是谁</div>
           </div>`;
         void wrap.getBoundingClientRect();
         wrap.style.transition = 'transform 0.4s cubic-bezier(0.4,0,0.2,1)';
