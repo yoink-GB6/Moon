@@ -109,6 +109,14 @@ async function _loadImages() {
       url: supaClient.storage.from('avatars').getPublicUrl(f.name).data.publicUrl,
     }));
   } catch (e) { console.error('gacha: load images', e); }
+  // 方案二：图片列表加载完后随机预热 6 张
+  _preloadRandom(6);
+}
+
+function _preloadRandom(n) {
+  if (!_allImages.length) return;
+  const pool = [..._allImages].sort(() => Math.random() - 0.5).slice(0, n);
+  pool.forEach(img => { const i = new Image(); i.src = img.url; });
 }
 
 function _normUrl(url) {
@@ -386,11 +394,27 @@ function _openGachaViewer(url, onClose) {
   }
 
   const char = _charForUrl(url);
-  viewer.innerHTML = `<div class="gacha-vimg-wrap"><img src="${escHtml(url)}" class="gacha-viewer-img" draggable="false"/></div>`;
+  viewer.innerHTML = `
+    <div class="gacha-vimg-wrap">
+      <div class="gacha-img-loading"><div class="gacha-img-ring"></div></div>
+      <img src="${escHtml(url)}" class="gacha-viewer-img" draggable="false" style="opacity:0"/>
+    </div>`;
   viewer.style.display = '';
   viewer.classList.add('show');
 
   const wrap = viewer.querySelector('.gacha-vimg-wrap');
+  const img  = wrap.querySelector('img');
+  const ring = wrap.querySelector('.gacha-img-loading');
+
+  // 图片加载完后淡入，隐藏转圈
+  function _onImgReady() {
+    ring.style.display = 'none';
+    img.style.transition = 'opacity 0.3s';
+    img.style.opacity = '1';
+  }
+  if (img.complete) { _onImgReady(); }
+  else { img.addEventListener('load', _onImgReady, { once: true }); }
+
   // viewer 打开：从现在开始淡出所有笔迹
   _clearStrokesAt = performance.now();
   _startAnim();
