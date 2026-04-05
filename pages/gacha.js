@@ -16,6 +16,7 @@ let _mounted   = false;
 
 let _allImages     = [];
 let _drawnUrls     = new Set();
+let _drawnGroups   = new Set(); // 已抽过的角色名 or 无角色图 url
 let _preloadedUrls = new Set();
 let _charMap       = new Map();
 let _hand          = [];
@@ -62,7 +63,7 @@ export function mount(container) {
 <div class="gacha-page">
   <canvas id="gacha-draw-canvas" class="gacha-draw-canvas"></canvas>
   <div class="gacha-hint" id="gacha-hint">生命、宇宙以及一切</div>
-  <div id="gacha-hand" class="gacha-hand"></div>
+<div id="gacha-hand" class="gacha-hand"></div>
 </div>`;
 
   _canvas = container.querySelector('#gacha-draw-canvas');
@@ -91,7 +92,7 @@ export function unmount() {
   if (viewer)  viewer.classList.remove('show');
 
   if (_drawRafId) { cancelAnimationFrame(_drawRafId); _drawRafId = null; }
-  _allImages = []; _drawnUrls = new Set(); _preloadedUrls = new Set(); _charMap = new Map();
+  _allImages = []; _drawnUrls = new Set(); _drawnGroups = new Set(); _preloadedUrls = new Set(); _charMap = new Map();
   _hand = []; _strokes = []; _pts = []; _particles = []; _drawing = false;
   _animOn = false; _lastParticleT = 0; _cursorPt = null; _loadPromise = null; _locked = false; _clearStrokesAt = 0;
   if (_drawTimer) { clearTimeout(_drawTimer); _drawTimer = null; }
@@ -143,6 +144,17 @@ function _buildCharMap() {
 
 function _charForUrl(url) {
   return _charMap.get(url) || _charMap.get(_normUrl(url)) || null;
+}
+
+// 总可抽格数：每个有角色的算1格，无角色图各算1格
+function _countGroups() {
+  const chars = new Set();
+  let noChar = 0;
+  for (const img of _allImages) {
+    const c = _charForUrl(img.url);
+    if (c) chars.add(c.name); else noChar++;
+  }
+  return chars.size + noChar;
 }
 
 // ── 画布尺寸 ──────────────────────────────────────────────────
@@ -369,11 +381,24 @@ async function _doDraw() {
   if (!_mounted || _locked) return;
   _locked = true;
   if (!_allImages.length) { _locked = false; showToast('暂无图片'); return; }
-  const limit = Math.max(0, _allImages.length - POOL_RESERVE);
-  if (_drawnUrls.size >= limit) { _locked = false; showToast('在等谁呢？'); return; }
+  const limit = Math.max(0, _countGroups() - POOL_RESERVE);
+  if (_drawnGroups.size >= limit) { _locked = false; showToast('在等谁呢？'); return; }
 
-  const available = _allImages.filter(img => !_drawnUrls.has(img.url));
-  const pick      = available[Math.floor(Math.random() * available.length)];
+  // 按角色分组，已抽过的角色整组跳过
+  const groups = new Map();
+  for (const img of _allImages) {
+    const c   = _charForUrl(img.url);
+    const key = c ? c.name : img.url;
+    if (_drawnGroups.has(key)) continue;
+    if (!c && _drawnUrls.has(img.url)) continue;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(img);
+  }
+  const buckets = [...groups.values()];
+  const bucket  = buckets[Math.floor(Math.random() * buckets.length)];
+  const pick    = bucket[Math.floor(Math.random() * bucket.length)];
+  const groupKey = _charForUrl(pick.url)?.name ?? pick.url;
+  _drawnGroups.add(groupKey);
   _drawnUrls.add(pick.url);
   _preloadNext(1);
   _updateHint();
@@ -575,10 +600,10 @@ function _onHandClick(i, el) {
 function _updateHint() {
   const hint = _container?.querySelector('#gacha-hint');
   if (!hint) return;
-  const total = _allImages.length;
+  const total = _countGroups();
   if (!total) { hint.textContent = '暂无图片'; hint.className = 'gacha-hint'; return; }
   const limit     = Math.max(0, total - POOL_RESERVE);
-  const remaining = limit - _drawnUrls.size;
+  const remaining = limit - _drawnGroups.size;
   if (remaining <= 0) {
     hint.textContent = '剩下的不给抽了~';
     hint.className   = 'gacha-hint clickable';
@@ -597,6 +622,7 @@ function _clearCanvas() {
 
 function _reset() {
   _drawnUrls     = new Set();
+  _drawnGroups   = new Set();
   _preloadedUrls = new Set();
   _hand          = [];
   _locked    = false;
