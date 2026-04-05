@@ -14,11 +14,12 @@ let _canvas    = null;
 let _ctx       = null;
 let _mounted   = false;
 
-let _allImages   = [];
-let _drawnUrls   = new Set();
-let _charMap     = new Map();
-let _hand        = [];
-let _loadPromise = null;  // 数据加载 Promise，_doDraw 等它
+let _allImages     = [];
+let _drawnUrls     = new Set();
+let _preloadedUrls = new Set();
+let _charMap       = new Map();
+let _hand          = [];
+let _loadPromise   = null;  // 数据加载 Promise，_doDraw 等它
 
 // 笔迹状态
 let _drawing = false;
@@ -90,7 +91,7 @@ export function unmount() {
   if (viewer)  viewer.classList.remove('show');
 
   if (_drawRafId) { cancelAnimationFrame(_drawRafId); _drawRafId = null; }
-  _allImages = []; _drawnUrls = new Set(); _charMap = new Map();
+  _allImages = []; _drawnUrls = new Set(); _preloadedUrls = new Set(); _charMap = new Map();
   _hand = []; _strokes = []; _pts = []; _particles = []; _drawing = false;
   _animOn = false; _lastParticleT = 0; _cursorPt = null; _loadPromise = null; _locked = false; _clearStrokesAt = 0;
   if (_drawTimer) { clearTimeout(_drawTimer); _drawTimer = null; }
@@ -115,8 +116,13 @@ async function _loadImages() {
 
 function _preloadRandom(n) {
   if (!_allImages.length) return;
-  const pool = [..._allImages].sort(() => Math.random() - 0.5).slice(0, n);
-  pool.forEach(img => { const i = new Image(); i.src = img.url; });
+  const unloaded = _allImages.filter(img => !_preloadedUrls.has(img.url));
+  const pool = unloaded.sort(() => Math.random() - 0.5).slice(0, n);
+  pool.forEach(img => { _preloadedUrls.add(img.url); const i = new Image(); i.src = img.url; });
+}
+
+function _preloadNext(n) {
+  _preloadRandom(n);
 }
 
 function _normUrl(url) {
@@ -369,6 +375,7 @@ async function _doDraw() {
   const available = _allImages.filter(img => !_drawnUrls.has(img.url));
   const pick      = available[Math.floor(Math.random() * available.length)];
   _drawnUrls.add(pick.url);
+  _preloadNext(1);
   _updateHint();
 
   _openGachaViewer(pick.url, () => {
@@ -589,8 +596,9 @@ function _clearCanvas() {
 }
 
 function _reset() {
-  _drawnUrls = new Set();
-  _hand      = [];
+  _drawnUrls     = new Set();
+  _preloadedUrls = new Set();
+  _hand          = [];
   _locked    = false;
   _clearCanvas();
   const hand = _container?.querySelector('#gacha-hand');
