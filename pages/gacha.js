@@ -396,20 +396,21 @@ function _openGachaViewer(url, onClose) {
   // viewer 打开：从现在开始淡出所有笔迹
   _clearStrokesAt = performance.now();
   _startAnim();
-  // 从细条展开进场
+  // 先定在 scaleX(0)，等元素真正渲染后再展开
   wrap.style.transition = 'none';
   wrap.style.transform  = 'scaleX(0)';
-  requestAnimationFrame(() => {
-    wrap.style.transition = 'transform 0.35s cubic-bezier(0.4,0,0.2,1)';
-    wrap.style.transform  = '';
-  });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    wrap.style.transition = 'transform 0.4s cubic-bezier(0.4,0,0.2,1)';
+    wrap.style.transform  = 'scaleX(1)';
+  }));
   let _closed = false;
 
   function collapseAndReveal() {
     if (_closed) return;
     _closed = true;
     if (_viewerAC) { _viewerAC.abort(); _viewerAC = null; }
-    wrap.style.transform = 'scaleX(0)';
+    wrap.style.transition = 'transform 0.25s cubic-bezier(0.4,0,0.2,1)';
+    wrap.style.transform  = 'scaleX(0)';
     wrap.addEventListener('transitionend', function handler() {
       wrap.removeEventListener('transitionend', handler);
       viewer.classList.remove('show');
