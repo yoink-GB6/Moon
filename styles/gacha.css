@@ -128,28 +128,28 @@
   border-radius: 4px;
 }
 
-/* ── 卡背（无角色图片） ─────────────────────────────────────── */
-.gacha-cb-wrap {
-  cursor: pointer;
-  transform-origin: center center;
-  border-radius: 8px;
-  box-shadow: 0 0 0 1px rgba(168, 137, 58, 0.4), 0 12px 60px rgba(0, 0, 0, 0.7);
+/* ── 敬请期待叠层 ───────────────────────────────────────────── */
+.gacha-pending-wrap {
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-.gacha-cb-box {
-  width: 200px;
-  height: 280px;
-  background: #091422;
-  border-radius: 8px;
+.gacha-pending-img {
+  display: block;
+  filter: brightness(0.28);
+}
+
+.gacha-pending-label {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.gacha-vflip-pending {
   font-family: var(--font-title);
   font-size: 22px;
   letter-spacing: .25em;
-  color: rgba(168, 137, 58, 0.55);
+  color: rgba(168, 137, 58, 0.75);
   user-select: none;
+  pointer-events: none;
 }

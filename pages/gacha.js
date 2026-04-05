@@ -86,10 +86,8 @@ export function unmount() {
   window.removeEventListener('resize', _onResize);
 
   // 隐藏挂在 body 上的浮层
-  const viewer   = document.getElementById('gacha-viewer');
-  if (viewer)   viewer.classList.remove('show');
-  const cardBack = document.getElementById('gacha-card-back');
-  if (cardBack) cardBack.classList.remove('show');
+  const viewer = document.getElementById('gacha-viewer');
+  if (viewer)  viewer.classList.remove('show');
 
   if (_drawRafId) { cancelAnimationFrame(_drawRafId); _drawRafId = null; }
   _allImages = []; _drawnUrls = new Set(); _charMap = new Map();
@@ -405,22 +403,40 @@ function _openGachaViewer(url, onClose) {
   }));
   let _closed = false;
 
+  let _flipped = false;  // 无角色图片是否已翻到"敬请期待"面
+
   function collapseAndReveal() {
     if (_closed) return;
-    _closed = true;
-    if (_viewerAC) { _viewerAC.abort(); _viewerAC = null; }
     wrap.style.transition = 'transform 0.25s cubic-bezier(0.4,0,0.2,1)';
     wrap.style.transform  = 'scaleX(0)';
     wrap.addEventListener('transitionend', function handler() {
       wrap.removeEventListener('transitionend', handler);
-      viewer.classList.remove('show');
       if (!_mounted) return;
       if (char) {
+        // 有角色：关闭 viewer，打开人物介绍
+        _closed = true;
+        if (_viewerAC) { _viewerAC.abort(); _viewerAC = null; }
+        viewer.classList.remove('show');
         openCharReadonly(char, undefined, url);
         _animateModalEnter();
         onClose();
+      } else if (!_flipped) {
+        // 无角色第一次点击：换成暗图+敬请期待，再展开
+        _flipped = true;
+        wrap.innerHTML = `
+          <div class="gacha-pending-wrap">
+            <img src="${escHtml(url)}" class="gacha-viewer-img gacha-pending-img" draggable="false"/>
+            <div class="gacha-pending-label">猜猜我是谁~</div>
+          </div>`;
+        void wrap.getBoundingClientRect();
+        wrap.style.transition = 'transform 0.4s cubic-bezier(0.4,0,0.2,1)';
+        wrap.style.transform  = 'scaleX(1)';
       } else {
-        _openCardBack(onClose);
+        // 无角色第二次点击：收入手牌
+        _closed = true;
+        if (_viewerAC) { _viewerAC.abort(); _viewerAC = null; }
+        viewer.classList.remove('show');
+        onClose();
       }
     }, { once: true });
   }
@@ -455,32 +471,6 @@ function _animateModalEnter() {
   });
 }
 
-// 无角色图片 → 展示卡背"敬请期待~"
-function _openCardBack(onClose) {
-  let back = document.getElementById('gacha-card-back');
-  if (!back) {
-    back             = document.createElement('div');
-    back.id          = 'gacha-card-back';
-    back.className   = 'gacha-viewer';
-    document.body.appendChild(back);
-  }
-  back.innerHTML = `<div class="gacha-cb-wrap"><div class="gacha-cb-box"><span class="gacha-vflip-pending">敬请期待~</span></div></div>`;
-  back.style.display = '';
-  back.classList.add('show');
-
-  const wrap        = back.querySelector('.gacha-cb-wrap');
-  wrap.style.transition = 'none';
-  wrap.style.transform  = 'scaleX(0)';
-  requestAnimationFrame(() => {
-    wrap.style.transition = 'transform 0.3s cubic-bezier(0.4,0,0.2,1)';
-    wrap.style.transform  = '';
-  });
-
-  back.addEventListener('click', () => {
-    back.classList.remove('show');
-    if (_mounted) onClose();
-  }, { once: true });
-}
 
 // ── 手牌盘 ────────────────────────────────────────────────────
 const HAND_SPACING = 52; // 固定间距，卡片始终轻微重叠
