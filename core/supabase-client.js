@@ -13,6 +13,11 @@ export function setSyncStatus(status) {
   if (dot) dot.className = status;
 }
 
+// 安全移除 realtime channel（先清引用再 remove，吞掉 subscribing 期间的报错）
+export function safeUnsubscribe(channel) {
+  if (channel) supaClient.removeChannel(channel).catch(() => {});
+}
+
 // 通用错误提示
 export function dbError(action, err) {
   console.error(`[DB] ${action} 失败`, err);

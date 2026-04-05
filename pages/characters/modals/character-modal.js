@@ -261,6 +261,36 @@ export function initTlSelect(wrapEl, options, selectedValue, onChange) {
   wrapEl._cleanupTlSelect = function() { document.removeEventListener('click', onOutside); };
 }
 
+// ── 图片删除三选对话框 ────────────────────────────────────────
+function _imgDeleteDialog() {
+  return new Promise(function(resolve) {
+    let overlay = document.getElementById('img-delete-dialog');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'img-delete-dialog';
+      overlay.className = 'img-delete-dialog';
+      document.body.appendChild(overlay);
+    }
+    overlay.innerHTML =
+      '<div class="img-delete-box">' +
+        '<button class="btn br img-delete-opt" data-v="storage">从图库中删除该图片</button>' +
+        '<button class="btn bn img-delete-opt" data-v="unlink">保留图片仅取消关联</button>' +
+        '<button class="btn bn img-delete-opt" data-v="cancel">取消该操作</button>' +
+      '</div>';
+    overlay.classList.add('show');
+
+    overlay.querySelectorAll('.img-delete-opt').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        overlay.classList.remove('show');
+        resolve(btn.dataset.v);
+      });
+    });
+    overlay.addEventListener('mousedown', function(e) {
+      if (e.target === overlay) { overlay.classList.remove('show'); resolve('cancel'); }
+    }, { once: true });
+  });
+}
+
 // ── 图片列表渲染 ──────────────────────────────────────────────
 
 function _renderImagesGrid(container) {
@@ -277,9 +307,19 @@ function _renderImagesGrid(container) {
     '</div>';
   }).join('');
   grid.querySelectorAll('.char-img-del').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
+    btn.addEventListener('click', async function(e) {
       e.stopPropagation();
       const idx = parseInt(btn.closest('.char-img-thumb').dataset.index);
+      const img = _editImages[idx];
+      const isStorage = _isStorageUrl(img.url || img.preview);
+
+      if (isStorage) {
+        const choice = await _imgDeleteDialog();
+        if (choice === 'cancel') return;
+        if (choice === 'storage') await _deleteStorageUrls([img.url || img.preview]);
+        // choice === 'unlink': 仅取消关联，不删 storage
+      }
+
       _editImages.splice(idx, 1);
       _renderImagesGrid(container);
     });
@@ -324,12 +364,248 @@ export function setupCharModal() {
   container.querySelector('#char-url-input')?.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.preventDefault(); _addUrlImage(); }
   });
+  container.querySelector('#char-library-btn')?.addEventListener('click', function() {
+    _openLibraryPicker(container);
+  });
   container.querySelector('#char-save-btn')?.addEventListener('click', saveCharacter);
   container.querySelector('#char-delete-btn')?.addEventListener('click', deleteCharacter);
   container.querySelector('#char-cancel-btn')?.addEventListener('click', function() { closeModal(modal); });
   let _mdOnModal = false;
   modal.addEventListener('mousedown', function(e) { _mdOnModal = (e.target === modal); });
   modal.addEventListener('mouseup', function(e) { if (_mdOnModal && e.target === modal) closeModal(modal); _mdOnModal = false; });
+}
+
+// ── 图库管理器（批量上传/删除）────────────────────────────────
+export async function openImageManager() {
+  let mgr = document.getElementById('char-img-mgr');
+  if (!mgr) {
+    mgr = document.createElement('div');
+    mgr.id = 'char-img-mgr';
+    mgr.className = 'char-img-mgr';
+    document.body.appendChild(mgr);
+  }
+
+  mgr.innerHTML =
+    '<div class="char-img-mgr-box" onmousedown="event.stopPropagation()">' +
+      '<div class="char-img-mgr-hdr">' +
+        '<span>图库管理</span>' +
+        '<div style="display:flex;gap:8px;align-items:center">' +
+          '<button class="btn bp" id="img-mgr-upload-btn">📁 上传文件</button>' +
+          '<input type="file" id="img-mgr-file-input" accept="image/*" multiple style="display:none"/>' +
+          '<button class="btn bn" id="img-mgr-url-btn">🔗 URL导入</button>' +
+          '<button class="char-library-close" id="img-mgr-close">✕</button>' +
+        '</div>' +
+      '</div>' +
+      '<div id="img-mgr-url-row" style="display:none">' +
+        '<textarea id="img-mgr-url-input" rows="3" placeholder="每行一个图片 URL..." style="width:100%;box-sizing:border-box;resize:vertical;font-size:12px;padding:7px 9px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;outline:none"></textarea>' +
+        '<div style="display:flex;justify-content:flex-end;margin-top:6px">' +
+          '<button class="btn bp" id="img-mgr-url-confirm">导入</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="char-img-mgr-grid" id="img-mgr-grid"><div class="char-images-empty">加载中…</div></div>' +
+    '</div>';
+
+  mgr.classList.add('show');
+
+  async function _renderMgr() {
+    const grid = mgr.querySelector('#img-mgr-grid');
+    grid.innerHTML = '<div class="char-images-empty">加载中…</div>';
+
+    let files = [];
+    try {
+      const { data, error } = await supaClient.storage.from('avatars').list('', { limit: 300 });
+      if (!error && data) {
+        const re = /\.(jpe?g|png|gif|webp|avif)$/i;
+        files = data.filter(f => re.test(f.name));
+      }
+    } catch (e) { grid.innerHTML = '<div class="char-images-empty">加载失败</div>'; return; }
+
+    if (!files.length) { grid.innerHTML = '<div class="char-images-empty">暂无图片</div>'; return; }
+
+    // 建立 filename → 关联角色名 的映射
+    const filenameToChar = new Map();
+    State.allChars.forEach(function(char) {
+      parseAvatarUrls(char.avatar_url).forEach(function(url) {
+        if (_isStorageUrl(url)) filenameToChar.set(_storageFilename(url), char.name);
+      });
+    });
+
+    grid.innerHTML = files.map(function(f) {
+      const url  = supaClient.storage.from('avatars').getPublicUrl(f.name).data.publicUrl;
+      const who  = filenameToChar.get(f.name);
+      return '<div class="char-img-mgr-item" data-filename="' + escHtml(f.name) + '">' +
+        '<img src="' + escHtml(url) + '" loading="lazy"/>' +
+        (who ? '<div class="char-img-mgr-tag">' + escHtml(who) + '</div>' : '') +
+        '<button class="char-img-mgr-del" title="删除">✕</button>' +
+      '</div>';
+    }).join('');
+
+    grid.querySelectorAll('.char-img-mgr-del').forEach(function(btn) {
+      btn.addEventListener('click', async function(e) {
+        e.stopPropagation();
+        const item     = btn.closest('.char-img-mgr-item');
+        const filename = item.dataset.filename;
+        const who      = filenameToChar.get(filename);
+        const msg      = who
+          ? '确定从图库删除该图片？它当前关联了角色「' + who + '」。'
+          : '确定从图库删除该图片？';
+        if (!confirmDialog(msg)) return;
+        const { error } = await supaClient.storage.from('avatars').remove([filename]);
+        if (error) { showToast('删除失败'); return; }
+        showToast('已删除');
+        _renderMgr();
+      });
+    });
+  }
+
+  _renderMgr();
+
+  mgr.querySelector('#img-mgr-upload-btn').addEventListener('click', function() {
+    mgr.querySelector('#img-mgr-file-input').click();
+  });
+
+  mgr.querySelector('#img-mgr-file-input').addEventListener('change', async function(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    showToast('上传中…');
+    for (const file of files) {
+      const ext      = file.name.split('.').pop();
+      const filename = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.' + ext;
+      const { error } = await supaClient.storage.from('avatars').upload(filename, file, { upsert: false });
+      if (error) { showToast('上传失败：' + file.name); }
+    }
+    e.target.value = '';
+    showToast('上传完成');
+    _renderMgr();
+  });
+
+  mgr.querySelector('#img-mgr-url-btn').addEventListener('click', function() {
+    const row = mgr.querySelector('#img-mgr-url-row');
+    row.style.display = row.style.display === 'none' ? 'block' : 'none';
+    if (row.style.display !== 'none') mgr.querySelector('#img-mgr-url-input')?.focus();
+  });
+
+  mgr.querySelector('#img-mgr-url-confirm').addEventListener('click', async function() {
+    const textarea = mgr.querySelector('#img-mgr-url-input');
+    const urls = (textarea.value || '').split('\n').map(s => s.trim()).filter(Boolean);
+    if (!urls.length) return;
+    showToast('导入中…');
+    const mimeExt = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp', 'image/avif': 'avif' };
+    let ok = 0, fail = 0;
+    for (const url of urls) {
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('fetch failed');
+        const blob = await resp.blob();
+        const ext  = mimeExt[blob.type] || 'jpg';
+        const filename = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.' + ext;
+        const { error } = await supaClient.storage.from('avatars').upload(filename, blob, { upsert: false, contentType: blob.type });
+        if (error) throw error;
+        ok++;
+      } catch (_) { fail++; }
+    }
+    textarea.value = '';
+    mgr.querySelector('#img-mgr-url-row').style.display = 'none';
+    showToast('导入完成：' + ok + ' 成功' + (fail ? '，' + fail + ' 失败' : ''));
+    _renderMgr();
+  });
+
+  mgr.querySelector('#img-mgr-close').addEventListener('click', function() {
+    mgr.classList.remove('show');
+  });
+  mgr.addEventListener('mousedown', function(e) {
+    if (e.target === mgr) mgr.classList.remove('show');
+  });
+}
+
+// ── 图库选择器 ────────────────────────────────────────────────
+async function _openLibraryPicker(container) {
+  // 获取所有 storage 图片
+  let allFiles = [];
+  try {
+    const { data, error } = await supaClient.storage.from('avatars').list('', { limit: 300 });
+    if (!error && data) {
+      const re = /\.(jpe?g|png|gif|webp|avif)$/i;
+      allFiles = data.filter(f => re.test(f.name));
+    }
+  } catch (e) { showToast('图库加载失败'); return; }
+
+  if (!allFiles.length) { showToast('图库暂无图片'); return; }
+
+  // 已被其他角色关联的 URL 集合（不含当前编辑角色自己的图片）
+  const usedFilenames = new Set();
+  const editingId = State.editingCharId;
+  State.allChars.forEach(function(char) {
+    if (char.id === editingId) return;
+    parseAvatarUrls(char.avatar_url).forEach(function(url) {
+      if (_isStorageUrl(url)) usedFilenames.add(_storageFilename(url));
+    });
+  });
+
+  const available = allFiles.filter(f => !usedFilenames.has(f.name));
+  if (!available.length) { showToast('所有图库图片均已关联角色'); return; }
+
+  // 构建 picker overlay
+  let picker = document.getElementById('char-library-picker');
+  if (!picker) {
+    picker = document.createElement('div');
+    picker.id = 'char-library-picker';
+    picker.className = 'char-library-picker';
+    document.body.appendChild(picker);
+  }
+
+  // 当前编辑列表中已有的 URL（含自身角色的图片）
+  const alreadyAdded = new Set(_editImages.map(function(img) { return img.url || img.preview; }));
+
+  picker.innerHTML =
+    '<div class="char-library-box" onmousedown="event.stopPropagation()">' +
+      '<div class="char-library-hdr">' +
+        '<span>从图库选择</span>' +
+        '<button class="char-library-close">✕</button>' +
+      '</div>' +
+      '<div class="char-library-grid" id="char-library-grid">' +
+        available.map(function(f) {
+          const url = supaClient.storage.from('avatars').getPublicUrl(f.name).data.publicUrl;
+          const selected = alreadyAdded.has(url);
+          return '<div class="char-library-item' + (selected ? ' selected' : '') + '" data-url="' + escHtml(url) + '" data-selected="' + selected + '">' +
+            '<img src="' + escHtml(url) + '" loading="lazy"/>' +
+            (selected ? '<div class="char-library-check">✓</div>' : '') +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+
+  picker.classList.add('show');
+
+  picker.querySelector('.char-library-close').addEventListener('click', function() {
+    picker.classList.remove('show');
+  });
+  picker.addEventListener('mousedown', function(e) {
+    if (e.target === picker) picker.classList.remove('show');
+  });
+
+  picker.querySelectorAll('.char-library-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      const url = item.dataset.url;
+      if (item.dataset.selected === 'true') {
+        // 取消选中：从编辑列表移除
+        const idx = _editImages.findIndex(function(img) { return (img.url || img.preview) === url; });
+        if (idx !== -1) _editImages.splice(idx, 1);
+        item.dataset.selected = 'false';
+        item.classList.remove('selected');
+        const check = item.querySelector('.char-library-check');
+        if (check) check.remove();
+        _renderImagesGrid(container);
+      } else {
+        // 选中：加入编辑列表
+        _editImages.push({ type: 'existing', url: url, preview: url, file: null });
+        item.dataset.selected = 'true';
+        item.classList.add('selected');
+        item.insertAdjacentHTML('beforeend', '<div class="char-library-check">✓</div>');
+        _renderImagesGrid(container);
+      }
+    });
+  });
 }
 
 // ── openCharModal ─────────────────────────────────────────────

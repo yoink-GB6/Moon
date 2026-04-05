@@ -6,12 +6,7 @@
   padding:40px clamp(20px, 6vw, 100px);
   overflow-y:auto;height:100%;
   position:relative;box-sizing:border-box;
-  scrollbar-width:thin;scrollbar-color:rgba(168,137,58,.2) transparent;
 }
-.page-home::-webkit-scrollbar{width:4px}
-.page-home::-webkit-scrollbar-track{background:transparent}
-.page-home::-webkit-scrollbar-thumb{background:rgba(168,137,58,.2);border-radius:2px}
-.page-home::-webkit-scrollbar-thumb:hover{background:rgba(168,137,58,.4)}
 
 /* 编辑按钮悬浮右上角 */
 .home-md-edit-btn{position:absolute;top:32px;right:32px}

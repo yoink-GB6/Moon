@@ -1,24 +1,30 @@
 // pages/home.js
 // 主页：全 Markdown 可编辑文档
 
-import { supaClient, setSyncStatus, dbError } from '../core/supabase-client.js';
+import { supaClient, setSyncStatus, dbError, safeUnsubscribe } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { showToast } from '../core/ui.js';
 
 const KEY = 'home_md';
 let _md = '';
 let _container = null;
+let _channel = null;
+let _unsubAuth = null;
 
 export async function mount(container) {
   _container = container;
   container.innerHTML = _skeleton();
   _bindEvents(container);
-  onAuthChange(() => _refresh());
+  if (_unsubAuth) _unsubAuth();
+  _unsubAuth = onAuthChange(() => _refresh());
   await _fetch();
   _subscribe();
 }
 
-export function unmount() {}
+export function unmount() {
+  safeUnsubscribe(_channel); _channel = null;
+  if (_unsubAuth) { _unsubAuth(); _unsubAuth = null; }
+}
 
 // ── 骨架 ─────────────────────────────────────────────
 function _skeleton() {
@@ -167,7 +173,8 @@ async function _fetch() {
 }
 
 function _subscribe() {
-  supaClient.channel('home-md')
+  safeUnsubscribe(_channel); _channel = null;
+  _channel = supaClient.channel('home-md')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'site_content' }, payload => {
       if (payload.new?.key === KEY) {
         _md = payload.new.value || '';

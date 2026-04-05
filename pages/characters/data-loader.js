@@ -1,7 +1,7 @@
 // pages/characters/data-loader.js
 // 数据加载和实时同步
 
-import { supaClient, setSyncStatus } from '../../core/supabase-client.js';
+import { supaClient, setSyncStatus, safeUnsubscribe } from '../../core/supabase-client.js';
 import * as State from './state.js';
 
 /**
@@ -35,30 +35,33 @@ export async function loadAllData() {
  * 订阅实时更新
  */
 export function subscribeRealtime(onUpdate) {
+  // 先清理可能残留的旧 channel，避免重复注册
+  unsubscribeRealtime();
+
   // 人物表监听
   const charsChannel = supaClient.channel('chars-intro')
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: 'characters' }, 
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'characters' },
       () => loadAllData().then(onUpdate)
     )
     .subscribe();
-  
+
   // 地理表监听
   const geoChannel = supaClient.channel('geo-data')
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: 'countries' }, 
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'countries' },
       () => loadAllData().then(onUpdate)
     )
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: 'cities' }, 
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'cities' },
       () => loadAllData().then(onUpdate)
     )
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: 'landmarks' }, 
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'landmarks' },
       () => loadAllData().then(onUpdate)
     )
     .subscribe();
-  
+
   State.setCharsChannel(charsChannel);
   State.setGeoChannel(geoChannel);
 }
@@ -67,6 +70,10 @@ export function subscribeRealtime(onUpdate) {
  * 取消订阅
  */
 export function unsubscribeRealtime() {
-  if (State.charsChannel) supaClient.removeChannel(State.charsChannel);
-  if (State.geoChannel) supaClient.removeChannel(State.geoChannel);
+  const cc = State.charsChannel;
+  const gc = State.geoChannel;
+  State.setCharsChannel(null);
+  State.setGeoChannel(null);
+  safeUnsubscribe(cc);
+  safeUnsubscribe(gc);
 }

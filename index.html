@@ -25,6 +25,7 @@
 <link rel="stylesheet" href="styles/timeline.css">
 <link rel="stylesheet" href="styles/characters.css">
 <link rel="stylesheet" href="styles/library.css">
+<link rel="stylesheet" href="styles/gacha.css">
 <link rel="stylesheet" href="styles/responsive.css">
 
 </head>
@@ -97,10 +98,22 @@ const ROUTES = [
     loader: () => import('./pages/home.js?v='+_V),
   },
   {
+    id: 'geo',
+    label: '🏳 国家',
+    icon: '🏳',
+    loader: () => import('./pages/geo.js?v='+_V),
+  },
+  {
     id: 'characters',
-    label: '☲ 世界观及人物',
+    label: '☲ 人物',
     icon: '☲',
     loader: () => import('./pages/characters.js?v='+_V),
+  },
+  {
+    id: 'timeline',
+    label: '⏱ 年龄轴',
+    icon: '⏱',
+    loader: () => import('./pages/timeline.js?v='+_V),
   },
   {
     id: 'library',
@@ -109,10 +122,10 @@ const ROUTES = [
     loader: () => import('./pages/library.js?v='+_V),
   },
   {
-    id: 'timeline',
-    label: '⏱ 时间轴',
-    icon: '⏱',
-    loader: () => import('./pages/timeline.js?v='+_V),
+    id: 'gacha',
+    label: '✦ 抽卡',
+    icon: '✦',
+    loader: () => import('./pages/gacha.js?v='+_V),
   },
 ];
 

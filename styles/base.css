@@ -34,7 +34,11 @@
   --font-body:    'PingFang SC','Microsoft YaHei UI','Microsoft YaHei','Hiragino Sans GB',system-ui,sans-serif;
   --font-title:   'Palatino Linotype','Palatino','Book Antiqua','Georgia',serif;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;scrollbar-width:thin;scrollbar-color:rgba(168,137,58,.2) transparent}
+*::-webkit-scrollbar{width:4px;height:4px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:rgba(168,137,58,.2);border-radius:2px}
+*::-webkit-scrollbar-thumb:hover{background:rgba(168,137,58,.4)}
 html,body{height:100%;overflow:hidden}
 body{font-family:var(--font-body);background:var(--bg);color:var(--text)}
 

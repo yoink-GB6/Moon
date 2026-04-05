@@ -1,7 +1,7 @@
 // pages/library.js
 // 指令集页面：支持标签筛选和权限管理
 
-import { supaClient, setSyncStatus, dbError } from '../core/supabase-client.js';
+import { supaClient, setSyncStatus, dbError, safeUnsubscribe } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { showToast, escHtml, confirmDialog, bindPanelToggle } from '../core/ui.js';
 
@@ -22,8 +22,10 @@ let isLibraryEditable = false;
 const LIBRARY_PASSWORD = 'y';  // Simple password for library editing
 let _pressState = null;        // 模块级，供 unmount 清理长按定时器
 let _unsubAuth = null;         // 模块级，供 unmount 取消 auth 订阅
+let _libMounted = false;
 
 export async function mount(container) {
+  _libMounted = true;
   pageContainer = container;  // Save container reference
   container.innerHTML = buildHTML();
   bindControls(container);
@@ -41,9 +43,10 @@ export async function mount(container) {
 
 export function unmount() {
   // 清理长按定时器，防止导航走后定时器仍触发
+  _libMounted = false;
   if (_pressState?.timer) { clearTimeout(_pressState.timer); _pressState.timer = null; }
   if (_unsubAuth) { _unsubAuth(); _unsubAuth = null; }
-  realtimeCh && supaClient.removeChannel(realtimeCh);
+  safeUnsubscribe(realtimeCh); realtimeCh = null;
 
   // Security: Clear decrypted content cache on unmount
   items.forEach(item => {
@@ -459,7 +462,12 @@ async function fetchAll() {
     renderTagList(document.querySelector('#lib-tag-list'));
     renderGrid(document.querySelector('.lib-layout'));
     setSyncStatus('ok');
-  } catch(e) { dbError('加载指令集', e); }
+  } catch(e) {
+    if (!_libMounted) return;
+    setSyncStatus('err');
+    showToast('⚠️ 加载指令集失败，请刷新页面');
+    console.error('[DB] 加载指令集失败', e);
+  }
 }
 
 function sortItems() {
@@ -1123,6 +1131,7 @@ async function deleteItem(container) {
 
 
 function subscribeRealtime() {
+  safeUnsubscribe(realtimeCh); realtimeCh = null;
   realtimeCh = supaClient.channel('library-page')
     .on('postgres_changes', {event:'*', schema:'public', table:'library_items'}, () => fetchAll())
     .subscribe();

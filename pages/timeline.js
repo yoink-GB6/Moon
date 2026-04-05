@@ -1,7 +1,7 @@
 // pages/timeline.js
 // 人物年龄时间轴页面模块
 
-import { supaClient, setSyncStatus, dbError } from '../core/supabase-client.js';
+import { supaClient, setSyncStatus, dbError, safeUnsubscribe } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { showToast, escHtml, confirmDialog, bindPanelToggle } from '../core/ui.js';
 
@@ -59,8 +59,8 @@ export async function mount(container) {
 
 export function unmount() {
   resizeObserver?.disconnect();
-  realtimeChannel && supaClient.removeChannel(realtimeChannel);
-  if (authUnsub) { /* auth listeners are cumulative; keep small list */ }
+  safeUnsubscribe(realtimeChannel); realtimeChannel = null;
+  if (authUnsub) { authUnsub(); authUnsub = null; }
   clearTimeout(cfgTimer);
   clearTimeout(lpTimer);
 }
@@ -731,6 +731,7 @@ function saveConfigDebounced() {
 
 
 function subscribeRealtime() {
+  safeUnsubscribe(realtimeChannel); realtimeChannel = null;
   realtimeChannel = supaClient.channel('timeline-data')
     .on('postgres_changes',{event:'*',schema:'public',table:'characters'},()=>fetchAll())
     .on('postgres_changes',{event:'*',schema:'public',table:'timeline_config'},payload=>{

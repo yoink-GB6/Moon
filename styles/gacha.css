@@ -1,0 +1,155 @@
+/* ── 抽卡页 ─────────────────────────────────────────────────── */
+
+.gacha-page {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── 绘制画布（全页面覆盖，z-index 最低） ───────────────────── */
+.gacha-draw-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+  z-index: 1;
+}
+
+/* ── 提示文字 ───────────────────────────────────────────────── */
+.gacha-hint {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(168, 137, 58, 0.38);
+  font-size: 12px;
+  pointer-events: none;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  user-select: none;
+  z-index: 3;
+}
+
+.gacha-hint.clickable {
+  pointer-events: auto;
+  cursor: pointer;
+  color: rgba(168, 137, 58, 0.65);
+}
+
+.gacha-hint.clickable:hover {
+  color: rgba(168, 137, 58, 0.9);
+}
+
+/* ── 手牌区（z-index 高于画布，接管底部点击） ───────────────── */
+.gacha-hand {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 176px;
+  z-index: 2;
+  overflow-x: auto;
+  overflow-y: visible;
+  cursor: grab;
+}
+
+.gacha-hand:active { cursor: grabbing; }
+
+.gacha-hand-inner {
+  position: relative;
+  height: 100%;
+}
+
+.gacha-hcard {
+  position: absolute;
+  bottom: 0;
+  width: 88px;
+  height: 124px;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid rgba(168, 137, 58, 0.38);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+  transform-origin: bottom center;
+  transition: bottom .2s ease, box-shadow .2s ease;
+}
+
+.gacha-hcard img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.gacha-hcard:hover {
+  bottom: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+}
+
+.gacha-hcard.active {
+  bottom: 40px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75), 0 0 12px rgba(168, 137, 58, 0.25);
+  border-color: rgba(168, 137, 58, 0.7);
+}
+
+/* ── 全屏查看器（图片 + 卡背共用同一个 overlay 样式） ───────── */
+.gacha-viewer {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 515;
+  background: rgba(0, 0, 0, 0.82);
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+
+.gacha-viewer.show {
+  display: flex;
+}
+
+/* 图片容器：负责 scaleX 折叠动画 */
+.gacha-vimg-wrap {
+  cursor: pointer;
+  transform-origin: center center;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(168, 137, 58, 0.25), 0 12px 60px rgba(0, 0, 0, 0.7);
+}
+
+.gacha-viewer-img {
+  max-width: 90vw;
+  max-height: 90vh;
+  display: block;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+/* ── 卡背（无角色图片） ─────────────────────────────────────── */
+.gacha-cb-wrap {
+  cursor: pointer;
+  transform-origin: center center;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(168, 137, 58, 0.4), 0 12px 60px rgba(0, 0, 0, 0.7);
+}
+
+.gacha-cb-box {
+  width: 200px;
+  height: 280px;
+  background: #091422;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gacha-vflip-pending {
+  font-family: var(--font-title);
+  font-size: 22px;
+  letter-spacing: .25em;
+  color: rgba(168, 137, 58, 0.55);
+  user-select: none;
+}
