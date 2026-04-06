@@ -14,13 +14,13 @@ let _canvas    = null;
 let _ctx       = null;
 let _mounted   = false;
 
-let _allImages     = [];
-let _drawnUrls     = new Set();
-let _drawnGroups   = new Set(); // 已抽过的角色名 or 无角色图 url
-let _preloadedUrls = new Set();
-let _charMap       = new Map();
-let _hand          = [];
-let _loadPromise   = null;  // 数据加载 Promise，_doDraw 等它
+let _allImages   = [];
+let _charMap     = new Map();
+let _hand        = [];
+let _loadPromise = null;  // 数据加载 Promise，_doDraw 等它
+
+let _drawQueue  = [];  // 洗好牌的抽卡队列，每格一张图
+let _queueTotal = 0;   // 建队时的总格数（用于 hint 显示）
 
 // 笔迹状态
 let _drawing = false;
@@ -77,6 +77,8 @@ export function mount(container) {
   _loadPromise = Promise.all([loadAllData(), _loadImages()]).then(() => {
     if (!_mounted) return;
     _buildCharMap();
+    _buildQueue();
+    _preloadQueue(6);
     _updateHint();
   });
 }
@@ -92,7 +94,7 @@ export function unmount() {
   if (viewer)  viewer.classList.remove('show');
 
   if (_drawRafId) { cancelAnimationFrame(_drawRafId); _drawRafId = null; }
-  _allImages = []; _drawnUrls = new Set(); _drawnGroups = new Set(); _preloadedUrls = new Set(); _charMap = new Map();
+  _allImages = []; _charMap = new Map(); _drawQueue = []; _queueTotal = 0;
   _hand = []; _strokes = []; _pts = []; _particles = []; _drawing = false;
   _animOn = false; _lastParticleT = 0; _cursorPt = null; _loadPromise = null; _locked = false; _clearStrokesAt = 0;
   if (_drawTimer) { clearTimeout(_drawTimer); _drawTimer = null; }
@@ -111,19 +113,27 @@ async function _loadImages() {
       url: supaClient.storage.from('avatars').getPublicUrl(f.name).data.publicUrl,
     }));
   } catch (e) { console.error('gacha: load images', e); }
-  // 方案二：图片列表加载完后随机预热 6 张
-  _preloadRandom(6);
 }
 
-function _preloadRandom(n) {
-  if (!_allImages.length) return;
-  const unloaded = _allImages.filter(img => !_preloadedUrls.has(img.url));
-  const pool = unloaded.sort(() => Math.random() - 0.5).slice(0, n);
-  pool.forEach(img => { _preloadedUrls.add(img.url); const i = new Image(); i.src = img.url; });
+// 洗牌：按角色分组，每组随机选一张，打乱顺序，去掉末尾 POOL_RESERVE 格
+function _buildQueue() {
+  const groups = new Map();
+  for (const img of _allImages) {
+    const c   = _charForUrl(img.url);
+    const key = c ? c.name : img.url;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(img);
+  }
+  const picks = [...groups.values()]
+    .map(imgs => imgs[Math.floor(Math.random() * imgs.length)])
+    .sort(() => Math.random() - 0.5);
+  _drawQueue  = picks.slice(0, Math.max(0, picks.length - POOL_RESERVE));
+  _queueTotal = _drawQueue.length;
 }
 
-function _preloadNext(n) {
-  _preloadRandom(n);
+// 预热队列前 n 张（浏览器自动去重，不会重复请求）
+function _preloadQueue(n) {
+  _drawQueue.slice(0, n).forEach(img => { new Image().src = img.url; });
 }
 
 function _normUrl(url) {
@@ -146,16 +156,6 @@ function _charForUrl(url) {
   return _charMap.get(url) || _charMap.get(_normUrl(url)) || null;
 }
 
-// 总可抽格数：每个有角色的算1格，无角色图各算1格
-function _countGroups() {
-  const chars = new Set();
-  let noChar = 0;
-  for (const img of _allImages) {
-    const c = _charForUrl(img.url);
-    if (c) chars.add(c.name); else noChar++;
-  }
-  return chars.size + noChar;
-}
 
 // ── 画布尺寸 ──────────────────────────────────────────────────
 function _resizeCanvas() {
@@ -205,8 +205,12 @@ function _onUp() {
   _drawing  = false;
   _cursorPt = null;
   if (_drawRafId) { cancelAnimationFrame(_drawRafId); _drawRafId = null; }
-  if (_pathLen < MIN_STROKE) { _pts = []; _redraw(); _startAnim(); }
-  else _commitStroke();
+  if (_pathLen < MIN_STROKE) {
+    _pts = []; _redraw();
+    // 有已提交笔迹时，点一下视为确认，直接触发抽卡
+    if (_strokes.length && !_locked) _doDraw();
+    else _startAnim();
+  } else _commitStroke();
   // 停笔 1.2s 后没新笔就淡出所有笔迹
   if (_idleTimer) clearTimeout(_idleTimer);
   _idleTimer = setTimeout(() => {
@@ -380,27 +384,9 @@ async function _doDraw() {
   if (_loadPromise) await _loadPromise;
   if (!_mounted || _locked) return;
   _locked = true;
-  if (!_allImages.length) { _locked = false; showToast('暂无图片'); return; }
-  const limit = Math.max(0, _countGroups() - POOL_RESERVE);
-  if (_drawnGroups.size >= limit) { _locked = false; showToast('在等谁呢？'); return; }
-
-  // 按角色分组，已抽过的角色整组跳过
-  const groups = new Map();
-  for (const img of _allImages) {
-    const c   = _charForUrl(img.url);
-    const key = c ? c.name : img.url;
-    if (_drawnGroups.has(key)) continue;
-    if (!c && _drawnUrls.has(img.url)) continue;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(img);
-  }
-  const buckets = [...groups.values()];
-  const bucket  = buckets[Math.floor(Math.random() * buckets.length)];
-  const pick    = bucket[Math.floor(Math.random() * bucket.length)];
-  const groupKey = _charForUrl(pick.url)?.name ?? pick.url;
-  _drawnGroups.add(groupKey);
-  _drawnUrls.add(pick.url);
-  _preloadNext(1);
+  if (!_drawQueue.length) { _locked = false; showToast('暂无图片'); return; }
+  const pick = _drawQueue.shift();
+  _preloadQueue(1);  // 补预热下一张
   _updateHint();
 
   _openGachaViewer(pick.url, () => {
@@ -600,10 +586,8 @@ function _onHandClick(i, el) {
 function _updateHint() {
   const hint = _container?.querySelector('#gacha-hint');
   if (!hint) return;
-  const total = _countGroups();
-  if (!total) { hint.textContent = '暂无图片'; hint.className = 'gacha-hint'; return; }
-  const limit     = Math.max(0, total - POOL_RESERVE);
-  const remaining = limit - _drawnGroups.size;
+  if (!_queueTotal) { hint.textContent = '暂无图片'; hint.className = 'gacha-hint'; return; }
+  const remaining = _drawQueue.length;
   if (remaining <= 0) {
     hint.textContent = '剩下的不给抽了~';
     hint.className   = 'gacha-hint clickable';
@@ -621,11 +605,10 @@ function _clearCanvas() {
 }
 
 function _reset() {
-  _drawnUrls     = new Set();
-  _drawnGroups   = new Set();
-  _preloadedUrls = new Set();
-  _hand          = [];
-  _locked    = false;
+  _hand   = [];
+  _locked = false;
+  _buildQueue();
+  _preloadQueue(6);
   _clearCanvas();
   const hand = _container?.querySelector('#gacha-hand');
   if (hand) hand.innerHTML = '';
