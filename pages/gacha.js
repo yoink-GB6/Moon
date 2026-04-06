@@ -384,7 +384,7 @@ async function _doDraw() {
   if (_loadPromise) await _loadPromise;
   if (!_mounted || _locked) return;
   _locked = true;
-  if (!_drawQueue.length) { _locked = false; showToast('暂无图片'); return; }
+  if (!_drawQueue.length) { _locked = false; showToast('在等谁~'); return; }
   const pick = _drawQueue.shift();
   _preloadQueue(1);  // 补预热下一张
   _updateHint();
@@ -586,7 +586,7 @@ function _onHandClick(i, el) {
 function _updateHint() {
   const hint = _container?.querySelector('#gacha-hint');
   if (!hint) return;
-  if (!_queueTotal) { hint.textContent = '暂无图片'; hint.className = 'gacha-hint'; return; }
+  if (!_queueTotal) { hint.textContent = '在等谁~'; hint.className = 'gacha-hint'; return; }
   const remaining = _drawQueue.length;
   if (remaining <= 0) {
     hint.textContent = '剩下的不给抽了~';
