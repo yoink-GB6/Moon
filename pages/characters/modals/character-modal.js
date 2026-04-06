@@ -452,6 +452,16 @@ export async function openImageManager() {
         if (!confirmDialog(msg)) return;
         const { error } = await supaClient.storage.from('avatars').remove([filename]);
         if (error) { showToast('删除失败'); return; }
+        // 同步解除关联：把这张图从角色的 avatar_url 里移除
+        if (who) {
+          const char    = State.allChars.find(c => c.name === who);
+          const pubUrl  = supaClient.storage.from('avatars').getPublicUrl(filename).data.publicUrl;
+          const newUrls = parseAvatarUrls(char?.avatar_url)
+            .filter(u => u !== pubUrl && !u.endsWith('/' + filename));
+          const newVal  = newUrls.length ? JSON.stringify(newUrls) : null;
+          await supaClient.from('characters').update({ avatar_url: newVal }).eq('id', char.id);
+          if (char) char.avatar_url = newVal;
+        }
         showToast('已删除');
         _renderMgr();
       });

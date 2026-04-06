@@ -112,7 +112,7 @@ function bindSearchResults() {
       );
     });
   });
-  
+
   // 选择城市
   results.querySelectorAll('[data-select-city]').forEach(item => {
     item.addEventListener('click', () => {

@@ -121,6 +121,7 @@ function bindSidePanel() {
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.trim().toLowerCase();
       if (searchClear) searchClear.style.display = q ? 'block' : 'none';
+      _geoFilter = null;
       _filterCharGrid(null);
       renderPanelList(q);
     });
@@ -129,10 +130,40 @@ function bindSidePanel() {
     searchClear.addEventListener('click', () => {
       if (searchInput) { searchInput.value = ''; searchInput.focus(); }
       searchClear.style.display = 'none';
+      _geoFilter = null;
       _filterCharGrid(null);
       renderPanelList('');
     });
   }
+}
+
+let _geoFilter = null; // { type: 'country'|'city', id }
+
+
+function _filterCharGridByGeo() {
+  const container = State.pageContainer;
+  const grid = container.querySelector('#chars-grid');
+  if (!grid) return;
+
+  if (!_geoFilter) { renderCharactersTab(_avatarCache); return; }
+
+  let chars;
+  if (_geoFilter.type === 'city') {
+    chars = State.allChars.filter(c => c.city_id === _geoFilter.id);
+  } else {
+    const cityIds = new Set(State.allCities.filter(c => c.country_id === _geoFilter.id).map(c => c.id));
+    chars = State.allChars.filter(c => c.country_id === _geoFilter.id || cityIds.has(c.city_id));
+  }
+
+  if (!chars.length) { grid.innerHTML = '<div class="intro-empty">该地区暂无人物</div>'; return; }
+  grid.innerHTML = chars.map(char => {
+    const avatarUrl = _avatarCache.get(char.id) || pickRandomUrl(parseAvatarUrls(char.avatar_url));
+    return buildCharCardHTML(char, avatarUrl);
+  }).join('');
+  grid.querySelectorAll('.intro-card').forEach(card => {
+    const char = State.allChars.find(c => c.id === parseInt(card.dataset.id));
+    if (char) bindCharCard(card, char);
+  });
 }
 
 // 模块级头像缓存
@@ -172,6 +203,21 @@ export function refreshCharactersView() {
 }
 
 function _renderCharPanel(list, query, avatarCache) {
+  // 搜索匹配的国家/城市，置顶作为可点击的地理条目
+  const geoItems = [];
+  if (query) {
+    State.allCountries.forEach(function(co) {
+      if (co.name.toLowerCase().includes(query))
+        geoItems.push({ type: 'country', id: co.id, name: co.name, sub: '国家' });
+    });
+    State.allCities.forEach(function(ci) {
+      if (ci.name.toLowerCase().includes(query)) {
+        const co = State.allCountries.find(function(c) { return c.id === ci.country_id; });
+        geoItems.push({ type: 'city', id: ci.id, name: ci.name, sub: co ? co.name : '城市' });
+      }
+    });
+  }
+
   const chars = query
     ? State.allChars.filter(function(c) {
         if (c.name.toLowerCase().includes(query)) return true;
@@ -184,12 +230,21 @@ function _renderCharPanel(list, query, avatarCache) {
       })
     : [...State.allChars];
 
-  if (!chars.length) {
+  if (!geoItems.length && !chars.length) {
     list.innerHTML = '<div class="tl-empty">' + (query ? '无匹配人物' : '暂无人物') + '</div>';
     return;
   }
 
-  list.innerHTML = chars.map(function(c) {
+  const geoHTML = geoItems.map(function(g) {
+    return '<div class="tl-ci tl-ci-geo" data-geo-type="' + g.type + '" data-geo-id="' + g.id + '">' +
+      '<div class="tl-ci-av tl-ci-geo-av">◎</div>' +
+      '<div class="tl-ci-info">' +
+        '<div class="tl-cname">' + escHtml(g.name) + '</div>' +
+        '<div class="tl-cmeta">' + escHtml(g.sub) + ' · 点击筛选</div>' +
+      '</div></div>';
+  }).join('');
+
+  list.innerHTML = geoHTML + chars.map(function(c) {
     const city    = c.city_id    ? State.allCities.find(function(ci) { return ci.id  === c.city_id;    }) : null;
     const country = c.country_id ? State.allCountries.find(function(co) { return co.id === c.country_id; }) : null;
     const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
@@ -212,6 +267,15 @@ function _renderCharPanel(list, query, avatarCache) {
       list.querySelectorAll('.tl-ci').forEach(function(el) { el.classList.remove('active-item'); });
       item.classList.add('active-item');
       _filterCharGrid(id);
+    });
+  });
+
+  list.querySelectorAll('.tl-ci-geo').forEach(function(item) {
+    item.addEventListener('click', function() {
+      list.querySelectorAll('.tl-ci').forEach(function(el) { el.classList.remove('active-item'); });
+      item.classList.add('active-item');
+      _geoFilter = { type: item.dataset.geoType, id: parseInt(item.dataset.geoId) };
+      _filterCharGridByGeo();
     });
   });
 }

@@ -71,6 +71,7 @@
 .intro-body .tl-ci:hover{background:rgba(168,137,58,0.08);border-color:rgba(168,137,58,0.2)}
 .intro-body .tl-ci.active-item{background:rgba(168,137,58,0.12);border-color:var(--accent)}
 .intro-body .tl-ci-av{width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;overflow:hidden}
+.tl-ci-geo-av{background:none !important;border:1px solid var(--border);color:var(--muted) !important;font-size:16px !important;font-weight:400 !important}
 .intro-body .tl-ci-info{flex:1;min-width:0}
 .intro-body .tl-cname{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .intro-body .tl-cmeta{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
