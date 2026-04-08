@@ -15,11 +15,7 @@ let editItemId = null;
 let realtimeCh = null;
 let pageContainer = null; // Store container reference for use in event handlers
 let likedItems = new Set(); // Track liked items in current session (resets on page refresh)
-let unlockedKeys = new Set(); // Track unlocked privacy keys (resets on page refresh)
 
-// Library-specific edit mode (independent from global edit mode)
-let isLibraryEditable = false;
-const LIBRARY_PASSWORD = 'y';  // Simple password for library editing
 let _pressState = null;        // 模块级，供 unmount 清理长按定时器
 let _unsubAuth = null;         // 模块级，供 unmount 取消 auth 订阅
 let _libMounted = false;
@@ -35,8 +31,7 @@ export async function mount(container) {
   _unsubAuth = onAuthChange(() => updateLibraryUI(container));
 
   updateSortButton(container);      // Initialize sort button
-  updateLibraryUI(container);       // Initialize library-specific edit UI
-  updateUnlockedKeysDisplay(container);  // Initialize privacy status
+  updateLibraryUI(container);
   await fetchAll();
   subscribeRealtime();
 }
@@ -47,14 +42,6 @@ export function unmount() {
   if (_pressState?.timer) { clearTimeout(_pressState.timer); _pressState.timer = null; }
   if (_unsubAuth) { _unsubAuth(); _unsubAuth = null; }
   safeUnsubscribe(realtimeCh); realtimeCh = null;
-
-  // Security: Clear decrypted content cache on unmount
-  items.forEach(item => {
-    if (item.privacyLevel === 'private') {
-      delete item.decryptedContent;
-    }
-  });
-  unlockedKeys.clear();
 }
 
 function buildHTML() {
@@ -65,8 +52,7 @@ function buildHTML() {
     <div class="lib-header">
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn bn" id="lib-sort-btn" title="切换排序方式">点赞排序</button>
-        <button class="btn bn" id="lib-unlock-btn"> 添加指令 / 更新tag </button>
-        <button class="btn bp" id="lib-add-btn" style="display:none">＋ 新建</button>
+        <button class="btn bp" id="lib-add-btn">＋ 新建</button>
       </div>
     </div>
     <div class="lib-grid" id="lib-grid"></div>
@@ -84,20 +70,6 @@ function buildHTML() {
     <div class="lib-panel-body">
       <!-- Privacy unlock -->
       <div style="margin-bottom:16px">
-        <div style="font-size:12px;color:#889;margin-bottom:8px">隐私内容解锁</div>
-        <div style="display:flex;gap:8px">
-          <input 
-            id="lib-privacy-input"
-            type="password"
-            placeholder="输入密码解锁..."
-            autocomplete="off"
-            style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px"
-          />
-          <button class="btn bp" id="lib-privacy-unlock" style="padding:8px 16px">解锁</button>
-        </div>
-        <div id="lib-unlocked-keys" style="margin-top:8px;font-size:12px;color:#889"></div>
-      </div>
-      
       <!-- Search box -->
       <div style="margin-bottom:16px">
         <input 
@@ -153,25 +125,6 @@ function buildHTML() {
       <button class="btn bn" id="lib-add-tag-btn">添加</button>
     </div>
 
-    <label style="margin-top:12px;display:flex;align-items:center;gap:8px;cursor:pointer">
-      <input type="checkbox" id="lib-private-checkbox" style="cursor:pointer"/>
-      <span>设为隐私指令（仅输入密码后可见）</span>
-    </label>
-    
-    <div id="lib-privacy-key-group" style="margin-top:8px;display:none">
-      <label>隐私密码</label>
-      <input 
-        id="lib-privacy-key" 
-        type="text" 
-        placeholder="设置解锁密码（支持不同密码）" 
-        autocomplete="off"
-        style="margin-bottom:8px"
-      />
-      <div style="font-size:12px;color:#889">
-        提示：可以为不同的隐私指令设置不同的密码，只有知道密码的人才能看到
-      </div>
-    </div>
-
     <div class="mbtns" style="justify-content:flex-end;margin-top:12px">
       <button class="btn bn" id="lib-modal-cancel">取消</button>
       <button class="btn bp" id="lib-modal-save">保存</button>
@@ -207,32 +160,11 @@ function buildHTML() {
     <div id="lib-preview-meta" style="margin-bottom:12px;font-size:13px;color:#889"></div>
     
     <div class="mbtns" style="justify-content:space-between">
-      <button class="btn bn" id="lib-preview-close">关闭</button>
-      <button class="btn bp" id="lib-preview-copy">复制内容</button>
-    </div>
-  </div>
-</div>
-
-<!-- Password unlock modal (library-specific) -->
-<div id="lib-password-modal" class="tl-modal-overlay">
-  <div class="tl-modal" style="max-width:400px" onmousedown="event.stopPropagation()">
-    <h2>解锁</h2>
-    <p style="color:#889;font-size:13px;margin-bottom:16px">裴献之是公主吗？(y/n)</p>
-    
-    <input 
-      id="lib-password-input" 
-      type="password" 
-      placeholder="输入密码" 
-      autocomplete="off"
-      style="width:100%;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:14px"
-    />
-    <div id="lib-password-error" style="color:#ef4444;font-size:12px;margin-bottom:12px;display:none">
-      密码错误，请重试
-    </div>
-    
-    <div class="mbtns" style="justify-content:flex-end">
-      <button class="btn bn" id="lib-password-cancel">取消</button>
-      <button class="btn bp" id="lib-password-submit">确定</button>
+      <button class="btn bn" id="lib-preview-edit">编辑</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn bn" id="lib-preview-close">关闭</button>
+        <button class="btn bp" id="lib-preview-copy">复制内容</button>
+      </div>
     </div>
   </div>
 </div>`;
@@ -261,6 +193,11 @@ function bindControls(container) {
   _libDupModal.addEventListener('mouseup', e => { if (_mdOnDupModal && e.target === _libDupModal) _dupAction(container, 'cancel'); _mdOnDupModal = false; });
 
   // Preview modal buttons
+  container.querySelector('#lib-preview-edit').addEventListener('click', () => {
+    const item = previewItem;
+    closePreviewModal(container);
+    if (item) openModal(item, container);
+  });
   container.querySelector('#lib-preview-close').addEventListener('click', () => closePreviewModal(container));
   container.querySelector('#lib-preview-copy').addEventListener('click', () => copyFromPreview(container));
   const _libPreviewModal = container.querySelector('#lib-preview-modal');
@@ -274,24 +211,6 @@ function bindControls(container) {
     if (e.key === 'Enter') addNewTag(container);
   });
   
-  // Privacy checkbox toggle
-  container.querySelector('#lib-private-checkbox').addEventListener('change', e => {
-    const keyGroup = container.querySelector('#lib-privacy-key-group');
-    keyGroup.style.display = e.target.checked ? '' : 'none';
-    if (e.target.checked) {
-      setTimeout(() => container.querySelector('#lib-privacy-key').focus(), 100);
-    }
-  });
-
-  // Privacy unlock
-  const privacyInput = container.querySelector('#lib-privacy-input');
-  const privacyUnlockBtn = container.querySelector('#lib-privacy-unlock');
-  
-  privacyUnlockBtn.addEventListener('click', () => unlockPrivateContent(container));
-  privacyInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') unlockPrivateContent(container);
-  });
-
   // Search input
   container.querySelector('#lib-search-input').addEventListener('input', e => {
     searchKeyword = e.target.value.trim();
@@ -382,31 +301,6 @@ function bindControls(container) {
     renderGrid(container.querySelector('.lib-layout'));
   });
 
-  // Unlock button
-  container.querySelector('#lib-unlock-btn').addEventListener('click', () => {
-    if (isLibraryEditable) {
-      // Lock
-      isLibraryEditable = false;
-      updateLibraryUI(container);
-      showToast('🔒 已锁定指令编辑');
-    } else {
-      // Show password modal
-      openPasswordModal(container);
-    }
-  });
-
-  // Password modal
-  container.querySelector('#lib-password-cancel').addEventListener('click', () => closePasswordModal(container));
-  container.querySelector('#lib-password-submit').addEventListener('click', () => submitPassword(container));
-  container.querySelector('#lib-password-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') submitPassword(container);
-    if (e.key === 'Escape') closePasswordModal(container);
-  });
-  const _libPwdModal = container.querySelector('#lib-password-modal');
-  let _mdOnPwdModal = false;
-  _libPwdModal.addEventListener('mousedown', e => { _mdOnPwdModal = (e.target === _libPwdModal); });
-  _libPwdModal.addEventListener('mouseup', e => { if (_mdOnPwdModal && e.target === _libPwdModal) closePasswordModal(container); _mdOnPwdModal = false; });
-
   // Sort buttons
   // Panel toggle
   bindPanelToggle(container, '.lib-panel', '#lib-panel-toggle', '#lib-expand', '#lib-panel-chevron');
@@ -423,23 +317,15 @@ async function fetchAll() {
     
     console.log('Fetched items:', data?.length || 0);
     
-    items = (data || []).map(r => {
-      // Backward compatible: handle missing privacy fields
-      const privacyLevel = r.privacy_level !== undefined ? r.privacy_level : 'public';
-      const privacyKey = r.privacy_key !== undefined ? r.privacy_key : null;
-      
-      return {
-        id: r.id,
-        content: r.content || '',
-        author: r.author || '',
-        tags: r.tags_json ? JSON.parse(r.tags_json) : [],
-        likes: r.likes || 0,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-        privacyLevel: privacyLevel,
-        privacyKey: privacyKey
-      };
-    });
+    items = (data || []).map(r => ({
+      id: r.id,
+      content: r.content || '',
+      author: r.author || '',
+      tags: r.tags_json ? JSON.parse(r.tags_json) : [],
+      likes: r.likes || 0,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }));
     
     // Sort items based on current sortBy method
     sortItems();
@@ -503,7 +389,7 @@ function renderTagList(tagListEl) {
     return;
   }
   
-  const editable = isLibraryEditor();
+  const editable = isEditor();
   
   tagListEl.innerHTML = tags.map(tag => {
     const selected = selectedTags.includes(tag);
@@ -548,7 +434,7 @@ function renderTagList(tagListEl) {
       editBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         const oldTag = el.dataset.tag;
-        renameTag(oldTag, tagListEl);
+        renameTag(oldTag);
       });
     }
     
@@ -558,7 +444,7 @@ function renderTagList(tagListEl) {
       deleteBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         const tag = el.dataset.tag;
-        deleteTag(tag, tagListEl);
+        deleteTag(tag);
       });
     }
   });
@@ -569,18 +455,9 @@ function renderTagList(tagListEl) {
 function renderGrid(container) {
   const grid = container.querySelector('#lib-grid');
   
-  // Step 0: Filter by privacy (only show public + unlocked private items)
-  let filtered = items.filter(item => {
-    // Treat undefined/null as public (for backward compatibility)
-    if (!item.privacyLevel || item.privacyLevel === 'public') return true;
-    if (item.privacyLevel === 'private') {
-      // Check if any unlocked key matches this item
-      return item.decryptedContent !== undefined;
-    }
-    return false;
-  });
-  
-  // Step 1: Filter by search keyword (content only, case-insensitive)
+  let filtered = [...items];
+
+  // Filter by search keyword (content only, case-insensitive)
   if (searchKeyword) {
     const keyword = searchKeyword.toLowerCase();
     filtered = filtered.filter(item => {
@@ -634,8 +511,7 @@ function renderGrid(container) {
   }
   
   grid.innerHTML = filtered.map(item => {
-    // Use decrypted content if available (for private items)
-    const displayContent = item.decryptedContent || item.content;
+    const displayContent = item.content;
     const preview = displayContent.length > 150 ? displayContent.slice(0, 150) + '...' : displayContent;
     const tagsHtml = item.tags.map(tag => `<span class="lib-item-tag">${escHtml(tag)}</span>`).join('');
     const authorHtml = item.author ? `<div class="lib-item-author">by ${escHtml(item.author)}</div>` : '';
@@ -695,47 +571,42 @@ function bindGridItemEvents(grid) {
   };
   
   const startPress = (e) => {
+    // 右键交给 contextmenu 处理，这里跳过
+    if (!e.touches && e.button !== 0) return;
+
     const card = findCard(e.target);
     if (!card) return;
-    
-    // 忽略点赞区域的点击
     if (e.target.closest('.lib-item-like')) return;
-    
+
     pressState.start = Date.now();
     pressState.moved = false;
     pressState.triggered = false;
     pressState.targetCard = card;
-    
+
     if (e.touches) {
       pressState.startX = e.touches[0].clientX;
       pressState.startY = e.touches[0].clientY;
+      // 长按仅在触屏上触发
+      pressState.timer = setTimeout(() => {
+        if (!pressState.moved && pressState.targetCard) {
+          const id = parseInt(pressState.targetCard.dataset.id);
+          const item = items.find(x => x.id === id);
+          if (item) { openPreviewModal(item); pressState.triggered = true; }
+        }
+      }, 500);
     } else {
       pressState.startX = e.clientX;
       pressState.startY = e.clientY;
     }
-    
-    // 长按定时器
-    pressState.timer = setTimeout(() => {
-      if (!pressState.moved && pressState.targetCard) {
-        const id = parseInt(pressState.targetCard.dataset.id);
-        const item = items.find(x => x.id === id);
-        if (item && !isLibraryEditor()) {
-          openPreviewModal(item);
-          pressState.triggered = true;
-        }
-      }
-    }, 500);
   };
   
   const checkMovement = (e) => {
     if (pressState.moved || !pressState.targetCard) return;
     
-    let currentX, currentY;
+    let currentY;
     if (e.touches) {
-      currentX = e.touches[0].clientX;
       currentY = e.touches[0].clientY;
     } else {
-      currentX = e.clientX;
       currentY = e.clientY;
     }
     
@@ -782,17 +653,12 @@ function bindGridItemEvents(grid) {
     const item = items.find(x => x.id === id);
     if (!item) return;
     
-    if (isLibraryEditor()) {
-      openModal(item, pageContainer);
-    } else {
-      // 非编辑模式：复制到剪贴板
-      const contentToCopy = item.decryptedContent || item.content;
-      navigator.clipboard.writeText(contentToCopy).then(() => {
-        showToast('已复制到剪贴板');
-      }).catch(() => {
-        showToast('复制失败，请手动复制');
-      });
-    }
+    const contentToCopy = item.content;
+    navigator.clipboard.writeText(contentToCopy).then(() => {
+      showToast('已复制到剪贴板');
+    }).catch(() => {
+      showToast('复制失败，请手动复制');
+    });
   };
   
   const handleLike = async (e) => {
@@ -829,6 +695,16 @@ function bindGridItemEvents(grid) {
       handleLike(e);
     }
   });
+
+  // 桌面端右键展开全文
+  grid.addEventListener('contextmenu', (e) => {
+    const card = findCard(e.target);
+    if (!card || e.target.closest('.lib-item-like')) return;
+    e.preventDefault();
+    const id = parseInt(card.dataset.id);
+    const item = items.find(x => x.id === id);
+    if (item) openPreviewModal(item);
+  });
 }
 
 function openModal(item, container) {
@@ -836,32 +712,9 @@ function openModal(item, container) {
   
   container.querySelector('#lib-modal-title').textContent = item ? '编辑指令' : '新建指令';
   
-  // Use decrypted content if available
-  const displayContent = item ? (item.decryptedContent || item.content) : '';
-  container.querySelector('#lib-content').value = displayContent;
+  container.querySelector('#lib-content').value = item ? item.content : '';
   container.querySelector('#lib-author').value = item ? item.author : '';
   container.querySelector('#lib-new-tag').value = '';
-  
-  // Privacy settings
-  const isPrivate = item ? item.privacyLevel === 'private' : false;
-  container.querySelector('#lib-private-checkbox').checked = isPrivate;
-  
-  // For private items, get the original password from unlockedKeys
-  let privacyKeyValue = '';
-  if (item && isPrivate) {
-    // Find the password that unlocked this item
-    for (const key of unlockedKeys) {
-      const hashedKey = item.privacyKey;
-      // We can't reverse hash, so we leave it blank for security
-      // User needs to re-enter password if they want to change it
-      privacyKeyValue = ''; // Don't show password
-      break;
-    }
-  }
-  
-  container.querySelector('#lib-privacy-key').value = privacyKeyValue;
-  container.querySelector('#lib-privacy-key-group').style.display = isPrivate ? '' : 'none';
-  
   renderTagPicker(container, item ? item.tags : []);
   
   container.querySelector('#lib-modal-delete').style.display = item ? '' : 'none';
@@ -914,48 +767,41 @@ function copyFromPreview(container) {
 
 function renderTagPicker(container, selectedItemTags) {
   const picker = container.querySelector('#lib-tag-picker');
-  
   if (!tags.length && !selectedItemTags.length) {
     picker.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:4px 0">暂无标签，请先添加</div>';
     return;
   }
-  
-  // Merge all tags and item's tags
   const allTags = Array.from(new Set([...tags, ...selectedItemTags])).sort();
-  
-  picker.innerHTML = allTags.map(tag => {
-    const checked = selectedItemTags.includes(tag);
-    return `<label class="lib-tag-checkbox">
-      <input type="checkbox" value="${escHtml(tag)}" ${checked ? 'checked' : ''}>
-      <span>${escHtml(tag)}</span>
-    </label>`;
-  }).join('');
+  picker.innerHTML = allTags.map(tag =>
+    `<div class="lib-tag-filter${selectedItemTags.includes(tag) ? ' selected' : ''}" data-tag="${escHtml(tag)}">
+      <span class="lib-tag-name">${escHtml(tag)}</span>
+    </div>`
+  ).join('');
+  picker.querySelectorAll('.lib-tag-filter').forEach(el => {
+    el.addEventListener('click', () => el.classList.toggle('selected'));
+  });
 }
 
 function addNewTag(container) {
   const input = container.querySelector('#lib-new-tag');
   const tag = input.value.trim();
-  
+
   if (!tag) return;
-  if (tags.includes(tag)) {
-    showToast('标签已存在');
-    return;
-  }
-  
+  if (tags.includes(tag)) { showToast('标签已存在'); return; }
+
   tags.push(tag);
   tags.sort();
-  
-  const currentTags = Array.from(container.querySelectorAll('#lib-tag-picker input[type="checkbox"]:checked'))
-    .map(cb => cb.value);
+
+  const currentTags = Array.from(container.querySelectorAll('#lib-tag-picker .lib-tag-filter.selected'))
+    .map(el => el.dataset.tag);
   currentTags.push(tag);
-  
+
   renderTagPicker(container, currentTags);
   input.value = '';
   showToast(`已添加标签：${tag}`);
 }
 
 // 查重用的临时状态
-let _dupPendingContainer = null;
 let _dupFoundItem = null;
 let _dupPendingSave = null; // 保存当前编辑框内容的函数引用
 
@@ -969,7 +815,7 @@ function _dupAction(container, action) {
     if (_dupFoundItem) openModal(_dupFoundItem, container);
   }
   // 'cancel' 什么都不做
-  _dupPendingContainer = null;
+
   _dupFoundItem = null;
   _dupPendingSave = null;
 }
@@ -977,117 +823,41 @@ function _dupAction(container, action) {
 async function saveItem(container) {
   const content = container.querySelector('#lib-content').value.trim();
   if (!content) { showToast('内容不能为空'); return; }
-  
+
   const author = container.querySelector('#lib-author').value.trim();
-  const selectedItemTags = Array.from(container.querySelectorAll('#lib-tag-picker input[type="checkbox"]:checked'))
-    .map(cb => cb.value);
-  
-  const savingId = editItemId;  // Save ID before any async operations
-  
-  // Privacy settings
-  const isPrivate = container.querySelector('#lib-private-checkbox').checked;
-  let privacyKey = container.querySelector('#lib-privacy-key').value.trim();
-  
-  // If editing an existing private item without entering password, use the unlocked password
-  if (savingId && isPrivate && !privacyKey) {
-    const existingItem = items.find(x => x.id === savingId);
-    if (existingItem && existingItem.privacyLevel === 'private') {
-      // Find the password that unlocked this item
-      for (const key of unlockedKeys) {
-        const hashedKey = await hashPassword(key);
-        if (hashedKey === existingItem.privacyKey) {
-          privacyKey = key;
-          break;
-        }
-      }
-    }
-  }
-  
-  if (isPrivate && !privacyKey) {
-    showToast('隐私指令必须设置密码');
-    container.querySelector('#lib-modal').classList.add('show');
-    setTimeout(() => container.querySelector('#lib-privacy-key').focus(), 100);
+  const selectedItemTags = Array.from(container.querySelectorAll('#lib-tag-picker .lib-tag-filter.selected'))
+    .map(el => el.dataset.tag);
+  const savingId = editItemId;
+
+  // 查重
+  const dupItem = items.find(function(x) {
+    if (savingId && x.id === savingId) return false;
+    return x.content.trim() === content;
+  });
+  if (dupItem) {
+    _dupFoundItem = dupItem;
+    _dupPendingSave = async function() {
+      closeModal(container);
+      setSyncStatus('syncing');
+      try {
+        const { error } = await supaClient.from('library_items')
+          .update({ content, author: author || 'unknown', tags_json: JSON.stringify(selectedItemTags) })
+          .eq('id', dupItem.id);
+        if (error) throw error;
+        showToast('已更新');
+        await fetchAll();
+        setSyncStatus('ok');
+      } catch(e) { dbError('保存指令', e); }
+    };
+    closeModal(container);
+    container.querySelector('#lib-dup-modal').classList.add('show');
     return;
   }
 
-  // 查重：仅对公开指令、新建或内容有变化的编辑做检查
-  if (!isPrivate) {
-    const dupItem = items.find(function(x) {
-      if (x.privacyLevel === 'private') return false;
-      if (savingId && x.id === savingId) return false; // 排除自身
-      return (x.decryptedContent || x.content).trim() === content;
-    });
-    if (dupItem) {
-      _dupFoundItem = dupItem;
-      _dupPendingContainer = container;
-      // 把"确认覆盖"后的实际保存操作包成闭包，让 _dupAction 调用
-      _dupPendingSave = async function() {
-        const overrideId = dupItem.id;
-        closeModal(container);
-        setSyncStatus('syncing');
-        try {
-          let row;
-          if (isPrivate) {
-            const encryptedContent = await encryptContent(content, privacyKey);
-            const hashedKey = await hashPassword(privacyKey);
-            row = { content: encryptedContent, author: author || 'unknown', tags_json: JSON.stringify(selectedItemTags), privacy_level: 'private', privacy_key: hashedKey };
-          } else {
-            row = { content, author: author || 'unknown', tags_json: JSON.stringify(selectedItemTags), privacy_level: 'public', privacy_key: null };
-          }
-          const { error } = await supaClient.from('library_items').update(row).eq('id', overrideId);
-          if (error) throw error;
-          showToast('已更新');
-          await fetchAll();
-          setSyncStatus('ok');
-        } catch(e) { dbError('保存指令', e); }
-      };
-      closeModal(container);
-      container.querySelector('#lib-dup-modal').classList.add('show');
-      return;
-    }
-  }
-
   closeModal(container);
-  
   setSyncStatus('syncing');
   try {
-    let row;
-    
-    if (isPrivate) {
-      // Encrypt content and hash password for private items
-      try {
-        const encryptedContent = await encryptContent(content, privacyKey);
-        const hashedKey = await hashPassword(privacyKey);
-        
-        row = {
-          content: encryptedContent,
-          author: author || 'unknown',
-          tags_json: JSON.stringify(selectedItemTags),
-          privacy_level: 'private',
-          privacy_key: hashedKey
-        };
-      } catch (encryptErr) {
-        console.error('Encryption failed, falling back to public:', encryptErr);
-        showToast('加密失败，已保存为公开指令');
-        row = {
-          content,
-          author: author || 'unknown',
-          tags_json: JSON.stringify(selectedItemTags),
-          privacy_level: 'public',
-          privacy_key: null
-        };
-      }
-    } else {
-      // Public items: store as-is
-      row = {
-        content,
-        author: author || 'unknown',
-        tags_json: JSON.stringify(selectedItemTags),
-        privacy_level: 'public',
-        privacy_key: null
-      };
-    }
-    
+    const row = { content, author: author || 'unknown', tags_json: JSON.stringify(selectedItemTags) };
     if (savingId) {
       const { error } = await supaClient.from('library_items').update(row).eq('id', savingId);
       if (error) throw error;
@@ -1097,12 +867,9 @@ async function saveItem(container) {
       if (error) throw error;
       showToast('已创建');
     }
-    
     await fetchAll();
     setSyncStatus('ok');
-  } catch(e) { 
-    dbError('保存指令', e); 
-  }
+  } catch(e) { dbError('保存指令', e); }
 }
 
 async function deleteItem(container) {
@@ -1111,9 +878,7 @@ async function deleteItem(container) {
   const item = items.find(x => x.id === editItemId);
   if (!item) return;
   
-  // Use decrypted content for preview if available
-  const displayContent = item.decryptedContent || item.content;
-  const preview = displayContent.slice(0, 30) + (displayContent.length > 30 ? '...' : '');
+  const preview = item.content.slice(0, 30) + (item.content.length > 30 ? '...' : '');
   if (!confirmDialog(`确定要删除这条指令吗？\n\n预览：${preview}`)) return;
   
   const deletingId = editItemId;  // Save ID before closeModal clears it
@@ -1138,7 +903,7 @@ function subscribeRealtime() {
 }
 
 // ── Tag management ─────────────────────────────────
-async function renameTag(oldTag, tagListEl) {
+async function renameTag(oldTag) {
   
   const newTag = prompt(`重命名标签「${oldTag}」:`, oldTag);
   if (!newTag || newTag.trim() === '') return;
@@ -1178,7 +943,7 @@ async function renameTag(oldTag, tagListEl) {
   }
 }
 
-async function deleteTag(tag, tagListEl) {
+async function deleteTag(tag) {
   
   const count = items.filter(item => item.tags.includes(tag)).length;
   if (!confirmDialog(`确定要删除标签「${tag}」？\n\n将从 ${count} 个指令中移除此标签，但不会删除指令本身。`)) return;
@@ -1294,113 +1059,7 @@ async function likeItem(itemId) {
   }
 }
 
-// ── Library-specific edit mode (password-protected) ───
-function openPasswordModal(container) {
-  container.querySelector('#lib-password-input').value = '';
-  container.querySelector('#lib-password-error').style.display = 'none';
-  container.querySelector('#lib-password-modal').classList.add('show');
-  setTimeout(() => container.querySelector('#lib-password-input').focus(), 60);
-}
 
-function closePasswordModal(container) {
-  container.querySelector('#lib-password-modal').classList.remove('show');
-}
-
-function submitPassword(container) {
-  const input = container.querySelector('#lib-password-input').value;
-  if (input === LIBRARY_PASSWORD) {
-    isLibraryEditable = true;
-    updateLibraryUI(container);
-    closePasswordModal(container);
-    showToast('已解锁指令编辑');
-  } else {
-    container.querySelector('#lib-password-error').style.display = 'block';
-    container.querySelector('#lib-password-input').value = '';
-    container.querySelector('#lib-password-input').focus();
-  }
-}
-
-// ── Crypto utilities ────────────────────────────────
-async function deriveKey(password, salt) {
-  const encoder = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(password),
-    'PBKDF2',
-    false,
-    ['deriveBits', 'deriveKey']
-  );
-  
-  return crypto.subtle.deriveKey(
-    {
-      name: 'PBKDF2',
-      salt: encoder.encode(salt),
-      iterations: 100000,
-      hash: 'SHA-256'
-    },
-    keyMaterial,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt']
-  );
-}
-
-async function encryptContent(content, password) {
-  try {
-    const encoder = new TextEncoder();
-    const salt = 'library-privacy-salt';
-    const key = await deriveKey(password, salt);
-    
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    
-    const encrypted = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv },
-      key,
-      encoder.encode(content)
-    );
-    
-    const combined = new Uint8Array(iv.length + encrypted.byteLength);
-    combined.set(iv, 0);
-    combined.set(new Uint8Array(encrypted), iv.length);
-    
-    return btoa(String.fromCharCode(...combined));
-  } catch (e) {
-    console.error('Encryption failed:', e);
-    throw new Error('加密失败');
-  }
-}
-
-async function decryptContent(encryptedBase64, password) {
-  try {
-    const decoder = new TextDecoder();
-    const salt = 'library-privacy-salt';
-    const key = await deriveKey(password, salt);
-    
-    const combined = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
-    
-    const iv = combined.slice(0, 12);
-    const encrypted = combined.slice(12);
-    
-    const decrypted = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv },
-      key,
-      encrypted
-    );
-    
-    return decoder.decode(decrypted);
-  } catch (e) {
-    console.error('Decryption failed:', e);
-    return null;
-  }
-}
-
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hash));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
 
 function updateSortButton(container) {
   const sortBtn = container.querySelector('#lib-sort-btn');
@@ -1416,114 +1075,6 @@ function updateSortButton(container) {
 }
 
 function updateLibraryUI(container) {
-  const unlockBtn = container.querySelector('#lib-unlock-btn');
-  const addBtn = container.querySelector('#lib-add-btn');
-  if (!unlockBtn || !addBtn) return;
-
-  // Check if editable through EITHER global OR library-specific mode
-  const isEditable = isLibraryEditor();
-
-  if (isEditable) {
-    if (isEditor()) {
-      // Global edit mode is active
-      unlockBtn.textContent = '全局编辑中';
-      unlockBtn.className = 'btn bp';
-      unlockBtn.disabled = true;  // Can't lock from here
-    } else {
-      // Library-specific edit mode
-      unlockBtn.textContent = '锁定指令编辑';
-      unlockBtn.className = 'btn bp';
-      unlockBtn.disabled = false;
-    }
-    addBtn.style.display = '';
-  } else {
-    unlockBtn.textContent = ' 添加指令 / 更新tag ';
-    unlockBtn.className = 'btn bn';
-    unlockBtn.disabled = false;
-    addBtn.style.display = 'none';
-  }
-  
-  // Re-render grid to update edit buttons on tags
   renderTagList(container.querySelector('#lib-tag-list'));
 }
 
-// Check library edit permission (global OR library-specific)
-function isLibraryEditor() {
-  return isEditor() || isLibraryEditable;
-}
-
-// ── Privacy mode functions ────────────────────────
-async function unlockPrivateContent(container) {
-  const input = container.querySelector('#lib-privacy-input');
-  const key = input.value.trim();
-  
-  if (!key) {
-    showToast('请输入密码');
-    return;
-  }
-  
-  // Hash the input password
-  const hashedKey = await hashPassword(key);
-  
-  // Check if this key unlocks any private items
-  const matchingItems = items.filter(item => 
-    item.privacyLevel === 'private' && item.privacyKey === hashedKey
-  );
-  
-  if (matchingItems.length === 0) {
-    showToast(' X 密码错误或没有匹配的隐私内容');
-    input.value = '';
-    return;
-  }
-  
-  // Store the plain password for decryption (in memory only)
-  unlockedKeys.add(key);
-  input.value = '';
-  
-  // Decrypt content for unlocked items
-  for (const item of matchingItems) {
-    if (item.content && !item.decryptedContent) {
-      const decrypted = await decryptContent(item.content, key);
-      if (decrypted) {
-        item.decryptedContent = decrypted;
-      }
-    }
-  }
-  
-  // Update UI
-  updateUnlockedKeysDisplay(container);
-  renderGrid(container.querySelector('.lib-layout'));
-  
-  showToast(`√ 已解锁 ${matchingItems.length} 条隐私内容`);
-}
-
-function updateUnlockedKeysDisplay(container) {
-  const display = container.querySelector('#lib-unlocked-keys');
-  if (!display) return;
-  
-  if (unlockedKeys.size === 0) {
-    display.textContent = '';
-    return;
-  }
-  
-  display.innerHTML = `<span style="color:#22c55e">✓ 解锁成功</span> <button onclick="clearAllKeys()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0 4px">清除全部</button>`;
-}
-
-window.clearAllKeys = function() {
-  unlockedKeys.clear();
-  
-  // Clear decrypted content cache
-  items.forEach(item => {
-    if (item.privacyLevel === 'private') {
-      delete item.decryptedContent;
-    }
-  });
-  
-  const container = pageContainer;
-  if (container) {
-    const layout = container.querySelector('.lib-layout');
-    updateUnlockedKeysDisplay(container);
-    renderGrid(layout);
-    showToast(' 已清除所有解锁密码');
-  }
-};
