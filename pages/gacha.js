@@ -507,10 +507,10 @@ function _animateModalEnter() {
   if (!box) return;
   box.style.transition = 'none';
   box.style.transform  = 'scaleX(0)';
-  requestAnimationFrame(() => {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     box.style.transition = 'transform 0.3s cubic-bezier(0.4,0,0.2,1)';
     box.style.transform  = '';
-  });
+  }));
 }
 
 
