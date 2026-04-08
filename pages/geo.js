@@ -130,6 +130,16 @@ function updateUI() {
 
 // ── 地理搜索 ──────────────────────────────────────────────────
 
+function _descText(description) {
+  if (!description) return '';
+  try {
+    const obj = typeof description === 'string' ? JSON.parse(description) : description;
+    return JSON.stringify(obj).toLowerCase();
+  } catch (_) {
+    return typeof description === 'string' ? description.toLowerCase() : '';
+  }
+}
+
 function _bindGeoSearch() {
   const container = State.pageContainer;
   const input   = container.querySelector('#geo-panel-search');
@@ -147,14 +157,14 @@ function _bindGeoSearch() {
     if (!q) { results.classList.remove('open'); results.innerHTML = ''; currentHits = []; return; }
 
     const hits = [];
-    State.allCountries.filter(co => co.name.toLowerCase().includes(q))
+    State.allCountries.filter(co => co.name.toLowerCase().includes(q) || _descText(co.description).includes(q))
       .forEach(co => hits.push({ type: 'country', icon: '🏛️', label: co.name, path: '', obj: co }));
     State.allCities.filter(ci => ci.name.toLowerCase().includes(q))
       .forEach(ci => {
         const country = State.allCountries.find(co => co.id === ci.country_id);
         hits.push({ type: 'city', icon: '🏙️', label: ci.name, path: country ? country.name : '', obj: ci, parentCountry: country });
       });
-    State.allLandmarks.filter(lm => lm.name.toLowerCase().includes(q))
+    State.allLandmarks.filter(lm => lm.name.toLowerCase().includes(q) || _descText(lm.description).includes(q))
       .forEach(lm => {
         const city    = State.allCities.find(ci => ci.id === lm.city_id);
         const country = city ? State.allCountries.find(co => co.id === city.country_id) : null;

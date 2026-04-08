@@ -202,6 +202,16 @@ export function refreshCharactersView() {
   renderPanelList(searchInput?.value?.trim().toLowerCase() || '');
 }
 
+function _descText(description) {
+  if (!description) return '';
+  try {
+    const obj = typeof description === 'string' ? JSON.parse(description) : description;
+    return JSON.stringify(obj).toLowerCase();
+  } catch (_) {
+    return typeof description === 'string' ? description.toLowerCase() : '';
+  }
+}
+
 function _renderCharPanel(list, query, avatarCache) {
   // 搜索匹配的国家/城市，置顶作为可点击的地理条目
   const geoItems = [];
@@ -226,6 +236,7 @@ function _renderCharPanel(list, query, avatarCache) {
                       : (city        ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null);
         if (city    && city.name.toLowerCase().includes(query))    return true;
         if (country && country.name.toLowerCase().includes(query)) return true;
+        if (_descText(c.description).includes(query))              return true;
         return false;
       })
     : [...State.allChars];

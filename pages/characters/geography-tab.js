@@ -4,28 +4,14 @@
 import * as State from './state.js';
 import { renderGeoTree, bindGeoTree } from './geo-tree.js';
 import { renderGeoDetail } from './geo-detail.js';
-import { renderSearchResults, bindSearch } from './geo-search.js';
 import { openCountryModal } from './modals/country-modal.js';
-import { bindPanelToggle } from '../../core/ui.js';
 
-/**
- * 初始化地理标签页
- */
 export function initGeographyTab() {
-  const container = State.pageContainer;
-  
-  // 渲染所有组件
   renderGeoTree();
   renderGeoDetail();
-  renderSearchResults();
-  
-  // 绑定事件
   bindGeoTree();
-  bindSearch();
-  bindSearchCollapse();
   bindAddCountry();
-  
-  // 默认选中第一个国家
+
   if (!State.selectedCountry && !State.selectedCity && State.allCountries.length > 0) {
     State.setSelectedCountry(State.allCountries[0]);
     State.toggleCountryExpanded(State.allCountries[0].id);
@@ -34,16 +20,7 @@ export function initGeographyTab() {
   }
 }
 
-/**
- * 绑定搜索栏折叠功能
- */
-function bindSearchCollapse() {
-  bindPanelToggle(State.pageContainer, '.geo-search', '#geo-search-toggle', '#geo-search-expand', '#geo-search-chevron');
-}
 
-/**
- * 绑定添加国家按钮
- */
 function bindAddCountry() {
   const container = State.pageContainer;
   const addBtn = container.querySelector('#add-country-btn');
