@@ -162,8 +162,8 @@ function buildHTML() {
     <div class="mbtns" style="justify-content:space-between">
       <button class="btn bn" id="lib-preview-edit">编辑</button>
       <div style="display:flex;gap:8px">
-        <button class="btn bn" id="lib-preview-close">关闭</button>
-        <button class="btn bp" id="lib-preview-copy">复制内容</button>
+        <button class="btn bn" id="lib-preview-swap">user⇌char复制</button>
+        <button class="btn bp" id="lib-preview-copy">原文复制</button>
       </div>
     </div>
   </div>
@@ -198,7 +198,7 @@ function bindControls(container) {
     closePreviewModal(container);
     if (item) openModal(item, container);
   });
-  container.querySelector('#lib-preview-close').addEventListener('click', () => closePreviewModal(container));
+  container.querySelector('#lib-preview-swap').addEventListener('click', () => swapAndCopy(container));
   container.querySelector('#lib-preview-copy').addEventListener('click', () => copyFromPreview(container));
   const _libPreviewModal = container.querySelector('#lib-preview-modal');
   let _mdOnPreviewModal = false;
@@ -754,9 +754,19 @@ function closePreviewModal(container) {
   previewItem = null;
 }
 
+function swapAndCopy(container) {
+  if (!previewItem) return;
+  const swapped = previewItem.content.replace(/user|char/g, m => m === 'user' ? 'char' : 'user');
+  navigator.clipboard.writeText(swapped).then(() => {
+    showToast('已互换并复制');
+    closePreviewModal(container);
+  }).catch(() => {
+    showToast('复制失败，请手动复制');
+  });
+}
+
 function copyFromPreview(container) {
   if (!previewItem) return;
-  
   navigator.clipboard.writeText(previewItem.content).then(() => {
     showToast('已复制到剪贴板');
     closePreviewModal(container);
