@@ -576,24 +576,31 @@ function bindGridItemEvents(grid) {
 
     const card = findCard(e.target);
     if (!card) return;
-    if (e.target.closest('.lib-item-like')) return;
+
+    const isLike = !!e.target.closest('.lib-item-like');
+
+    // 鼠标点赞区交给 click 事件处理，这里跳过
+    if (!e.touches && isLike) return;
 
     pressState.start = Date.now();
     pressState.moved = false;
     pressState.triggered = false;
     pressState.targetCard = card;
+    pressState.isLike = isLike;
 
     if (e.touches) {
       pressState.startX = e.touches[0].clientX;
       pressState.startY = e.touches[0].clientY;
-      // 长按仅在触屏上触发
-      pressState.timer = setTimeout(() => {
-        if (!pressState.moved && pressState.targetCard) {
-          const id = parseInt(pressState.targetCard.dataset.id);
-          const item = items.find(x => x.id === id);
-          if (item) { openPreviewModal(item); pressState.triggered = true; }
-        }
-      }, 500);
+      // 长按只在非点赞区触发
+      if (!isLike) {
+        pressState.timer = setTimeout(() => {
+          if (!pressState.moved && pressState.targetCard) {
+            const id = parseInt(pressState.targetCard.dataset.id);
+            const item = items.find(x => x.id === id);
+            if (item) { openPreviewModal(item); pressState.triggered = true; }
+          }
+        }, 500);
+      }
     } else {
       pressState.startX = e.clientX;
       pressState.startY = e.clientY;
@@ -682,7 +689,8 @@ function bindGridItemEvents(grid) {
   grid.addEventListener('touchmove', checkMovement, { passive: true });
   grid.addEventListener('touchend', (e) => {
     if (e.target.closest('.lib-item-like')) {
-      handleLike(e);
+      if (!pressState.moved && pressState.targetCard) { handleLike(e); e.preventDefault(); }
+      resetPressState();
     } else {
       e.preventDefault();
       handleInteraction(e);
