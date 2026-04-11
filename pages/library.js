@@ -5,6 +5,19 @@ import { supaClient, setSyncStatus, dbError, safeUnsubscribe } from '../core/sup
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { showToast, escHtml, confirmDialog, bindPanelToggle } from '../core/ui.js';
 
+function _copyText(text) {
+  return navigator.clipboard.writeText(text).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (!ok) throw new Error('copy failed');
+  });
+}
+
 let items = [];           // All library items
 let tags = [];            // All available tags
 let selectedTags = [];    // Currently selected tags for filtering
@@ -676,8 +689,7 @@ function bindGridItemEvents(grid) {
     const item = items.find(x => x.id === id);
     if (!item) return;
     
-    const contentToCopy = item.content;
-    navigator.clipboard.writeText(contentToCopy).then(() => {
+    _copyText(item.content).then(() => {
       showToast('已复制到剪贴板');
     }).catch(() => {
       showToast('复制失败，请手动复制');
@@ -788,7 +800,7 @@ function _previewText(container) {
 function swapAndCopy(container) {
   if (!previewItem) return;
   const swapped = _previewText(container).replace(/user|char/g, m => m === 'user' ? 'char' : 'user');
-  navigator.clipboard.writeText(swapped).then(() => {
+  _copyText(swapped).then(() => {
     showToast('已互换并复制');
     closePreviewModal(container);
   }).catch(() => {
@@ -798,7 +810,7 @@ function swapAndCopy(container) {
 
 function copyFromPreview(container) {
   if (!previewItem) return;
-  navigator.clipboard.writeText(_previewText(container)).then(() => {
+  _copyText(_previewText(container)).then(() => {
     showToast('已复制到剪贴板');
     closePreviewModal(container);
   }).catch(() => {
