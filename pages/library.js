@@ -192,6 +192,22 @@ function bindControls(container) {
   _libDupModal.addEventListener('mousedown', e => { _mdOnDupModal = (e.target === _libDupModal); });
   _libDupModal.addEventListener('mouseup', e => { if (_mdOnDupModal && e.target === _libDupModal) _dupAction(container, 'cancel'); _mdOnDupModal = false; });
 
+  // Preview modal — 双击/双击文字临时编辑（同时支持鼠标和触屏）
+  const _contentEl = container.querySelector('#lib-preview-content');
+  const _enableEdit = function () {
+    if (_contentEl.contentEditable === 'true') return;
+    _contentEl.contentEditable = 'true';
+    _contentEl.style.outline = '1px dashed var(--border-hover)';
+    _contentEl.focus();
+  };
+  _contentEl.addEventListener('dblclick', _enableEdit);
+  let _lastTap = 0;
+  _contentEl.addEventListener('touchend', function (e) {
+    const now = Date.now();
+    if (now - _lastTap < 300) { e.preventDefault(); _enableEdit(); }
+    _lastTap = now;
+  });
+
   // Preview modal buttons
   container.querySelector('#lib-preview-edit').addEventListener('click', () => {
     const item = previewItem;
@@ -747,7 +763,10 @@ function openPreviewModal(item) {
   const metaEl = pageContainer.querySelector('#lib-preview-meta');
   
   contentEl.textContent = item.content;
-  
+  contentEl.contentEditable = 'false';
+  contentEl.style.outline = '';
+  contentEl.title = '双击可临时编辑';
+
   // Show metadata
   const parts = [];
   if (item.author) parts.push(`作者：${item.author}`);
@@ -762,9 +781,13 @@ function closePreviewModal(container) {
   previewItem = null;
 }
 
+function _previewText(container) {
+  return container.querySelector('#lib-preview-content').textContent;
+}
+
 function swapAndCopy(container) {
   if (!previewItem) return;
-  const swapped = previewItem.content.replace(/user|char/g, m => m === 'user' ? 'char' : 'user');
+  const swapped = _previewText(container).replace(/user|char/g, m => m === 'user' ? 'char' : 'user');
   navigator.clipboard.writeText(swapped).then(() => {
     showToast('已互换并复制');
     closePreviewModal(container);
@@ -775,7 +798,7 @@ function swapAndCopy(container) {
 
 function copyFromPreview(container) {
   if (!previewItem) return;
-  navigator.clipboard.writeText(previewItem.content).then(() => {
+  navigator.clipboard.writeText(_previewText(container)).then(() => {
     showToast('已复制到剪贴板');
     closePreviewModal(container);
   }).catch(() => {
