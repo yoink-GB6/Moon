@@ -175,8 +175,8 @@ function buildHTML() {
     <div class="mbtns" style="justify-content:space-between">
       <button class="btn bn" id="lib-preview-edit">编辑</button>
       <div style="display:flex;gap:8px">
-        <button class="btn bn" id="lib-preview-swap">user⇌char复制</button>
-        <button class="btn bp" id="lib-preview-copy">原文复制</button>
+        <button class="btn bn" id="lib-preview-swap">user⇌char</button>
+        <button class="btn bp" id="lib-preview-copy">复制文本</button>
       </div>
     </div>
   </div>
@@ -799,20 +799,16 @@ function _previewText(container) {
 
 function swapAndCopy(container) {
   if (!previewItem) return;
-  const swapped = _previewText(container).replace(/user|char/g, m => m === 'user' ? 'char' : 'user');
-  _copyText(swapped).then(() => {
-    showToast('已互换并复制');
-    closePreviewModal(container);
-  }).catch(() => {
-    showToast('复制失败，请手动复制');
-  });
+  const contentEl = container.querySelector('#lib-preview-content');
+  const swapped = contentEl.textContent.replace(/user|char/g, m => m === 'user' ? 'char' : 'user');
+  contentEl.textContent = swapped;
+  showToast('已互换');
 }
 
 function copyFromPreview(container) {
   if (!previewItem) return;
   _copyText(_previewText(container)).then(() => {
     showToast('已复制到剪贴板');
-    closePreviewModal(container);
   }).catch(() => {
     showToast('复制失败，请手动复制');
   });
