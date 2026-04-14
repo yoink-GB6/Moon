@@ -113,7 +113,7 @@ function buildHTML() {
       
       <!-- Tag filter hint -->
       <div style="font-size:12px;color:#889;margin-bottom:12px;line-height:1.6">
-        点击标签进行筛选。选中多个标签时，显示<b>同时包含</b>所有选中标签的指令。
+        点击tag筛选。点按番外块复制。长按展开全文，双击全文内容定制修改（不记录入库），附快捷交换UC
       </div>
       <div id="lib-tag-list" class="lib-tag-list"></div>
     </div>
