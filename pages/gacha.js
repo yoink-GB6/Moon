@@ -207,9 +207,18 @@ function _onUp() {
   if (_drawRafId) { cancelAnimationFrame(_drawRafId); _drawRafId = null; }
   if (_pathLen < MIN_STROKE) {
     _pts = []; _redraw();
-    // 有已提交笔迹时，点一下视为确认，直接触发抽卡
-    if (_strokes.length && !_locked) _doDraw();
-    else _startAnim();
+    // 有已提交笔迹时，点一下视为确认
+    if (_strokes.length && !_locked) {
+      const flashAge = _flashT0 ? (performance.now() - _flashT0) : Infinity;
+      if (flashAge < FLASH_RISE) {
+        // 仍在升亮阶段：跳到峰值亮度，等 FLASH_HOLD 后再出图
+        _flashT0 = performance.now() - FLASH_RISE;
+        _startAnim();
+        _drawTimer = setTimeout(() => { _drawTimer = null; if (!_locked) _doDraw(); }, FLASH_HOLD);
+      } else {
+        _doDraw();
+      }
+    } else _startAnim();
   } else _commitStroke();
   // 停笔 1.2s 后没新笔就淡出所有笔迹
   if (_idleTimer) clearTimeout(_idleTimer);
