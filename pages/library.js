@@ -77,7 +77,7 @@ function buildHTML() {
   <!-- Right sidebar filter panel -->
   <div class="lib-panel">
     <div class="lib-panel-hdr" id="lib-panel-toggle">
-      <span>搜索 & 筛选</span>
+      <span>搜索 & 按tag筛选</span>
       <span id="lib-panel-chevron">‹</span>
     </div>
     <div class="lib-panel-body">
@@ -113,7 +113,9 @@ function buildHTML() {
       
       <!-- Tag filter hint -->
       <div style="font-size:12px;color:#889;margin-bottom:12px;line-height:1.6">
-        点击tag筛选。点按番外块复制。长按展开全文，双击全文内容定制修改（不记录入库），附快捷交换UC
+        番外块：点按复制/长按展开<br>
+        临时编辑：长按后双击文本<br>
+        电脑端 右键 = 触屏 长按
       </div>
       <div id="lib-tag-list" class="lib-tag-list"></div>
     </div>
