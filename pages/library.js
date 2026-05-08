@@ -327,7 +327,9 @@ function bindControls(container) {
 
   // Sort button
   container.querySelector('#lib-sort-btn').addEventListener('click', () => {
-    sortBy = sortBy === 'likes' ? 'created' : 'likes';
+    if (sortBy === 'likes') sortBy = 'created';
+    else if (sortBy === 'created') sortBy = 'random';
+    else sortBy = 'likes';
     updateSortButton(container);
     renderGrid(container.querySelector('.lib-layout'));
   });
@@ -401,6 +403,12 @@ function sortItems() {
     items.sort((a, b) => {
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
+  } else if (sortBy === 'random') {
+    // Fisher-Yates shuffle
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
   }
 }
 
@@ -539,6 +547,12 @@ function renderGrid(container) {
     filtered.sort((a, b) => {
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
+  } else if (sortBy === 'random') {
+    // Fisher-Yates shuffle
+    for (let i = filtered.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+    }
   }
   
   grid.innerHTML = filtered.map(item => {
@@ -1115,13 +1129,16 @@ async function likeItem(itemId) {
 function updateSortButton(container) {
   const sortBtn = container.querySelector('#lib-sort-btn');
   if (!sortBtn) return;
-  
+
   if (sortBy === 'likes') {
     sortBtn.textContent = '❤ 点赞排序';
     sortBtn.title = '当前：按点赞数排序，点击切换为时间排序';
-  } else {
+  } else if (sortBy === 'created') {
     sortBtn.textContent = '⏱ 时间排序';
-    sortBtn.title = '当前：按创建时间排序，点击切换为点赞排序';
+    sortBtn.title = '当前：按创建时间排序，点击切换为随机排序';
+  } else {
+    sortBtn.textContent = '🎲 随机排序';
+    sortBtn.title = '当前：随机排序，点击切换为点赞排序';
   }
 }
 
