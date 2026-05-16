@@ -153,6 +153,16 @@ function buildNav() {
 }
 
 // ── Navigate ────────────────────────────────────────
+async function tryLoad(loader, maxAttempts = 3) {
+  for (let i = 0; i < maxAttempts; i++) {
+    try { return await loader(); }
+    catch(e) {
+      if (i === maxAttempts - 1) throw e;
+      await new Promise(r => setTimeout(r, 600 * (i + 1)));
+    }
+  }
+}
+
 async function navigate(id) {
   const route = ROUTES.find(r => r.id === id) || ROUTES[0];
   if (currentRoute?.id === route.id) return;
@@ -180,7 +190,7 @@ async function navigate(id) {
 
   const seq = ++_navSeq;
   try {
-    const mod = await route.loader();
+    const mod = await tryLoad(route.loader);
     if (seq !== _navSeq) return;
     if (!mod) {
       root.innerHTML = `<div class="page-placeholder"><div class="placeholder-icon">${route.icon}</div><h2>页面暂未实现</h2><p>对应的 pages/${route.id}.js 文件尚不存在。</p></div>`;
@@ -188,9 +198,15 @@ async function navigate(id) {
     }
     currentModule = mod;
     await mod.mount(root);
+    sessionStorage.removeItem('_navReloadAttempted');
   } catch(e) {
     if (seq !== _navSeq) return;
     console.error(`页面 ${route.id} 加载失败`, e);
+    if (!sessionStorage.getItem('_navReloadAttempted')) {
+      sessionStorage.setItem('_navReloadAttempted', '1');
+      location.reload();
+      return;
+    }
     root.innerHTML = `<div class="page-placeholder"><div class="placeholder-icon">⚠️</div><h2>加载失败</h2><p>${e.message}</p></div>`;
   }
 }
