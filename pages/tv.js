@@ -343,9 +343,9 @@ function _startAutoSpin() {
     const dt = (now - _autoLastT) / 1000;
     _autoLastT = now;
     // 触发回正（一次性）
-    if (!_returning && now - _lastInteract > RETURN_DELAY_MS && Math.abs(_angleX) > 0.5) {
+    /*if (!_returning && now - _lastInteract > RETURN_DELAY_MS && Math.abs(_angleX) > 0.5) {
       _startReturn();
-    }
+    }*/
     // auto spin 始终转 Y 轴；transition 只挂卡片身上，不影响 ring 的 Y 旋转
     _setAngles(_angleY + AUTO_SPIN_DPS * dt, _angleX);
     _autoRAF = requestAnimationFrame(tick);
