@@ -27,6 +27,8 @@ let _returnTimer = null;
 let _cleanupFns = [];
 let _autoRAF = null;
 let _autoLastT = 0;
+let viewDistance = 1200; // 把之前的写死的 1200 抽出来做成变量
+let _currentRadius = 0;  // 用来记录当前球体的真实半径
 /*
 export async function mount(container) {
   _container = container;
@@ -151,8 +153,12 @@ function _renderRing() {
   // 3. 动态调整球心 Z 轴位置
   // 公式：摄像机位置(PERSPECTIVE) - 球半径(radius) - 安全观看距离(400)
   // 这样无论球多大，离屏幕前壁的距离始终保持适中，不会穿模，也不会太远
-currentRingPush = PERSPECTIVE - radius - 1200;
+/*currentRingPush = PERSPECTIVE - radius - 1200;*/
+// 把半径存下来，给缩放功能用
+_currentRadius = radius; 
 
+// 使用动态的 viewDistance，而不是写死的 1200
+currentRingPush = PERSPECTIVE - _currentRadius - viewDistance;
   // Fibonacci 球面均匀分布
   const points = _fibSpherePoints(n);
 
@@ -332,6 +338,56 @@ function _bindInteractions(container) {
     };
     _addListener(window, 'deviceorientation', onOrient);
   }
+  // ── 附加功能：视图缩放 (实时更新 Z 轴位置) ──
+  const _updateZoom = () => {
+    currentRingPush = PERSPECTIVE - _currentRadius - viewDistance;
+    const tilt = container.querySelector('.tv-tilt');
+    if (tilt) {
+      // 保持当前的 X 轴旋转角度，仅更新 Z 轴距离
+      tilt.style.transform = `translate(-50%, -50%) translateZ(${currentRingPush}px) rotateX(${_angleX}deg)`;
+    }
+  };
+
+  // 1. PC端：鼠标滚轮缩放
+  container.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    viewDistance += e.deltaY * 0.5; // 滚轮调整幅度
+    // 限制缩放范围：最近 400（防穿模贴脸），最远 4000
+    viewDistance = Math.max(400, Math.min(4000, viewDistance)); 
+    _updateZoom();
+  }, { passive: false });
+
+  // 2. 移动端：双指捏合缩放
+  let initialPinchDist = 0;
+  let initialViewDist = 0;
+
+  container.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      pointer.dragging = false; // 如果是双指，强制取消单指拖拽的旋转逻辑
+      // 计算两指之间的初始距离 (勾股定理)
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      initialPinchDist = Math.hypot(dx, dy);
+      initialViewDist = viewDistance;
+    }
+  }, { passive: false });
+
+  container.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault(); // 防止触发浏览器其他手势
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const currentPinchDist = Math.hypot(dx, dy);
+      
+      // 计算缩放比例：两指张开距离变大（scale < 1）拉近距离；两指捏合距离变小（scale > 1）拉远距离
+      const scale = initialPinchDist / currentPinchDist;
+      
+      viewDistance = initialViewDist * scale;
+      viewDistance = Math.max(400, Math.min(4000, viewDistance)); // 同样限制距离
+      
+      _updateZoom();
+    }
+  }, { passive: false });
 }
 
 // ── 自动旋转 ──────────────────────────────
