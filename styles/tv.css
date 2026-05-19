@@ -1,0 +1,102 @@
+.tv-page {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  background: radial-gradient(ellipse at center, var(--panel) 0%, #000 100%);
+}
+
+.tv-stage {
+  position: absolute;
+  inset: 0;
+  perspective: 3200px;
+  perspective-origin: 50% 50%;
+  cursor: grab;
+  touch-action: none;
+}
+
+.tv-stage:active {
+  cursor: grabbing;
+}
+
+.tv-tilt {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.tv-ring {
+  position: absolute;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.tv-card {
+  position: absolute;
+  width: 320px;
+  height: 440px;
+  left: -160px;
+  top: -220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+}
+/*
+.tv-card img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  display: block;
+  pointer-events: none;
+  border-radius: 10px;
+  image-rendering: -webkit-optimize-contrast;
+}*/
+.tv-card img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  display: block;
+  pointer-events: none;
+  border-radius: 10px;
+  
+  /* ──── 提升 3D 清晰度核心属性 ──── */
+  image-rendering: -webkit-optimize-contrast; /* 保持高对比度清晰 */
+  backface-visibility: hidden;               /* 隐藏背面，减少 3D 渲染模糊 */
+  transform: translateZ(0);                    /* 强制开启独立 GPU 图层增强画质 */
+}
+
+.tv-hint {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 1px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .tv-card {
+    width: 220px;
+    height: 300px;
+    left: -110px;
+    top: -150px;
+  }
+}

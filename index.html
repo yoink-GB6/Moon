@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="styles/characters.css">
 <link rel="stylesheet" href="styles/library.css">
 <link rel="stylesheet" href="styles/gacha.css">
+<link rel="stylesheet" href="styles/tv.css">
 <link rel="stylesheet" href="styles/responsive.css">
 
 </head>
@@ -126,6 +127,12 @@ const ROUTES = [
     label: '✦ 抽卡',
     icon: '✦',
     loader: () => import('./pages/gacha.js?v='+_V),
+  },
+  {
+    id: 'tv',
+    label: '▬ 上电视',
+    icon: '▬',
+    loader: () => import('./pages/tv.js?v='+_V),
   },
 ];
 
