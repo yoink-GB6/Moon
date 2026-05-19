@@ -151,7 +151,7 @@ function _renderRing() {
   // 3. 动态调整球心 Z 轴位置
   // 公式：摄像机位置(PERSPECTIVE) - 球半径(radius) - 安全观看距离(400)
   // 这样无论球多大，离屏幕前壁的距离始终保持适中，不会穿模，也不会太远
-currentRingPush = PERSPECTIVE - radius - 400;
+currentRingPush = PERSPECTIVE - radius - 1200;
 
   // Fibonacci 球面均匀分布
   const points = _fibSpherePoints(n);
