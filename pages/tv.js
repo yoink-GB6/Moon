@@ -205,7 +205,7 @@ function _setAngles(degY, degX) {
   if (newY !== _angleY) {
     _angleY = newY;
     const ring = _container.querySelector('#tv-ring');
-    if (ring) ring.style.transform = `rotateY(${_angleY}deg)`;/*`rotateY(${-_angleY}deg)`*/ 
+    if (ring) ring.style.transform = `rotateY(${-_angleY}deg)`;/*`rotateY(${-_angleY}deg)`*/ 
   }
   if (newX !== _angleX) {
     _angleX = newX;
