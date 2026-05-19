@@ -321,10 +321,14 @@ function _bindInteractions(container) {
       const dBeta = (beta || 0) - (_lastBeta || 0);
       _lastGamma = gamma;
       _lastBeta = beta;
-      if (Math.abs(dGamma) > 0.1 || Math.abs(dBeta) > 0.1) {
-        _setAngles(_angleY + dGamma * 4, _angleX + dBeta * 2);
+      if (Math.abs(dGamma) > 0.5 || Math.abs(dBeta) > 0.5) {
+        _setAngles(_angleY + dGamma * 1.5, _angleX + dBeta * 0.8);
         _lastInteract = performance.now();
       }
+      /*if (Math.abs(dGamma) > 0.1 || Math.abs(dBeta) > 0.1) {
+        _setAngles(_angleY + dGamma * 4, _angleX + dBeta * 2);
+        _lastInteract = performance.now();
+      }*/
     };
     _addListener(window, 'deviceorientation', onOrient);
   }
