@@ -6,75 +6,59 @@
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   background: radial-gradient(ellipse at center, var(--panel) 0%, #000 100%);
 }
 
-.tv-stage {
-  position: absolute;
-  inset: 0;
-  perspective: 3200px;
-  perspective-origin: 50% 50%;
-  cursor: grab;
-  touch-action: none;
+.tv-rows {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+  width: 100%;
 }
 
-.tv-stage:active {
+.tv-row {
+  --row-h: 240px;
+  position: relative;
+  height: var(--row-h);
+  overflow: hidden;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.tv-row:active {
   cursor: grabbing;
 }
 
-.tv-tilt {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  transform-style: preserve-3d;
-  will-change: transform;
-}
-
-.tv-ring {
-  position: absolute;
-  width: 0;
-  height: 0;
-  transform-style: preserve-3d;
+.tv-row-track {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 100%;
+  flex-shrink: 0;
+  width: max-content;
   will-change: transform;
 }
 
 .tv-card {
-  position: absolute;
-  width: 320px;
-  height: 440px;
-  left: -160px;
-  top: -220px;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  backface-visibility: hidden;
+  height: 100%;
 }
-/*
+
 .tv-card img {
-  max-width: 100%;
-  max-height: 100%;
+  max-height: var(--row-h);
   width: auto;
   height: auto;
   display: block;
-  pointer-events: none;
   border-radius: 10px;
+  pointer-events: none;
   image-rendering: -webkit-optimize-contrast;
-}*/
-.tv-card img {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  display: block;
-  pointer-events: none;
-  border-radius: 10px;
-  
-  /* ──── 提升 3D 清晰度核心属性 ──── */
-  image-rendering: -webkit-optimize-contrast; /* 保持高对比度清晰 */
-  backface-visibility: hidden;               /* 隐藏背面，减少 3D 渲染模糊 */
-  transform: translateZ(0);                    /* 强制开启独立 GPU 图层增强画质 */
 }
 
 .tv-hint {
@@ -93,10 +77,13 @@
 }
 
 @media (max-width: 600px) {
-  .tv-card {
-    width: 220px;
-    height: 300px;
-    left: -110px;
-    top: -150px;
+  .tv-rows {
+    gap: 14px;
+  }
+  .tv-row {
+    --row-h: 150px;
+  }
+  .tv-row-track {
+    gap: 12px;
   }
 }
