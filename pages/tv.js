@@ -5,7 +5,7 @@ import { supaClient, setSyncStatus, dbError } from '../core/supabase-client.js';
 import { parseAvatarUrls, openImageViewer } from './characters/utils.js';
 
 const CHAR_ID = 45;
-const ROW_SPEEDS = [36, 48, 43];   // 各行速度(px/s)，略有差异形成错位
+const ROW_SPEEDS = [28, 50, 40];   // 各行速度(px/s)，差距拉大避免同向行看起来同速
 const DRAG_THRESHOLD = 5;          // 超过此位移判定为拖动，不触发点击放大
 
 let _container = null;
@@ -120,9 +120,16 @@ function _renderRows() {
     });
   });
 
-  // 等布局完成后测量一份副本宽度
+  // 等布局完成后测量一份副本宽度，并触发每张图独立随机渐入
+  const FADE_MAX = 1600;  // 整体渐入窗口(ms)，每张图在其中随机时刻点亮
   requestAnimationFrame(() => {
-    _rows.forEach(r => { r.contentWidth = r.track.scrollWidth / 2; });
+    _rows.forEach(r => {
+      r.contentWidth = r.track.scrollWidth / 2;
+      r.track.querySelectorAll('.tv-card').forEach(card => {
+        card.style.transitionDelay = (Math.random() * FADE_MAX).toFixed(0) + 'ms';
+        card.classList.add('show');
+      });
+    });
   });
 
 }
