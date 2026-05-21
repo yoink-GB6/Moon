@@ -49,6 +49,12 @@
   align-items: center;
   justify-content: center;
   height: 100%;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.tv-card.show {
+  opacity: 1;
 }
 
 .tv-card img {
