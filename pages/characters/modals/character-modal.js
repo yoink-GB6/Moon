@@ -376,7 +376,7 @@ export function setupCharModal() {
 }
 
 // ── 图库管理器（批量上传/删除）────────────────────────────────
-export async function openImageManager() {
+export async function openImageManager(charId = null) {
   let mgr = document.getElementById('char-img-mgr');
   if (!mgr) {
     mgr = document.createElement('div');
@@ -393,6 +393,7 @@ export async function openImageManager() {
           '<button class="btn bp" id="img-mgr-upload-btn">📁 上传文件</button>' +
           '<input type="file" id="img-mgr-file-input" accept="image/*" multiple style="display:none"/>' +
           '<button class="btn bn" id="img-mgr-url-btn">🔗 URL导入</button>' +
+          '<button class="btn bn" id="img-mgr-sel-btn">☑ 多选</button>' +
           '<button class="char-library-close" id="img-mgr-close">✕</button>' +
         '</div>' +
       '</div>' +
@@ -403,9 +404,41 @@ export async function openImageManager() {
         '</div>' +
       '</div>' +
       '<div class="char-img-mgr-grid" id="img-mgr-grid"><div class="char-images-empty">加载中…</div></div>' +
+      '<div id="img-mgr-sel-bar" style="display:none;padding:10px 14px;border-top:1px solid var(--border);flex-shrink:0;display:none;gap:8px">' +
+        '<span id="img-mgr-sel-count" style="flex:1;color:var(--muted);font-size:13px;line-height:32px">已选 0 张</span>' +
+        '<button class="btn bn" id="img-mgr-cancel-sel">取消</button>' +
+        '<button class="btn br" id="img-mgr-del-sel-btn">删除选中</button>' +
+      '</div>' +
     '</div>';
 
   mgr.classList.add('show');
+
+  let _selecting = false;
+  let _checked = new Set();
+
+  function _updateSelBar() {
+    const bar   = mgr.querySelector('#img-mgr-sel-bar');
+    const count = mgr.querySelector('#img-mgr-sel-count');
+    if (bar)   { bar.style.display = _selecting ? 'flex' : 'none'; }
+    if (count) count.textContent = '已选 ' + _checked.size + ' 张';
+  }
+
+  // 上传后自动关联到角色（仅 charId 有值时生效）
+  async function _linkUrl(url) {
+    if (!charId) return;
+    const char = State.allChars.find(function(c) { return c.id === charId; });
+    if (!char) return;
+    const existing = parseAvatarUrls(char.avatar_url);
+    if (existing.includes(url)) return;
+    const newUrls = [...existing, url];
+    const newVal  = JSON.stringify(newUrls);
+    const { error } = await supaClient.from('characters').update({ avatar_url: newVal }).eq('id', charId);
+    if (!error) {
+      char.avatar_url = newVal;
+      _editImages.push({ type: 'existing', url: url, preview: url, file: null });
+      _renderImagesGrid(State.pageContainer);
+    }
+  }
 
   async function _renderMgr() {
     const grid = mgr.querySelector('#img-mgr-grid');
@@ -466,9 +499,77 @@ export async function openImageManager() {
         _renderMgr();
       });
     });
+
+    if (_selecting) grid.classList.add('selecting');
+    grid.querySelectorAll('.char-img-mgr-item').forEach(function(item) {
+      if (_checked.has(item.dataset.filename)) item.classList.add('checked');
+    });
   }
 
   _renderMgr();
+
+  // grid 级点击委托：多选模式下切换勾选
+  mgr.querySelector('#img-mgr-grid').addEventListener('click', function(e) {
+    if (!_selecting) return;
+    const item = e.target.closest('.char-img-mgr-item');
+    if (!item) return;
+    const filename = item.dataset.filename;
+    if (_checked.has(filename)) {
+      _checked.delete(filename);
+      item.classList.remove('checked');
+    } else {
+      _checked.add(filename);
+      item.classList.add('checked');
+    }
+    _updateSelBar();
+  });
+
+  mgr.querySelector('#img-mgr-sel-btn').addEventListener('click', function() {
+    _selecting = !_selecting;
+    _checked.clear();
+    _updateSelBar();
+    const grid = mgr.querySelector('#img-mgr-grid');
+    if (grid) {
+      grid.classList.toggle('selecting', _selecting);
+      grid.querySelectorAll('.char-img-mgr-item').forEach(function(el) { el.classList.remove('checked'); });
+    }
+  });
+
+  mgr.querySelector('#img-mgr-cancel-sel').addEventListener('click', function() {
+    _selecting = false;
+    _checked.clear();
+    _updateSelBar();
+    const grid = mgr.querySelector('#img-mgr-grid');
+    if (grid) {
+      grid.classList.remove('selecting');
+      grid.querySelectorAll('.char-img-mgr-item').forEach(function(el) { el.classList.remove('checked'); });
+    }
+  });
+
+  mgr.querySelector('#img-mgr-del-sel-btn').addEventListener('click', async function() {
+    if (!_checked.size) return;
+    if (!await confirmDialog('确定删除选中的 ' + _checked.size + ' 张图片？')) return;
+    const filenames = [..._checked];
+    const { error } = await supaClient.storage.from('avatars').remove(filenames);
+    if (error) { showToast('删除失败'); return; }
+    for (const filename of filenames) {
+      const pubUrl = supaClient.storage.from('avatars').getPublicUrl(filename).data.publicUrl;
+      State.allChars.forEach(function(char) {
+        const urls    = parseAvatarUrls(char.avatar_url);
+        const filtered = urls.filter(function(u) { return u !== pubUrl && !u.endsWith('/' + filename); });
+        if (filtered.length !== urls.length) {
+          const newVal = filtered.length ? JSON.stringify(filtered) : null;
+          supaClient.from('characters').update({ avatar_url: newVal }).eq('id', char.id);
+          char.avatar_url = newVal;
+        }
+      });
+    }
+    _selecting = false;
+    _checked.clear();
+    _updateSelBar();
+    showToast('已删除 ' + filenames.length + ' 张');
+    _renderMgr();
+  });
 
   mgr.querySelector('#img-mgr-upload-btn').addEventListener('click', function() {
     mgr.querySelector('#img-mgr-file-input').click();
@@ -483,6 +584,10 @@ export async function openImageManager() {
       const filename = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.' + ext;
       const { error } = await supaClient.storage.from('avatars').upload(filename, file, { upsert: false });
       if (error) { showToast('上传失败：' + file.name); }
+      else {
+        const url = supaClient.storage.from('avatars').getPublicUrl(filename).data.publicUrl;
+        await _linkUrl(url);
+      }
     }
     e.target.value = '';
     showToast('上传完成');
@@ -511,6 +616,8 @@ export async function openImageManager() {
         const filename = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.' + ext;
         const { error } = await supaClient.storage.from('avatars').upload(filename, blob, { upsert: false, contentType: blob.type });
         if (error) throw error;
+        const pubUrl = supaClient.storage.from('avatars').getPublicUrl(filename).data.publicUrl;
+        await _linkUrl(pubUrl);
         ok++;
       } catch (_) { fail++; }
     }
@@ -721,6 +828,17 @@ export function openCharModal(char) {
 
 async function saveCharacter() {
   const container = State.pageContainer;
+  const saveBtn = container.querySelector('#char-save-btn');
+  if (saveBtn && saveBtn.disabled) return;
+  if (saveBtn) saveBtn.disabled = true;
+  try {
+    await _doSave(container);
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+  }
+}
+
+async function _doSave(container) {
   const name = container.querySelector('#char-name').value.trim();
   if (!name) return showToast('请输入名字');
 
@@ -741,6 +859,10 @@ async function saveCharacter() {
         if (error) throw error;
         uploadedUrls.push(supaClient.storage.from('avatars').getPublicUrl(data.path).data.publicUrl);
       } else if (img.type === 'url') {
+        if (_isStorageUrl(img.url)) {
+          // 已经是 storage 地址，直接保留，不重复上传
+          uploadedUrls.push(img.url);
+        } else {
         // 从外部 URL 下载后转存到 storage
         let blob;
         try {
@@ -756,6 +878,7 @@ async function saveCharacter() {
         const { data, error } = await supaClient.storage.from('avatars').upload(filename, blob, { upsert: true, contentType: blob.type });
         if (error) throw error;
         uploadedUrls.push(supaClient.storage.from('avatars').getPublicUrl(data.path).data.publicUrl);
+        }
       } else {
         // existing：已在 storage 中的 URL，直接保留
         uploadedUrls.push(img.url);
