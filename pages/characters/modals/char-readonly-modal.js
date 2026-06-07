@@ -34,6 +34,17 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
           '<h2 style="margin:0 0 4px;color:var(--border-hover)">' + escHtml(char.name) + '</h2>' +
           (age      ? '<div style="font-size:14px;color:var(--muted)">' + age + '</div>' : '') +
           (location ? '<div style="font-size:14px;color:var(--muted)">' + escHtml(location) + '</div>' : '') +
+          (char.link_url ? (function() {
+            var re = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, m, links = [], raw = char.link_url;
+            while ((m = re.exec(raw)) !== null) links.push({ label: m[1], url: m[2] });
+            if (!links.length && /^https?:\/\//.test(raw.trim())) links.push({ label: raw.trim(), url: raw.trim() });
+            if (!links.length) return '';
+            return '<div style="font-size:14px;margin-top:4px;display:flex;flex-wrap:wrap;gap:6px">' +
+              links.map(function(l) {
+                return '<a href="' + escHtml(l.url) + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none">' + escHtml(l.label) + '</a>';
+              }).join('') +
+            '</div>';
+          })() : '') +
         '</div>' +
       '</div>' +
       (function() {

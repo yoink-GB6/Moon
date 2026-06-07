@@ -734,8 +734,8 @@ export function openCharModal(char) {
   const modal = container.querySelector('#char-modal');
   container.querySelector('#char-modal-title').textContent = char ? '编辑人物' : '新建人物';
   container.querySelector('#char-name').value = char ? char.name || '' : '';
-  // 使用 base_age 字段
   container.querySelector('#char-age').value  = (char && char.base_age != null) ? char.base_age : '';
+  container.querySelector('#char-link').value = char ? char.link_url || '' : '';
   // ── 初始化小节编辑器 ──
   const sections = parseCharSections(char ? char.description : null);
   const usedTitles = new Set(sections.map(function(s) { return s.title; }));
@@ -843,6 +843,7 @@ async function _doSave(container) {
   if (!name) return showToast('请输入名字');
 
   const ageVal      = container.querySelector('#char-age').value.trim();
+  const linkVal     = container.querySelector('#char-link').value.trim();
   const cityIdVal   = container.querySelector('#char-city').value;
   const countryIdVal = container.querySelector('#char-country').value;
   const modal     = container.querySelector('#char-modal');
@@ -889,6 +890,7 @@ async function _doSave(container) {
     const payload = {
       name,
       base_age:    ageVal !== '' ? parseInt(ageVal) : null,
+      link_url:    linkVal || null,
       city_id:     cityIdVal   ? parseInt(cityIdVal)    : null,
       country_id:  countryIdVal ? parseInt(countryIdVal) : null,
       description: desc,
