@@ -93,7 +93,7 @@ function _rowHTML(sec) {
   const hasContent = content.trim().length > 0;
   const preview = hasContent
     ? escHtml(content.trim().slice(0, 60)) + (content.trim().length > 60 ? '…' : '')
-    : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
+    : '<span style="color:var(--muted);font-style:italic">恭喜你，哥伦布</span>';
   const titleVal = escHtml(sec.title || '');
   const titleLabel = escHtml(sec.title || '未命名');
   const phEsc = escHtml(ph);
@@ -191,7 +191,7 @@ function _collapseRow(row) {
     if (content) {
       preview.innerHTML = escHtml(content.slice(0, 60)) + (content.length > 60 ? '…' : '');
     } else {
-      preview.innerHTML = '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
+      preview.innerHTML = '<span style="color:var(--muted);font-style:italic">恭喜你，哥伦布</span>';
     }
   }
   row.querySelector('.cm-row-collapsed').style.display = '';

@@ -8,12 +8,28 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>hello~</title>
+<meta name="theme-color" content="#0c0c0c">
+
+<!-- 必须在样式表之前同步执行，否则浅色模式下会闪一帧暗色 -->
+<script>
+(function(){
+  var t = localStorage.getItem('moon-theme');
+  if (t !== 'light' && t !== 'dark')
+    t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t;
+  document.querySelector('meta[name="theme-color"]').content = t === 'light' ? '#f0eee6' : '#0c0c0c';
+})();
+</script>
 
 <!-- ★ 填入你的 Supabase 配置 ★ -->
 <script>
   window.SUPABASE_URL  = 'https://hrgottdtlnihablruxtr.supabase.co';
   window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhyZ290dGR0bG5paGFibHJ1eHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMTcxOTAsImV4cCI6MjA4Njg5MzE5MH0.6Ng0E96W8VLnATqWgc_o7xVKCrzlewn0J-ba2ChpcE4';
-  window.EDIT_PASSWORD_HASH = 'd9c6f9f83c0c015389bc595511f19d6ed5f1c11f4d9a318de4765a91e49aebc5';
+  // 编辑账号的邮箱。不是机密——它只是账号标识，防护由 Supabase Auth + RLS 提供。
+  // 填成你在 Supabase → Authentication → Users 里建的那个账号。
+  window.EDIT_EMAIL = 'editor@moon-site.com';
+  // 可选：把编辑权限钉死在这个 user id 上（Users 列表里能复制到 UUID）
+  window.EDIT_USER_ID = 'fa10502d-006a-4179-80bf-01fb5f949db7';
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -36,30 +52,25 @@
 <div id="app">
   <!-- Topbar -->
   <div id="topbar">
-    <button id="menu-btn">☰</button>
-    <div id="topbar-title">欢迎欢迎~</div>
-    <div id="sync-dot" title="同步状态"></div>
-    <button id="lock-btn" onclick="showPwModal()">readonly</button>
+    <button id="nav-btn" class="topbar-btn" title="导航栏">Where to?</button>
+    <div class="topbar-spacer"></div>
+    <button id="panel-btn" class="topbar-btn" title="页面工具" hidden>Tools</button>
   </div>
 
   <div id="body-row">
     <!-- Left sidebar -->
     <div id="sidebar">
-      <div id="sidebar-logo">
-        <div style="flex:1">
-          Where to？
-          </div>
-        <button id="sidebar-toggle" class="panel-toggle-btn" title="折叠/展开导航栏">‹</button>
-      </div>
       <nav id="sidebar-nav">
         <!-- Nav items injected by router -->
       </nav>
-      <div id="sidebar-footer">
-      </div>
+      <button id="theme-toggle" class="sidebar-btn" title="切换深色/浅色">
+        <span class="th-day"></span>
+        <span class="th-night"></span>
+      </button>
+      <button id="lock-btn" class="sidebar-btn" onclick="showPwModal()">readonly</button>
     </div>
 
     <div id="sidebar-overlay"></div>
-    <button id="sidebar-expand" class="expand-btn-float" title="展开导航栏">›</button>
 
     <!-- Main area -->
     <div id="main-content">
@@ -70,15 +81,10 @@
 
 <!-- Password modal -->
 <div id="pw-modal">
-  <div id="pw-box">
-    <h2>输入编辑密码</h2>
-    <input id="pw-input" type="password" placeholder="请输入密码" autocomplete="current-password"/>
-    <div id="pw-error">密码错误，请重试</div>
-    <div class="mbtns" style="justify-content:flex-end;margin-top:4px">
-      <button class="btn bn" onclick="closePwModal()">取消</button>
-      <button class="btn bp" onclick="submitPw()">确认</button>
-    </div>
-  </div>
+  <form id="pw-box" autocomplete="on">
+    <input id="pw-input" type="password" placeholder="••••••••" autocomplete="current-password"
+           enterkeyhint="go" aria-label="编辑密码"/>
+  </form>
 </div>
 
 <div id="toast"></div>
@@ -86,8 +92,12 @@
 <script src="core/starfield.js"></script>
 <script type="module">
 const _V = Date.now(); // 缓存破坏版本号，每次加载页面时生成
-import { showToast, initSidebar, closeSidebar, confirmDialog, bindPanelToggle } from './core/ui.js';
-import { isEditor, tryUnlock, lock, onAuthChange } from './core/auth.js';
+import { showToast, initSidebar, toggleSidebar, closeSidebar, confirmDialog } from './core/ui.js';
+import { isEditor, tryUnlock, lock, onAuthChange, initAuth } from './core/auth.js';
+import { initTheme, toggleTheme } from './core/theme.js';
+import { iconSun, iconCloud, iconCloudSm, iconBird, iconHorizon,
+         moonCrescent, iconConstellation,
+         iconStar, iconStarSm } from './core/icons.js';
 
 // ── Router config ──────────────────────────────────
 // 添加新页面：在这里加一条记录，并在 pages/ 目录下建对应 .js 文件
@@ -100,8 +110,8 @@ const ROUTES = [
   },
   {
     id: 'geo',
-    label: '🏳 国家',
-    icon: '🏳',
+    label: '⚑ 国家',
+    icon: '⚑',
     loader: () => import('./pages/geo.js?v='+_V),
   },
   {
@@ -112,8 +122,8 @@ const ROUTES = [
   },
   {
     id: 'timeline',
-    label: '⏱ 年龄轴',
-    icon: '⏱',
+    label: '◷ 年龄轴',
+    icon: '◷',
     loader: () => import('./pages/timeline.js?v='+_V),
   },
   {
@@ -148,13 +158,14 @@ function buildNav() {
     <div class="nav-item${r.id===currentRoute?.id?' active':''}" data-id="${r.id}">
       <span class="nav-icon">${r.icon}</span>
       <span class="nav-label">${r.label.replace(r.icon,'').trim()}</span>
-      ${r.placeholder ? '<span style="font-size:10px;color:#555;margin-left:auto">soon</span>' : ''}
+      ${r.placeholder ? '<span style="font-size:10px;color:var(--text-faint);margin-left:auto">soon</span>' : ''}
     </div>
   `).join('');
   nav.querySelectorAll('.nav-item').forEach(el => {
     el.addEventListener('click', () => {
       navigate(el.dataset.id);
       closeSidebar();
+      syncToggleBtns();
     });
   });
 }
@@ -180,17 +191,20 @@ async function navigate(id) {
   currentModule = null;
   buildNav();
 
-  document.getElementById('topbar-title').textContent = route.label;
+  // 换页时把顶栏放回来，否则在会滚动的页面收起后，
+  // 切到不滚动的页面就再也没机会把它唤出来了
+  document.getElementById('topbar').classList.remove('hide');
 
   const root = document.getElementById('page-root');
   root.innerHTML = '';
+  syncPanelBtn();  // 先隐藏；挂载完再按新页面是否有右侧面板决定
 
   if (route.placeholder) {
     root.innerHTML = `
       <div class="page-placeholder">
         <div class="placeholder-icon">${route.icon}</div>
         <h2>${route.label.replace(route.icon,'').trim()}</h2>
-        <p>这个页面正在建设中，敬请期待。</p>
+        <p>hiraeth</p>
       </div>`;
     return;
   }
@@ -200,11 +214,12 @@ async function navigate(id) {
     const mod = await tryLoad(route.loader);
     if (seq !== _navSeq) return;
     if (!mod) {
-      root.innerHTML = `<div class="page-placeholder"><div class="placeholder-icon">${route.icon}</div><h2>页面暂未实现</h2><p>对应的 pages/${route.id}.js 文件尚不存在。</p></div>`;
+      root.innerHTML = `<div class="page-placeholder"><div class="placeholder-icon">${route.icon}</div><h2>hiraeth</h2></div>`;
       return;
     }
     currentModule = mod;
     await mod.mount(root);
+    syncPanelBtn();
     sessionStorage.removeItem('_navReloadAttempted');
   } catch(e) {
     if (seq !== _navSeq) return;
@@ -222,63 +237,161 @@ async function navigate(id) {
 onAuthChange(editor => {
   const btn = document.getElementById('lock-btn');
   const banner = document.getElementById('readonly-banner');
-  const footer = document.getElementById('sidebar-footer');
-  if (editor) {
-    btn.textContent = '-- EDITING --';
-    btn.classList.add('unlocked');
-    if (banner) banner.classList.remove('show');
-    footer.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--muted);border-top:1px solid var(--border)">编辑模式已解锁</div>';
-  } else {
-    btn.textContent = 'READONLY';
-    btn.classList.remove('unlocked');
-    if (banner) banner.classList.add('show');
-    footer.innerHTML = '';
-    buildNav();
-  }
+  btn.textContent = editor ? 'EDITING' : 'READONLY';
+  btn.classList.toggle('unlocked', editor);
+  if (banner) banner.classList.toggle('show', !editor);
+  if (!editor) buildNav();
 });
 
 // ── Password modal ─────────────────────────────────
+const pwInput = document.getElementById('pw-input');
+const pwModal = document.getElementById('pw-modal');
+
 window.showPwModal = function() {
   if (isEditor()) { lock(); return; }
-  document.getElementById('pw-input').value = '';
-  document.getElementById('pw-error').style.display = 'none';
-  document.getElementById('pw-modal').classList.add('show');
-  setTimeout(() => document.getElementById('pw-input').focus(), 60);
+  pwInput.value = '';
+  pwInput.classList.remove('err');
+  pwModal.classList.add('show');
+  setTimeout(() => pwInput.focus(), 60);
 };
 window.closePwModal = function() {
-  document.getElementById('pw-modal').classList.remove('show');
-  document.getElementById('pw-error').style.display = 'none';
-  document.getElementById('pw-input').value = '';
+  pwModal.classList.remove('show');
+  pwInput.classList.remove('err');
+  pwInput.value = '';
 };
+let _pwBusy = false;
 window.submitPw = async function() {
-  const pw = document.getElementById('pw-input').value;
-  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-  const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
-  if (hashHex === window.EDIT_PASSWORD_HASH) {
-    window.EDIT_PASSWORD = pw;
-    tryUnlock(pw);
-    delete window.EDIT_PASSWORD;
+  if (_pwBusy) return;
+  _pwBusy = true;
+  pwInput.disabled = true;
+  const { ok, message } = await tryUnlock(pwInput.value);
+  pwInput.disabled = false;
+  _pwBusy = false;
+
+  if (ok) {
     window.closePwModal();
     showToast('ok 已解锁编辑模式');
   } else {
-    document.getElementById('pw-error').style.display = 'block';
-    document.getElementById('pw-input').value = '';
-    document.getElementById('pw-input').focus();
+    // 无文案，用输入框自身抖动 + 变红表达失败
+    console.warn('[auth] 登录失败：', message);
+    pwInput.value = '';
+    pwInput.classList.remove('err');
+    void pwInput.offsetWidth;   // 强制重排，让动画能连续触发
+    pwInput.classList.add('err');
+    pwInput.focus();
   }
 };
-document.getElementById('pw-input').addEventListener('keydown', e => {
-  if (e.key==='Enter') { e.preventDefault(); e.stopPropagation(); window.submitPw(); }
-  if (e.key==='Escape') { e.stopPropagation(); window.closePwModal(); }
+
+// 用真 <form>：手机端软键盘才会出「前往/Go」键并提交
+document.getElementById('pw-box').addEventListener('submit', e => {
+  e.preventDefault();
+  window.submitPw();
 });
-document.getElementById('pw-modal').addEventListener('click', e => {
-  if (e.target===document.getElementById('pw-modal')) window.closePwModal();
+pwInput.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { e.stopPropagation(); window.closePwModal(); }
+});
+pwModal.addEventListener('click', e => {
+  if (e.target === pwModal) window.closePwModal();
 });
 
-// ── Left sidebar toggle ────────────────────────────
-bindPanelToggle(document, '#sidebar', '#sidebar-toggle', '#sidebar-expand', '#sidebar-toggle');
+// ── 图标注入 ───────────────────────────────────────
+// 各五个符号，视觉重心都落在中间那个
+document.querySelector('#theme-toggle .th-day').innerHTML =
+  iconBird + iconCloud + iconSun + iconCloudSm + iconHorizon;
+document.querySelector('#theme-toggle .th-night').innerHTML =
+  iconConstellation + iconStarSm + moonCrescent + iconCloud + iconStar;
+
+// ── 顶栏左右按钮 ───────────────────────────────────
+// 右侧面板由各 page 自己渲染，这里统一按选择器找当前页的那一个
+const RIGHT_PANELS = ['#chars-panel', '.lib-panel', '#tl-panel'];
+const findRightPanel = () =>
+  RIGHT_PANELS.reduce((f, s) => f || document.querySelector('#page-root ' + s), null);
+
+// 面板展开时对应按钮停在选中态
+function syncToggleBtns() {
+  const sb = document.getElementById('sidebar');
+  document.getElementById('nav-btn')
+    .classList.toggle('active', !sb.classList.contains('collapsed'));
+  const p = findRightPanel();
+  document.getElementById('panel-btn')
+    .classList.toggle('active', !!p && !p.classList.contains('collapsed'));
+}
+
+function syncPanelBtn() {
+  const p = findRightPanel();
+  document.getElementById('panel-btn').hidden = !p;
+  // 手机端宽度不够，右侧栏默认收起；电脑端默认展开
+  if (p && window.matchMedia('(max-width:768px)').matches) p.classList.add('collapsed');
+  syncToggleBtns();
+}
+
+document.getElementById('nav-btn').addEventListener('click', () => {
+  lockTopbar(); toggleSidebar(); syncToggleBtns();
+});
+document.getElementById('panel-btn').addEventListener('click', () => {
+  lockTopbar();
+  findRightPanel()?.classList.toggle('collapsed');
+  syncToggleBtns();
+});
+window.addEventListener('resize', syncToggleBtns);
+document.getElementById('sidebar-overlay').addEventListener('click', syncToggleBtns);
+
+// 手机端屏幕放不下并排，点面板外部就收起（和左侧栏遮罩同一个道理）
+document.addEventListener('pointerdown', e => {
+  if (!window.matchMedia('(max-width:768px)').matches) return;
+  const p = findRightPanel();
+  if (!p || p.classList.contains('collapsed')) return;
+  if (p.contains(e.target) || e.target.closest('#panel-btn')) return;
+  p.classList.add('collapsed');
+  syncToggleBtns();
+}, true);
+
+// ── 顶栏随滚动收起 ─────────────────────────────────
+// 各 page 有自己的滚动容器（html/body 是 overflow:hidden），
+// scroll 不冒泡但会捕获，所以在 document 上捕获监听，按来源分别记录位置。
+const _lastScroll = new WeakMap();
+let _topbarLock = 0;   // 收/放之后的冷却，见下方说明
+
+// 只认页面主内容的滚动。弹窗、侧栏、右侧面板自己的滚动不该动顶栏。
+const IGNORE_SCROLL = '.tl-modal-overlay,#pw-modal,#sidebar,.lib-panel,#tl-panel,#chars-panel';
+
+// 侧栏/面板开合会改变内容区宽度 → 多列重排 → 高度变化 → 浏览器补发 scroll 事件。
+// 那不是用户滚的，不该动顶栏，所以在动画期间锁住。
+function lockTopbar(ms = 600) { _topbarLock = performance.now() + ms; }
+
+function setTopbarHidden(hide) {
+  const topbar = document.getElementById('topbar');
+  if (topbar.classList.contains('hide') === hide) return;
+  topbar.classList.toggle('hide', hide);
+  // 顶栏一收，内容区就变高 → 滚动容器尺寸变化 → 又派发一次 scroll，
+  // 方向相反就会来回抖。加一段冷却把这个反馈回路掐断。
+  _topbarLock = performance.now() + 400;
+}
+
+document.addEventListener('scroll', e => {
+  const el = e.target;
+  if (!(el instanceof Element)) return;
+  if (el.closest(IGNORE_SCROLL)) return;
+
+  const y    = el.scrollTop;
+  const prev = _lastScroll.get(el) ?? 0;
+  _lastScroll.set(el, y);
+  if (performance.now() < _topbarLock) return;
+
+  const d = y - prev;
+  if (Math.abs(d) < 8) return;            // 忽略抖动
+  if (y < 40) setTopbarHidden(false);
+  else setTopbarHidden(d > 0);
+}, true);
+
+// ── Theme toggle ───────────────────────────────────
+document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
 
 // ── Init ───────────────────────────────────────────
+initTheme();
+initAuth();      // 异步恢复会话；恢复完 onAuthChange 会把 UI 刷成 EDITING
 initSidebar();
+syncToggleBtns();
 buildNav();
 navigate('library');
 </script>

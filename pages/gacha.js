@@ -5,9 +5,18 @@ import { parseAvatarUrls } from './characters/utils.js';
 import { openCharReadonly } from './characters/modals/char-readonly-modal.js';
 import * as State from './characters/state.js';
 import { loadAllData } from './characters/data-loader.js';
+import { themeRGB } from '../core/theme.js';
 
 const POOL_RESERVE = 3;  // 永远抽不到的图片数
 const MIN_STROKE   = 50; // 最短有效笔迹 px，防止误触
+
+// 笔迹基准色，切主题时重读；下方的 glow 插值全部以此为原点偏移
+let INK = [255,210,80], INK_HI = [255,250,210], INK_GLOW = [255,240,160];
+function _readInk() {
+  INK      = themeRGB('--ink-rgb');
+  INK_HI   = themeRGB('--ink-hi-rgb');
+  INK_GLOW = themeRGB('--ink-glow-rgb');
+}
 
 let _container = null;
 let _canvas    = null;
@@ -69,8 +78,10 @@ export function mount(container) {
   _canvas = container.querySelector('#gacha-draw-canvas');
   _ctx    = _canvas.getContext('2d');
 
+  _readInk();
   _bindEvents();
   window.addEventListener('resize', _onResize);
+  document.addEventListener('theme-change', _readInk);
   requestAnimationFrame(() => requestAnimationFrame(_resizeCanvas));
 
   // 后台静默加载，不阻塞画布交互
@@ -88,6 +99,7 @@ export function unmount() {
   if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
   if (_viewerAC) { _viewerAC.abort(); _viewerAC = null; }
   window.removeEventListener('resize', _onResize);
+  document.removeEventListener('theme-change', _readInk);
 
   // 隐藏挂在 body 上的浮层
   const viewer = document.getElementById('gacha-viewer');
@@ -260,9 +272,9 @@ function _redraw() {
     const px = p.x0 + p.vx * age;
     const py = p.y0 + p.vy * age;
     _ctx.save();
-    _ctx.shadowColor = `rgba(255,240,160,${a})`;
+    _ctx.shadowColor = `rgba(${INK_GLOW},${a})`;
     _ctx.shadowBlur  = 8;
-    _ctx.fillStyle   = `rgba(255,250,210,${a})`;
+    _ctx.fillStyle   = `rgba(${INK_HI},${a})`;
     _ctx.beginPath();
     _ctx.arc(px, py, p.r * (1 - t * 0.5), 0, Math.PI * 2);
     _ctx.fill();
@@ -304,10 +316,10 @@ function _drawStroke(ctx, pts, alpha, glow) {
 
   // 外晕（两遍叠加，窄而亮）
   for (let pass = 0; pass < (glow > 0.2 ? 2 : 1); pass++) {
-    const hg = Math.round(185 + glow * 40);
-    ctx.shadowColor = `rgba(255,${hg},80,${Math.min(1, alpha * (1 + glow * 1.2))})`;
+    const hg = Math.round(INK[1] - 25 + glow * 40);
+    ctx.shadowColor = `rgba(${INK[0]},${hg},${INK[2]},${Math.min(1, alpha * (1 + glow * 1.2))})`;
     ctx.shadowBlur  = 8 + glow * 16 + pass * 8;
-    ctx.strokeStyle = `rgba(255,${Math.round(210 + glow * 20)},80,${alpha * (pass === 0 ? 1 : 0.5)})`;
+    ctx.strokeStyle = `rgba(${INK[0]},${Math.round(INK[1] + glow * 20)},${INK[2]},${alpha * (pass === 0 ? 1 : 0.5)})`;
     ctx.lineWidth   = 1.2;
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
@@ -317,8 +329,8 @@ function _drawStroke(ctx, pts, alpha, glow) {
 
   // 内芯：glow 时稍微偏白（金→浅金），幅度小
   ctx.shadowBlur  = 5 + glow * 14;
-  ctx.shadowColor = `rgba(255,${Math.round(210 + glow * 30)},${Math.round(50 + glow * 60)},${alpha})`;
-  ctx.strokeStyle = `rgba(255,${Math.round(220 + glow * 25)},${Math.round(100 + glow * 80)},${alpha})`;
+  ctx.shadowColor = `rgba(${INK[0]},${Math.round(INK[1] + glow * 30)},${Math.round(INK[2] - 30 + glow * 60)},${alpha})`;
+  ctx.strokeStyle = `rgba(${INK[0]},${Math.round(INK[1] + 10 + glow * 25)},${Math.round(INK[2] + 20 + glow * 80)},${alpha})`;
   ctx.lineWidth   = 0.5;
   ctx.beginPath();
   ctx.moveTo(pts[0].x, pts[0].y);

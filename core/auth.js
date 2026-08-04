@@ -1,13 +1,23 @@
 // core/auth.js
-// 全局编辑权限管理 - 每小时密码
+// 编辑权限 = Supabase Auth 会话。
+// 真正的拦截在数据库的 RLS 策略里，这里只负责登录/登出和同步 UI 状态；
+// 即使有人绕过前端直接调 REST API，没有有效 JWT 也写不进去。
+
+import { supaClient } from './supabase-client.js';
 
 let _isEditor = false;
 const _listeners = [];
 
 export function isEditor() { return _isEditor; }
 
-// 注册监听器，权限变化时通知各页面更新 UI
-export function onAuthChange(fn) { _listeners.push(fn); }
+// 注册监听器，权限变化时通知各页面更新 UI；返回取消订阅函数
+export function onAuthChange(fn) {
+  _listeners.push(fn);
+  return () => {
+    const i = _listeners.indexOf(fn);
+    if (i >= 0) _listeners.splice(i, 1);
+  };
+}
 
 function _notify() {
   _listeners.forEach(fn => {
@@ -16,54 +26,33 @@ function _notify() {
   });
 }
 
-// 生成当前小时的密码（基于时间戳 + 密钥）
-function generateHourlyPassword() {
-  const SECRET_KEY = 'Moon-Timeline-Secret-2026';  // 修改这个密钥来改变密码规则
-  const now = new Date();
-  const hourKey = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}-${now.getHours()}`;
-  
-  // 简单哈希：结合密钥和时间戳生成 6 位数字密码
-  const combined = SECRET_KEY + hourKey;
-  let hash = 0;
-  for (let i = 0; i < combined.length; i++) {
-    hash = ((hash << 5) - hash) + combined.charCodeAt(i);
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  
-  // 生成 6 位数字密码
-  const password = Math.abs(hash % 1000000).toString().padStart(6, '0');
-  return password;
-}
-
-// 获取当前小时的密码（供管理员查看）
-export function getCurrentPassword() {
-  return generateHourlyPassword();
-}
-
-// 显示当前密码（开发用）
-export function tryUnlock(password) {
-  const currentPassword = generateHourlyPassword();
-  
-  // 检查是否匹配当前小时的密码
-  if (password === currentPassword) {
-    _isEditor = true;
-    _notify();
-    return true;
-  }
-  
-  // 向后兼容：仍然支持固定密码（如果设置了）
-  if (window.EDIT_PASSWORD && password === window.EDIT_PASSWORD) {
-    _isEditor = true;
-    _notify();
-    return true;
-  }
-  
-  return false;
-}
-
-export function lock() {
-  _isEditor = false;
+function _applySession(session) {
+  // 可选：把编辑权限钉死在某个账号上，多账号时更保险
+  const pinned = window.EDIT_USER_ID;
+  const next = !!session && (!pinned || session.user?.id === pinned);
+  if (next === _isEditor) return;
+  _isEditor = next;
   _notify();
+}
+
+// 页面启动时调用：恢复已有会话（supabase-js 默认把会话存在 localStorage，刷新不掉线）
+export async function initAuth() {
+  supaClient.auth.onAuthStateChange((_event, session) => _applySession(session));
+  const { data } = await supaClient.auth.getSession();
+  _applySession(data?.session ?? null);
+}
+
+// 返回 { ok } 或 { ok:false, message }
+export async function tryUnlock(password) {
+  const email = window.EDIT_EMAIL;
+  if (!email) return { ok: false, message: '未配置 EDIT_EMAIL' };
+  const { error } = await supaClient.auth.signInWithPassword({ email, password });
+  if (error) return { ok: false, message: error.message };
+  return { ok: true };
+}
+
+export async function lock() {
+  await supaClient.auth.signOut();
 }
 
 // 便捷：检查权限，不足时弹 toast

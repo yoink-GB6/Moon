@@ -89,10 +89,10 @@ function _buildHTML(country, sections) {
 function _rowHTML(sec) {
   const mdText  = childrenToMd(sec);
   const ph      = PRESETS.find(function(p) { return p.title === sec.title; })?.ph || '在此填写内容...\n\n# 子小节标题\n内容\n\n## 更深一层';
-  const preview = mdText.trim().replace(/\n/g, ' ').slice(0, 55) || '暂无内容';
+  const preview = mdText.trim().replace(/\n/g, ' ').slice(0, 55) || '恭喜你，哥伦布';
   const previewHTML = mdText.trim()
     ? escHtml(preview) + (mdText.trim().length > 55 ? '…' : '')
-    : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
+    : '<span style="color:var(--muted);font-style:italic">恭喜你，哥伦布</span>';
 
   return '<div class="cm-row" draggable="false">' +
     // 折叠态
@@ -180,7 +180,7 @@ function _collapseRow(row) {
     const txt = content.replace(/\n/g, ' ').slice(0, 55);
     preview.innerHTML = content
       ? escHtml(txt) + (content.length > 55 ? '…' : '')
-      : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
+      : '<span style="color:var(--muted);font-style:italic">恭喜你，哥伦布</span>';
   }
   row.querySelector('.cm-row-collapsed').style.display = '';
   row.querySelector('.cm-row-expanded').style.display  = 'none';

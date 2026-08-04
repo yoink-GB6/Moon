@@ -1,6 +1,6 @@
 // pages/characters.js
 import { isEditor, onAuthChange } from '../core/auth.js';
-import { escHtml, bindPanelToggle } from '../core/ui.js';
+import { escHtml } from '../core/ui.js';
 import { parseAvatarUrls, pickRandomUrl } from './characters/utils.js';
 
 import * as State from './characters/state.js';
@@ -47,13 +47,8 @@ function buildHTML() {
     </div>
   </div>
 
-  <button id="chars-panel-expand" class="panel-expand-trigger" title="展开面板">‹</button>
 
   <div id="chars-panel" class="tl-panel">
-    <div class="map-panel-hdr" id="chars-panel-toggle">
-      <span id="chars-panel-title">人物列表</span>
-      <span id="chars-panel-chevron">‹</span>
-    </div>
     <div id="panel-chars-body" class="panel-body-section">
       <div class="panel-search-box">
         <div class="panel-search-wrap">
@@ -108,7 +103,6 @@ function buildHTML() {
 
 function bindControls() {
   const container = State.pageContainer;
-  bindPanelToggle(container, '#chars-panel', '#chars-panel-toggle', '#chars-panel-expand', '#chars-panel-chevron');
   bindCharactersTab();
   bindSidePanel();
   container.querySelector('#chars-img-mgr-btn')?.addEventListener('click', () => openImageManager());
@@ -156,7 +150,7 @@ function _filterCharGridByGeo() {
     chars = State.allChars.filter(c => c.country_id === _geoFilter.id || cityIds.has(c.city_id));
   }
 
-  if (!chars.length) { grid.innerHTML = '<div class="intro-empty">该地区暂无人物</div>'; return; }
+  if (!chars.length) { grid.innerHTML = '<div class="intro-empty">wandering……</div>'; return; }
   grid.innerHTML = chars.map(char => {
     const avatarUrl = _avatarCache.get(char.id) || pickRandomUrl(parseAvatarUrls(char.avatar_url));
     return buildCharCardHTML(char, avatarUrl);
@@ -243,7 +237,7 @@ function _renderCharPanel(list, query, avatarCache) {
     : [...State.allChars];
 
   if (!geoItems.length && !chars.length) {
-    list.innerHTML = '<div class="tl-empty">' + (query ? '无匹配人物' : '暂无人物') + '</div>';
+    list.innerHTML = '<div class="tl-empty">' + (query ? '恭喜你，哥伦布' : 'wandering……') + '</div>';
     return;
   }
 

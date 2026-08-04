@@ -1,19 +1,23 @@
 // pages/tv.js
-// 上电视：多行横幅滚动（仅 character id=45 的 avatar_url）
+// 上电视：多列竖向瀑布流（仅 character id=45 的 avatar_url）
+// 等宽不等高 —— 聊天截图多为长图，锁宽才能保住可读性
 
 import { supaClient, setSyncStatus, dbError } from '../core/supabase-client.js';
 import { parseAvatarUrls, openImageViewer } from './characters/utils.js';
 
 const CHAR_ID = 45;
-const ROW_SPEEDS = [28, 50, 40];   // 各行速度(px/s)，差距拉大避免同向行看起来同速
-const DRAG_THRESHOLD = 5;          // 超过此位移判定为拖动，不触发点击放大
+const COL_SPEEDS = [22, 38, 30, 44, 26];  // 各列速度(px/s)，拉开差距避免同向列看起来同速
+const COL_MIN_W  = 250;                   // 单列理想宽度，决定列数
+const DRAG_THRESHOLD = 5;                 // 超过此位移判定为拖动，不触发点击放大
 
 let _container = null;
 let _urls = [];
-let _rows = [];                    // 每行状态 { track, offset, speed, dir, contentWidth, paused, dragging }
+let _cols = [];                  // { track, offset, speed, dir, period, paused, dragging }
 let _cleanupFns = [];
 let _raf = null;
 let _lastT = 0;
+let _resizeTimer = null;
+let _colCount = 0;
 
 export async function mount(container) {
   _container = container;
@@ -21,7 +25,6 @@ export async function mount(container) {
   await _fetch();
 
   if (_urls.length > 0) {
-    const hint = container.querySelector('#tv-hint');
     await Promise.all(
       _urls.map(url => new Promise((resolve) => {
         const img = new Image();
@@ -35,24 +38,27 @@ export async function mount(container) {
     );
   }
 
-  _renderRows();
+  _renderCols();
   _bindInteractions(container);
+  _bindResize();
   _startAutoScroll();
 }
 
 export function unmount() {
   _stopAutoScroll();
+  clearTimeout(_resizeTimer); _resizeTimer = null;
   _cleanupFns.forEach(fn => { try { fn(); } catch(_){} });
   _cleanupFns = [];
   _container = null;
   _urls = [];
-  _rows = [];
+  _cols = [];
+  _colCount = 0;
 }
 
 function _skeleton() {
   return `
     <div class="tv-page">
-      <div class="tv-rows" id="tv-rows"></div>
+      <div class="tv-cols" id="tv-cols"></div>
       <div class="tv-hint" id="tv-hint"></div>
     </div>
   `;
@@ -77,123 +83,162 @@ async function _fetch() {
 
 function _cardHTML(url) {
   const safeUrl = String(url).replace(/"/g, '&quot;');
-  return `<div class="tv-card"><img src="${safeUrl}" alt="" draggable="false"/></div>`;
+  return `<div class="tv-card"><img src="${safeUrl}" alt="" draggable="false" loading="eager"/></div>`;
 }
 
-function _renderRows() {
+function _calcColCount() {
+  const w = _container?.clientWidth || window.innerWidth;
+  return Math.max(2, Math.min(5, Math.floor(w / COL_MIN_W)));
+}
+
+function _renderCols() {
   if (!_container) return;
-  const rowsEl = _container.querySelector('#tv-rows');
-  const hint = _container.querySelector('#tv-hint');
-  if (!rowsEl || !hint) return;
+  const colsEl = _container.querySelector('#tv-cols');
+  const hint   = _container.querySelector('#tv-hint');
+  if (!colsEl || !hint) return;
 
   if (!_urls.length) {
-    hint.textContent = '暂无图片';
+    hint.textContent = 'Snow';
     return;
   }
 
-  const rowCount = window.innerWidth < 600 ? 2 : 3;
+  _colCount = _calcColCount();
   const display = _urls.slice().sort(() => Math.random() - 0.5);
 
-  // 轮流分配到各行
-  const buckets = Array.from({ length: rowCount }, () => []);
-  display.forEach((url, i) => buckets[i % rowCount].push(url));
+  // 轮流分配到各列
+  const buckets = Array.from({ length: _colCount }, () => []);
+  display.forEach((url, i) => buckets[i % _colCount].push(url));
 
-  rowsEl.innerHTML = buckets.map(() => `
-    <div class="tv-row"><div class="tv-row-track"></div></div>
-  `).join('');
+  // 两份相同副本上下拼接，实现无缝循环。
+  // 用 .tv-half 包住每一份，是为了能精确量出一个循环周期
+  // （直接用 scrollHeight/2 会漏掉两份之间那道 gap 的一半，日积月累会看到接缝跳动）
+  colsEl.innerHTML = buckets.map(urls => {
+    const half = `<div class="tv-half">${urls.map(_cardHTML).join('')}</div>`;
+    return `<div class="tv-col"><div class="tv-col-track">${half + half}</div></div>`;
+  }).join('');
 
-  const rowEls = rowsEl.querySelectorAll('.tv-row');
-  _rows = [];
-  buckets.forEach((urls, idx) => {
-    const track = rowEls[idx].querySelector('.tv-row-track');
-    // 两份相同副本拼接，实现无缝循环
-    const copy = urls.map(_cardHTML).join('');
-    track.innerHTML = copy + copy;
-    _rows.push({
-      track,
+  const colEls = colsEl.querySelectorAll('.tv-col');
+  _cols = [];
+  colEls.forEach((el, idx) => {
+    _cols.push({
+      track: el.querySelector('.tv-col-track'),
       offset: 0,
-      speed: ROW_SPEEDS[idx % ROW_SPEEDS.length],
+      speed: COL_SPEEDS[idx % COL_SPEEDS.length],
       dir: idx % 2 === 0 ? 1 : -1,
-      contentWidth: 0,
+      period: 0,
       paused: false,
       dragging: false,
     });
   });
 
-  // 等布局完成后测量一份副本宽度，并触发每张图独立随机渐入
-  const FADE_MAX = 1600;  // 整体渐入窗口(ms)，每张图在其中随机时刻点亮
+  _measure();
+
+  // 每张图在窗口内随机时刻点亮
+  const FADE_MAX = 1600;
   requestAnimationFrame(() => {
-    _rows.forEach(r => {
-      r.contentWidth = r.track.scrollWidth / 2;
-      r.track.querySelectorAll('.tv-card').forEach(card => {
-        card.style.transitionDelay = (Math.random() * FADE_MAX).toFixed(0) + 'ms';
-        card.classList.add('show');
-      });
+    colsEl.querySelectorAll('.tv-card').forEach(card => {
+      card.style.transitionDelay = (Math.random() * FADE_MAX).toFixed(0) + 'ms';
+      card.classList.add('show');
     });
   });
-
 }
 
-function _applyRow(r) {
-  r.track.style.transform = `translateX(${(-r.offset).toFixed(1)}px)`;
+// 循环周期 = 一份副本的高度 + 一道 gap
+function _measure() {
+  requestAnimationFrame(() => {
+    _cols.forEach(c => {
+      const half = c.track.querySelector('.tv-half');
+      if (!half) return;
+      const gap = parseFloat(getComputedStyle(c.track).rowGap) || 0;
+      c.period = half.offsetHeight + gap;
+    });
+  });
 }
 
-function _wrap(offset, w) {
-  if (w <= 0) return offset;
-  return ((offset % w) + w) % w;
+function _applyCol(c) {
+  c.track.style.transform = `translateY(${(-c.offset).toFixed(1)}px)`;
+}
+
+function _wrap(offset, p) {
+  if (p <= 0) return offset;
+  return ((offset % p) + p) % p;
+}
+
+function _bindResize() {
+  const onResize = () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => {
+      if (!_container) return;
+      // 列数变了才整体重排，否则只重新量一次周期（图片宽度变了高度也会变）
+      if (_calcColCount() !== _colCount) { _renderCols(); _bindColHover(); }
+      else _measure();
+    }, 200);
+  };
+  _addListener(window, 'resize', onResize);
 }
 
 function _bindInteractions(container) {
-  const rowsEl = container.querySelector('#tv-rows');
-  if (!rowsEl) return;
+  const colsEl = container.querySelector('#tv-cols');
+  if (!colsEl) return;
 
-  const drag = { active: false, startX: 0, moved: false, rowIndex: -1, startOffset: 0 };
-
-  const getX = (e) => e.touches ? e.touches[0].clientX : e.clientX;
+  const drag = { active: false, startY: 0, moved: false, colIndex: -1, startOffset: 0 };
+  const getY = (e) => e.touches ? e.touches[0].clientY : e.clientY;
 
   const onDown = (e) => {
     if (!e.touches && e.button !== 0) return;
-    const rowEl = e.target.closest('.tv-row');
-    if (!rowEl) return;
-    const idx = Array.prototype.indexOf.call(rowsEl.children, rowEl);
-    if (idx < 0 || !_rows[idx]) return;
+    const colEl = e.target.closest('.tv-col');
+    if (!colEl) return;
+    const idx = Array.prototype.indexOf.call(colsEl.children, colEl);
+    if (idx < 0 || !_cols[idx]) return;
     drag.active = true;
     drag.moved = false;
-    drag.startX = getX(e);
-    drag.rowIndex = idx;
-    drag.startOffset = _rows[idx].offset;
-    _rows[idx].dragging = true;
+    drag.startY = getY(e);
+    drag.colIndex = idx;
+    drag.startOffset = _cols[idx].offset;
+    _cols[idx].dragging = true;
   };
 
   const onMove = (e) => {
     if (!drag.active) return;
-    const r = _rows[drag.rowIndex];
-    if (!r) return;
-    const dx = getX(e) - drag.startX;
-    if (Math.abs(dx) > DRAG_THRESHOLD) drag.moved = true;
-    // 只拖被按住的那一行：右滑(dx>0)内容右移 → offset 减小
-    r.offset = _wrap(drag.startOffset - dx, r.contentWidth);
-    _applyRow(r);
+    const c = _cols[drag.colIndex];
+    if (!c) return;
+    const dy = getY(e) - drag.startY;
+    if (Math.abs(dy) > DRAG_THRESHOLD) drag.moved = true;
+    // 只拖被按住的那一列：下滑(dy>0)内容下移 → offset 减小
+    c.offset = _wrap(drag.startOffset - dy, c.period);
+    _applyCol(c);
   };
 
   const onUp = () => {
     if (!drag.active) return;
     drag.active = false;
-    const r = _rows[drag.rowIndex];
-    if (r) r.dragging = false;
-    drag.rowIndex = -1;
+    const c = _cols[drag.colIndex];
+    if (c) c.dragging = false;
+    drag.colIndex = -1;
   };
 
-  _addListener(rowsEl, 'mousedown', onDown);
+  _addListener(colsEl, 'mousedown', onDown);
   _addListener(window, 'mousemove', onMove);
   _addListener(window, 'mouseup', onUp);
-  _addListener(rowsEl, 'touchstart', onDown, { passive: true });
+  _addListener(colsEl, 'touchstart', onDown, { passive: true });
   _addListener(window, 'touchmove', onMove, { passive: true });
   _addListener(window, 'touchend', onUp);
   _addListener(window, 'touchcancel', onUp);
 
+  // 滚轮：滚哪一列动哪一列
+  _addListener(colsEl, 'wheel', (e) => {
+    const colEl = e.target.closest('.tv-col');
+    if (!colEl) return;
+    const idx = Array.prototype.indexOf.call(colsEl.children, colEl);
+    const c = _cols[idx];
+    if (!c || c.period <= 0) return;
+    e.preventDefault();
+    c.offset = _wrap(c.offset + e.deltaY, c.period);
+    _applyCol(c);
+  }, { passive: false });
+
   // 点击放大（拖动过的不触发）
-  _addListener(rowsEl, 'click', (e) => {
+  _addListener(colsEl, 'click', (e) => {
     if (drag.moved) return;
     const card = e.target.closest('.tv-card');
     if (!card) return;
@@ -201,13 +246,15 @@ function _bindInteractions(container) {
     if (img && img.src) openImageViewer(img.src);
   });
 
-  // 悬停暂停（逐行，桌面有效）
-  const rowEls = rowsEl.querySelectorAll('.tv-row');
-  rowEls.forEach((el, i) => {
-    const enter = () => { if (_rows[i]) _rows[i].paused = true; };
-    const leave = () => { if (_rows[i]) _rows[i].paused = false; };
-    _addListener(el, 'mouseenter', enter);
-    _addListener(el, 'mouseleave', leave);
+  _bindColHover();
+}
+
+// 悬停暂停（逐列，桌面有效）。重排后需要重新绑，所以单独抽出来。
+function _bindColHover() {
+  if (!_container) return;
+  _container.querySelectorAll('.tv-col').forEach((el, i) => {
+    _addListener(el, 'mouseenter', () => { if (_cols[i]) _cols[i].paused = true; });
+    _addListener(el, 'mouseleave', () => { if (_cols[i]) _cols[i].paused = false; });
   });
 }
 
@@ -223,10 +270,10 @@ function _startAutoScroll() {
     if (!_container) { _raf = null; return; }
     const dt = Math.min(0.05, (now - _lastT) / 1000);
     _lastT = now;
-    _rows.forEach(r => {
-      if (r.paused || r.dragging || r.contentWidth <= 0) return;
-      r.offset = _wrap(r.offset + r.dir * r.speed * dt, r.contentWidth);
-      _applyRow(r);
+    _cols.forEach(c => {
+      if (c.paused || c.dragging || c.period <= 0) return;
+      c.offset = _wrap(c.offset + c.dir * c.speed * dt, c.period);
+      _applyCol(c);
     });
     _raf = requestAnimationFrame(tick);
   };

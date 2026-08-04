@@ -3,7 +3,7 @@
 
 import { supaClient, setSyncStatus, dbError, safeUnsubscribe } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
-import { showToast, escHtml, confirmDialog, bindPanelToggle } from '../core/ui.js';
+import { showToast, escHtml, confirmDialog } from '../core/ui.js';
 
 // ── 状态 ──────────────────────────────────────────
 let characters = [];
@@ -25,6 +25,19 @@ let resizeObserver = null;
 let realtimeChannel = null;
 let authUnsub = null;
 
+// canvas 主题色：从 CSS 变量读裸 RGB，切主题时重读并重绘
+let TH = { accent:'168,137,58', grid:'255,255,255', txt:'214,207,192', shadow:'0,0,0', red:'239,68,68' };
+function readCanvasTheme() {
+  const cs = getComputedStyle(document.documentElement);
+  const g = (n, d) => cs.getPropertyValue(n).trim() || d;
+  TH = {
+    accent: g('--accent-rgb', TH.accent), grid:   g('--grid-rgb',   TH.grid),
+    txt:    g('--text-rgb',   TH.txt),    shadow: g('--shadow-rgb', TH.shadow),
+    red:    g('--red-rgb',    TH.red),
+  };
+}
+const onThemeChange = () => { readCanvasTheme(); draw(); };
+
 // Pointer state
 let ptr   = { active:false, sx:0, sy:0, so:0, moved:false };
 let pinch = { active:false, dist0:0, scale0:0, cx:0, off0:0 };
@@ -36,6 +49,9 @@ export async function mount(container) {
   canvas = container.querySelector('#tl-canvas');
   ctx    = canvas.getContext('2d');
   wrap   = container.querySelector('#tl-cw');
+
+  readCanvasTheme();
+  document.addEventListener('theme-change', onThemeChange);
 
   bindControls(container);
   bindPointer();
@@ -59,6 +75,7 @@ export async function mount(container) {
 
 export function unmount() {
   resizeObserver?.disconnect();
+  document.removeEventListener('theme-change', onThemeChange);
   safeUnsubscribe(realtimeChannel); realtimeChannel = null;
   if (authUnsub) { authUnsub(); authUnsub = null; }
   clearTimeout(cfgTimer);
@@ -74,16 +91,9 @@ function buildHTML() {
     <canvas id="tl-canvas"></canvas>
   </div>
 
-  <!-- Floating expand button (shows when panel collapsed) -->
-  <button id="tl-expand" class="expand-btn-float" title="展开面板">‹</button>
 
   <!-- Right panel -->
   <div id="tl-panel" class="tl-panel">
-    <div class="map-panel-hdr" id="tl-panel-toggle">
-      <span>⏱ 时间轴</span>
-      <span id="tl-panel-chevron">‹</span>
-    </div>
-
     <!-- Tab bar removed - only one tab, so hide tabs -->
     <div style="display:none" class="tl-tabs">
       <button class="tl-tab active" data-tab="list">≡ 列表</button>
@@ -123,7 +133,7 @@ function buildHTML() {
             <input id="tl-quick-age" type="number" placeholder="当前年龄" min="0" max="200" style="flex:1"/>
             <button class="btn bp" id="tl-quick-add-btn" style="flex-shrink:0">添加</button>
           </div>
-          <div style="font-size:11px;color:#889;line-height:1.5">
+          <div style="font-size:11px;color:var(--muted);line-height:1.5">
             || 输入当前显示年龄（已含偏移 <span id="tl-quick-offset-hint">+0</span>）
           </div>
         </div>
@@ -163,7 +173,7 @@ function buildHTML() {
       <button class="btn bn" id="tl-modal-cancel">取消</button>
       <button class="btn bp" id="tl-modal-save">保存</button>
     </div>
-    <div class="mbtns" style="justify-content:center;margin-top:8px;padding-top:8px;border-top:1px solid #2a2418">
+    <div class="mbtns" style="justify-content:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
       <button class="btn br" id="tl-modal-delete" style="min-width:120px">🗑 删除此人物</button>
     </div>
   </div>
@@ -220,7 +230,6 @@ function bindControls(container) {
   });
 
   // Panel toggle
-  bindPanelToggle(container, '#tl-panel', '#tl-panel-toggle', '#tl-expand', '#tl-panel-chevron');
 }
 
 function updateEditUI(container) {
@@ -398,14 +407,14 @@ function draw() {
   for (let a = s; a <= e; a++) {
     if (a%5!==0) continue;
     const gx=dispAgeToX(a), maj=(a%10===0);
-    ctx.strokeStyle = maj?'rgba(255,255,255,.07)':'rgba(255,255,255,.02)';
+    ctx.strokeStyle = maj?`rgba(${TH.grid},.07)`:`rgba(${TH.grid},.02)`;
     ctx.lineWidth = maj?1:.5;
     ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,canvas.height); ctx.stroke();
   }
   // Axis
   const gr=ctx.createLinearGradient(0,0,canvas.width,0);
-  gr.addColorStop(0,'rgba(168,137,58,0)'); gr.addColorStop(.12,'rgba(168,137,58,.55)');
-  gr.addColorStop(.88,'rgba(168,137,58,.55)'); gr.addColorStop(1,'rgba(168,137,58,0)');
+  gr.addColorStop(0,`rgba(${TH.accent},0)`); gr.addColorStop(.12,`rgba(${TH.accent},.55)`);
+  gr.addColorStop(.88,`rgba(${TH.accent},.55)`); gr.addColorStop(1,`rgba(${TH.accent},0)`);
   ctx.strokeStyle=gr; ctx.lineWidth=2;
   ctx.beginPath(); ctx.moveTo(0,ay); ctx.lineTo(canvas.width,ay); ctx.stroke();
   // Ticks
@@ -415,19 +424,19 @@ function draw() {
     if (!maj2&&!mid2&&scale<30) continue;
     if (!maj2&&scale<14) continue;
     const x2=dispAgeToX(a2);
-    ctx.strokeStyle=maj2?'rgba(168,137,58,.85)':'rgba(168,137,58,.35)';
+    ctx.strokeStyle=maj2?`rgba(${TH.accent},.85)`:`rgba(${TH.accent},.35)`;
     ctx.lineWidth=maj2?1.5:1;
     const th=maj2?13:7;
     ctx.beginPath(); ctx.moveTo(x2,ay-th); ctx.lineTo(x2,ay+th); ctx.stroke();
     if (maj2||(mid2&&scale>22)) {
-      ctx.fillStyle=maj2?'rgba(214,207,192,.82)':'rgba(214,207,192,.38)';
+      ctx.fillStyle=maj2?`rgba(${TH.txt},.82)`:`rgba(${TH.txt},.38)`;
       ctx.font=(maj2?12:10)+'px "Noto Sans SC",system-ui'; ctx.textAlign='center';
       ctx.fillText(a2,x2,ay+26);
     }
   }
   // Center line
   ctx.save();
-  ctx.strokeStyle='rgba(168,137,58,.18)'; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+  ctx.strokeStyle=`rgba(${TH.accent},.18)`; ctx.setLineDash([4,4]); ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(canvas.width/2,0); ctx.lineTo(canvas.width/2,canvas.height);
   ctx.stroke(); ctx.setLineDash([]); ctx.restore();
   // Limit markers
@@ -483,9 +492,9 @@ function drawNode(c,x,cy) {
     const side=Math.min(iw,ih);
     const sx=(iw-side)/2, sy=(ih-side)/2;
     ctx.drawImage(img,sx,sy,side,side,x-r,cy-r,r*2,r*2);
-    if(gone){ctx.fillStyle='rgba(20,20,30,.55)';ctx.fillRect(x-r,cy-r,r*2,r*2);}
+    if(gone){ctx.fillStyle=`rgba(${TH.shadow},.55)`;ctx.fillRect(x-r,cy-r,r*2,r*2);}
     const ov=ctx.createLinearGradient(x,cy-r,x,cy+r);
-    ov.addColorStop(0,'rgba(0,0,0,0)'); ov.addColorStop(1,'rgba(0,0,0,.45)');
+    ov.addColorStop(0,`rgba(${TH.shadow},0)`); ov.addColorStop(1,`rgba(${TH.shadow},.45)`);
     ctx.fillStyle=ov; ctx.fillRect(x-r,cy-r,r*2,r*2);
   } else {
     const col=gone?'#555':c.color;
@@ -498,19 +507,19 @@ function drawNode(c,x,cy) {
     ctx.fillText(c.name.charAt(0).toUpperCase(),x,cy);
   }
   ctx.restore();
-  ctx.strokeStyle=gone?'rgba(120,120,130,.4)':'rgba(255,255,255,.25)'; ctx.lineWidth=1.5;
+  ctx.strokeStyle=gone?`rgba(${TH.shadow},.4)`:`rgba(${TH.grid},.25)`; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.arc(x,cy,r,0,Math.PI*2); ctx.stroke();
   if(gone){
-    ctx.strokeStyle='rgba(220,80,80,.9)'; ctx.lineWidth=1.5;
+    ctx.strokeStyle=`rgba(${TH.red},.9)`; ctx.lineWidth=1.5;
     const q=r*.38;
     ctx.beginPath(); ctx.moveTo(x-q,cy-q); ctx.lineTo(x+q,cy+q); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x+q,cy-q); ctx.lineTo(x-q,cy+q); ctx.stroke();
   }
   ctx.restore();
-  ctx.save(); ctx.fillStyle=gone?'#6a6058':'#d6cfc0';
+  ctx.save(); ctx.fillStyle=gone?`rgba(${TH.txt},.5)`:`rgb(${TH.txt})`;
   ctx.font='bold '+Math.round(r*.67)+'px "Noto Sans SC",system-ui';
   ctx.textAlign='center'; ctx.textBaseline='bottom';
-  ctx.shadowColor='rgba(0,0,0,.9)'; ctx.shadowBlur=7;
+  ctx.shadowColor=`rgba(${TH.shadow},.9)`; ctx.shadowBlur=7;
   ctx.fillText(c.name,x,cy-r-4); ctx.restore();
 }
 
@@ -607,7 +616,7 @@ function updateSidebar() {
   const list = document.querySelector('#tl-clist');
   if (!list) return;
   if (!characters.length) {
-    list.innerHTML = `<div class="tl-empty">暂无人物<br>${isEditor()?'上方输入框添加':'解锁编辑后可添加'}</div>`;
+    list.innerHTML = `<div class="tl-empty">wandering……<br>${isEditor()?'上方输入框添加':'解锁编辑后可添加'}</div>`;
     return;
   }
   const sorted = [...characters].sort((a,b) => dispAge(a)-dispAge(b));
@@ -615,14 +624,14 @@ function updateSidebar() {
     const da=dispAge(c), gone=isGone(c);
     const av = c.avatar
       ? `<div class="tl-ci-av"><img src="${escHtml(c.avatar)}" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div>`
-      : `<div class="tl-ci-av" style="background:${gone?'#555':c.color}">${escHtml(c.name.charAt(0).toUpperCase())}</div>`;
+      : `<div class="tl-ci-av" style="background:${gone?'var(--text-faint)':c.color}">${escHtml(c.name.charAt(0).toUpperCase())}</div>`;
     let meta = '';
     if (c.ageLimit!=null) meta += `<span class="limit-tag">上限${c.ageLimit}岁</span>`;
     if (gone)             meta += `${meta?' ':''}<span class="dead-tag">†消逝</span>`;
     return `<div class="tl-ci" onclick="(()=>{const m=document.querySelector('#tl-modal-overlay');if(m){}})()">
       ${av}
       <div class="tl-ci-info">
-        <div class="tl-cname" style="color:${gone?'#6a6058':'#d6cfc0'}">${escHtml(c.name)}</div>
+        <div class="tl-cname" style="color:${gone?'var(--text-faint)':'var(--text)'}">${escHtml(c.name)}</div>
         ${meta?`<div class="tl-cmeta">${meta}</div>`:''}
       </div>
       <div class="tl-cage${gone?' faded':''}">${da}</div>

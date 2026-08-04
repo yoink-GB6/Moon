@@ -5,30 +5,39 @@
 
 /* ── Topbar ── */
 #topbar{
-  display:flex;align-items:center;gap:10px;
-  padding:0 14px;height:var(--topbar-h);
-  background:rgba(18,17,17,.88);border-bottom:1px solid var(--border);
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  display:flex;align-items:center;
+  padding:0;height:var(--topbar-h);
+  background:var(--panel-glass);border-bottom:1px solid var(--border);
+  
   flex-shrink:0;z-index:100;
+  transition:margin-top .26s cubic-bezier(0.4,0,0.2,1);
 }
-#topbar-title{font-size:15px;font-weight:700;color:var(--accent-bright);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.3px}
-#sync-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
-#sync-dot.syncing{background:var(--amber);animation:pulse .8s infinite}
-#sync-dot.ok{background:var(--green)}
-#sync-dot.err{background:var(--red)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-#lock-btn{
-  background:var(--accent-muted);border:1px solid var(--accent-dim);color:var(--accent);
-  border-radius:2px;padding:3px 10px;cursor:pointer;font-size:12px;
-  letter-spacing:.18em;text-transform:uppercase;line-height:1.5;
-  flex-shrink:0;transition:filter .15s;white-space:nowrap;
+/* 向下滚动时收起（用负 margin 而非 transform，让下方内容顺势补位） */
+#topbar.hide{margin-top:calc(-1 * var(--topbar-h))}
+@media (prefers-reduced-motion:reduce){#topbar{transition:none}}
+.topbar-spacer{flex:1;min-width:0}
+
+/* 顶栏两侧的面板开合按钮：无边框，靠一道短竖线分隔 */
+.topbar-btn{
+  position:relative;flex-shrink:0;
+  height:100%;padding:0 16px;
+  display:flex;align-items:center;justify-content:center;
+  background:none;border:none;cursor:pointer;color:var(--muted);
+  /* 用衬线标题字体：拉丁字母在 Palatino 下比黑体优雅得多，
+     字号放大、字重放轻，靠字距撑气质而不是靠加粗 */
+  font-family:var(--font-title);font-size:16px;font-weight:500;
+  letter-spacing:.12em;white-space:nowrap;font-style:italic;
+  transition:background .15s,color .15s;
 }
-#lock-btn.unlocked{color:var(--accent-bright);border-color:var(--accent)}
-#lock-btn:hover{filter:brightness(1.2)}
-#menu-btn{
-  display:none;background:none;border:none;color:var(--accent);
-  font-size:22px;cursor:pointer;padding:4px;line-height:1;flex-shrink:0;
+/* .active = 对应面板处于展开状态，视觉上停在 hover 态 */
+.topbar-btn:hover,.topbar-btn.active{background:var(--hover-tint);color:var(--accent)}
+.topbar-btn[hidden]{display:none}
+#nav-btn::after,#panel-btn::before{
+  content:'';position:absolute;top:50%;transform:translateY(-50%);
+  width:1px;height:18px;background:var(--border);
 }
+#nav-btn::after{right:0}
+#panel-btn::before{left:0}
 
 /* ── Body row ── */
 #body-row{display:flex;flex:1;overflow:hidden;position:relative}
@@ -36,18 +45,12 @@
 /* ── Left sidebar ── */
 #sidebar{
   position:absolute;left:0;top:0;bottom:0;z-index:100;
-  width:var(--sidebar-w);background:rgba(18,17,17,.85);border-right:1px solid var(--border);
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  width:var(--sidebar-w);background:var(--panel-glass);border-right:1px solid var(--border);
+  
   display:flex;flex-direction:column;overflow:hidden;
   transition:transform .28s cubic-bezier(0.4,0,0.2,1);
 }
 #sidebar.collapsed{transform:translateX(-100%)}
-#sidebar-logo{
-  padding:12px 14px 10px;display:flex;align-items:flex-start;gap:8px;
-  font-size:18px;font-weight:800;color:var(--accent-bright);
-  border-bottom:1px solid var(--border);
-  letter-spacing:.5px;user-select:none;
-}
 #sidebar-nav{flex:1;overflow-y:auto;padding:8px 0}
 #sidebar-nav::-webkit-scrollbar{width:2px}
 #sidebar-nav::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:2px}
@@ -57,75 +60,67 @@
   border-left:3px solid transparent;transition:all .15s;
   user-select:none;
 }
-.nav-item:hover{background:rgba(168,137,58,.07);color:var(--text)}
-.nav-item.active{color:var(--accent-bright);border-left-color:var(--accent);background:rgba(168,137,58,.1)}
+.nav-item:hover{background:var(--hover-tint);color:var(--text)}
+.nav-item.active{color:var(--accent-bright);border-left-color:var(--accent);background:var(--active-tint)}
 .nav-item .nav-icon{font-size:16px;flex-shrink:0;width:20px;text-align:center}
 .nav-item .nav-label{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#sidebar-footer{
-  padding:10px 16px;font-size:11px;color:var(--muted);
-  border-top:1px solid var(--border);line-height:1.8;
+/* ── 侧栏底部大按钮（日夜切换 / 编辑模式），与导航等宽 ── */
+.sidebar-btn{
+  position:relative;overflow:hidden;flex-shrink:0;
+  width:100%;height:46px;
+  background:none;border:none;border-top:1px solid var(--border);
+  cursor:pointer;color:var(--muted);
+  font-family:var(--font-body);font-size:15px;letter-spacing:.3em;
+  transition:background .15s,color .15s;
+}
+.sidebar-btn:hover{background:var(--hover-tint);color:var(--accent)}
+
+#lock-btn{font-size:11px;letter-spacing:.22em;text-transform:uppercase;padding-left:.22em}
+#lock-btn.unlocked{color:var(--accent-bright);background:var(--active-tint)}
+
+/* ── 深色/浅色切换：两组符号横向对推 ── */
+#theme-toggle span{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .32s cubic-bezier(.4,0,.2,1);
+}
+/* 大小和浓淡都拉开梯度，几个图标才像一幅小景而不是一排图标 */
+#theme-toggle .ic{display:block;flex-shrink:0}
+#theme-toggle .ic-lg{width:19px;height:19px}
+#theme-toggle .ic-md{width:14px;height:14px;opacity:.8}
+#theme-toggle .ic-sm{width:11px;height:11px;opacity:.65}
+#theme-toggle .ic-xs{width:9px;height:9px;opacity:.55}
+#theme-toggle .ic-wide{width:21px;height:14px;opacity:.5}
+/* viewBox 30×24，按比例给尺寸才不会留白 */
+#theme-toggle .ic-const{width:24px;height:19px;opacity:.6}
+.th-day  {transform:translateX(-100%);opacity:0}
+.th-night{transform:translateX(0);opacity:1}
+:root[data-theme="light"] .th-day  {transform:translateX(0);opacity:1}
+:root[data-theme="light"] .th-night{transform:translateX(100%);opacity:0}
+@media (prefers-reduced-motion:reduce){
+  #theme-toggle span{transition:opacity .2s;transform:none}
+  :root[data-theme="light"] .th-day,:root[data-theme="light"] .th-night{transform:none}
 }
 
 /* ── Main content area ── */
+/* --content-inset = 当前页右侧面板占用的宽度。
+   主内容和弹窗都读它，这样右栏一展开，两者一起让位、位置保持一致。 */
 #main-content{
+  --content-inset:0px;
   flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative;
   background:
-    radial-gradient(ellipse at 15% 35%, rgba(55,50,75,.05)  0%, transparent 58%),
-    radial-gradient(ellipse at 82% 72%, rgba(150,85,25,.05) 0%, transparent 52%),
+    radial-gradient(ellipse at 15% 35%, var(--main-glow-1) 0%, transparent 58%),
+    radial-gradient(ellipse at 82% 72%, var(--main-glow-2) 0%, transparent 52%),
     var(--bg);
 }
+#main-content:has(.lib-panel:not(.collapsed)){--content-inset:240px}
+#main-content:has(#tl-panel:not(.collapsed)){--content-inset:240px}
+#main-content:has(#chars-panel:not(.collapsed)){--content-inset:260px}
 
 /* ── Sidebar overlay (mobile) ── */
 #sidebar-overlay{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
-  z-index:199;opacity:0;transition:opacity .3s;
+  display:none;position:fixed;inset:0;background:var(--overlay);
+  z-index:140;opacity:0;transition:opacity .3s;
 }
 #sidebar-overlay.show{display:block;opacity:1}
 
-/* ── 耳扣式展开按钮（面板折叠后显示在边缘） ── */
-.expand-btn-float{
-  position:fixed;top:50%;display:flex;align-items:center;justify-content:center;
-  width:20px;height:54px;
-  background:linear-gradient(to right,rgba(168,137,58,.14),var(--surface-2) 45%);
-  border:none;color:var(--accent);font-size:12px;font-weight:600;
-  cursor:pointer;z-index:200;
-  opacity:0;pointer-events:none;
-  transition:opacity .22s cubic-bezier(0.4,0,0.2,1),color .15s,filter .15s;
-}
-.expand-btn-float.show{opacity:1;pointer-events:auto}
-.expand-btn-float:hover{color:var(--accent-bright)}
-
-/* 右侧面板耳扣：尖端朝左 ◁ */
-#tl-expand,#map-expand,#lib-expand,#geo-search-expand{
-  right:0;transform:translateY(-50%);
-  clip-path:polygon(100% 0%,100% 100%,28% 100%,0% 50%,28% 0%);
-  filter:drop-shadow(-2px 0 8px rgba(0,0,0,.75));
-  font-size:0;  /* 图标由 CSS 控制，不依赖 HTML 文本 */
-}
-#tl-expand:hover,#map-expand:hover,#lib-expand:hover,#geo-search-expand:hover{
-  filter:drop-shadow(-2px 0 8px rgba(0,0,0,.75)) drop-shadow(-1px 0 5px rgba(168,137,58,.28));
-}
-#tl-expand::before,#map-expand::before,#lib-expand::before,#geo-search-expand::before{
-  content:'‹';font-size:12px;font-weight:600;
-}
-
-/* 左侧导航栏耳扣：尖端朝右 ▷ */
-#sidebar-expand{
-  left:0;transform:translateY(-50%);
-  clip-path:polygon(0% 0%,72% 0%,100% 50%,72% 100%,0% 100%);
-  background:linear-gradient(to left,rgba(168,137,58,.14),var(--surface-2) 45%);
-  filter:drop-shadow(2px 0 8px rgba(0,0,0,.75));
-  font-size:0;
-}
-#sidebar-expand:hover{
-  filter:drop-shadow(2px 0 8px rgba(0,0,0,.75)) drop-shadow(1px 0 5px rgba(168,137,58,.28));
-}
-#sidebar-expand::before{content:'›';font-size:12px;font-weight:600;}
-
-.panel-toggle-btn{
-  background:var(--accent-muted);border:1px solid var(--accent-dim);color:var(--accent);
-  border-radius:2px;padding:2px 7px;cursor:pointer;font-size:12px;
-  letter-spacing:.1em;line-height:1.5;
-  transition:filter .15s;flex-shrink:0;
-}
-.panel-toggle-btn:hover{filter:brightness(1.2)}

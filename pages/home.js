@@ -73,7 +73,7 @@ function _refresh() {
   } else {
     view.innerHTML = isEditor()
       ? '<p class="home-placeholder">点击右上角「编辑」开始写内容（支持 Markdown）</p>'
-      : '<p class="home-placeholder">暂无内容</p>';
+      : '<p class="home-placeholder">wandering……</p>';
   }
 
   // 编辑按钮（只在编辑模式且非编辑状态时显示）

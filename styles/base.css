@@ -2,18 +2,20 @@
    全局变量 & 重置
 ════════════════════════════════════════ */
 :root {
-  --bg:           #0c0c0c;
-  --panel:        #141313;  /* 去掉暖褐偏，接近中性深灰 */
-  --surface-2:    #1a1918;  /* 极轻微暖，比原来中性得多 */
-  --surface-3:    #201f1d;
-  --border:       #272421;  /* 边框降低暖饱和度 */
-  --border-hi:    #363028;
+  /* 底色取 VSCode 编辑区那种带灰的黑，纯黑太硬。
+     整条质感阶梯一起抬高，保证 panel 始终比 bg 亮。 */
+  --bg:           #1e1e1e;
+  --panel:        #252423;
+  --surface-2:    #2b2a28;
+  --surface-3:    #32302e;
+  --border:       #3a3733;
+  --border-hi:    #494339;
   --border-hover: #a8893a;  /* 可交互元素 hover 边框色 */
   --accent:       #cbbca8;
   --accent-bright:#c9c092;
   --accent-dim:   #6b5926;
-  --accent-muted: #2a2215;
-  --accent-bg:    #181510;
+  --accent-muted: #3b3225;
+  --accent-bg:    #2a2620;
   --green:        #4a7a42;
   --green-bright: #7aba72;
   --green-dim:    #3a6130;
@@ -23,22 +25,122 @@
   --red-dim:      #6b2626;
   --red-muted:    #2a1010;
   --amber:        #a87830;
-  --ib:           #181510;
-  --ibr:          #363028;
+  --ib:           #2a2620;
+  --ibr:          #494339;
   --text:         #cdc9c4;
   --muted:        #877f78;  /* 降低黄绿偏，更接近中性暖灰 */
-  --text-faint:   #4a4540;
+  --text-faint:   #5c5751;
   --sidebar-w:    220px;
   --topbar-h:     50px;
   /* 字体栈（无需外部加载） */
-  --font-body:    'PingFang SC','Microsoft YaHei UI','Microsoft YaHei','Hiragino Sans GB',system-ui,sans-serif;
+  /* 拉丁字体排在前面：浏览器逐字符回退，字母数字用系统原生拉丁字形，
+     汉字才落到 PingFang / 雅黑。零下载，但英文明显更精致。 */
+  --font-body:    -apple-system,'Segoe UI','Helvetica Neue',Helvetica,Arial,
+                  'PingFang SC','Microsoft YaHei UI','Microsoft YaHei','Hiragino Sans GB',
+                  system-ui,sans-serif;
   --font-title:   'Palatino Linotype','Palatino','Book Antiqua','Georgia',serif;
+
+  /* ── 语义色：需要透明叠加的存裸 RGB，CSS 与 JS 共用一份定义 ── */
+  --accent-rgb:   168,137,58;
+  --green-rgb:    39,174,96;
+  --red-rgb:      239,68,68;
+  --hover-solid:  #302c22;  /* 卡片/列表项的实色 hover 底 */
+  --shadow-rgb:   0,0,0;    /* 各处投影/浮层，alpha 由使用处决定 */
+  --vignette:     #141414;  /* 径向暗角外圈 */
+  --grid-rgb:     255,255,255;  /* canvas 网格线/描边，需与背景反向 */
+  --collapse-title: #b5b0a9;  /* 折叠区块标题：比正文略深的偏白，金色在这里太跳 */
+  --text-rgb:     214,207,192;  /* canvas 内文字 */
+  --hover-tint:   rgba(var(--accent-rgb),.07);
+  --active-tint:  rgba(var(--accent-rgb),.10);
+  --panel-glass:  #222120;   /* 侧栏/顶栏底色：不透明，比卡片略深 */
+  --overlay:      rgba(0,0,0,.6);
+  --shadow:       rgba(0,0,0,.75);
+  --toast-bg:     rgba(28,28,28,.96);
+  --main-glow-1:  rgba(55,50,75,.05);
+  --main-glow-2:  rgba(150,85,25,.05);
+  /* canvas 用（JS 通过 themeRGB() 读取） */
+  --star-rgb:     168,137,58;
+  --star-hi-rgb:  255,245,210;
+  --star-blend:   screen;
+  --ink-rgb:      255,210,80;
+  --ink-hi-rgb:   255,250,210;
+  --ink-glow-rgb: 255,240,160;
+  /* 全局噪点层 */
+  --noise-blend:   overlay;
+  --noise-opacity: .028;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;scrollbar-width:thin;scrollbar-color:rgba(168,137,58,.2) transparent}
+
+/* ── 浅色：暖中性象牙白（取自 darioamodei.com 的 ivory/slate 色阶）──
+   注意质感层级是反转的：暗色下 panel 比 bg 亮，浅色下同样要「抬升」，
+   所以 panel/surface 一路更白，不是更暗。 */
+:root[data-theme="light"] {
+  --bg:           #f0eee6;  /* ivory-medium：页面底 */
+  --panel:        #faf9f5;  /* ivory-light：卡片/面板，比背景亮 */
+  --surface-2:    #fdfdfb;
+  --surface-3:    #ffffff;
+  --border:       #e2dfd4;  /* ivory-dark 系 */
+  --border-hi:    #cfcbbc;
+  --border-hover: #c9971a;
+  --accent:       #b5860f;  /* 纯而亮的金，用于金边金框 */
+  --accent-bright:#8f6a05;  /* 标题/强调，保证可读对比度 */
+  --accent-dim:   #ddc88e;
+  --accent-muted: #f5eeda;
+  --accent-bg:    #faf5e6;
+  --green:        #3d7a4a;
+  --green-bright: #256b32;
+  --green-dim:    #9cc0a2;
+  --green-muted:  #e6f0e6;
+  --red:          #b04a3e;
+  --red-bright:   #a32e20;
+  --red-dim:      #d9a89f;
+  --red-muted:    #f7e3de;
+  --amber:        #a8760c;
+  --ib:           #faf5e6;
+  --ibr:          #e2dfd4;
+  --text:         #38322a;  /* 偏褐的深灰，避开纯黑 */
+  --muted:        #6b6255;
+  --text-faint:   #a09788;
+
+  --accent-rgb:   190,145,20;  /* 更纯：蓝通道压低 */
+  --green-rgb:    38,140,80;
+  --red-rgb:      190,55,55;
+  --hover-solid:  #ffffff;  /* hover 同样是「更抬升」，所以更白 */
+  --shadow-rgb:   60,58,52;
+  --vignette:     #ddd9cc;
+  --grid-rgb:     60,58,52;
+  --collapse-title: #554c3f;  /* 浅色下用褐色，比正文略浅 */
+  --text-rgb:     56,50,42;
+  --panel-glass:  #f7f6f1;
+  --overlay:      rgba(45,43,38,.35);
+  --shadow:       rgba(60,58,52,.16);
+  --toast-bg:     rgba(250,249,245,.97);
+  /* 极淡且中性，否则主内容区会比顶栏/侧栏明显偏黄 */
+  --main-glow-1:  rgba(120,116,100,.035);
+  --main-glow-2:  rgba(140,124,92,.035);
+  --star-rgb:     255,236,190;
+  --star-hi-rgb:  255,250,235;
+  --star-blend:   screen;
+  --ink-rgb:      240,175,20;   /* 亮而纯：蓝通道压到最低，避免 glow 峰值发脏 */
+  --ink-hi-rgb:   250,215,110;
+  --ink-glow-rgb: 245,195,70;
+  --noise-blend:   multiply;
+  --noise-opacity: .02;
+}
+
+/* 切主题的那一帧关掉所有过渡，否则带 transition:all 的卡片会慢半拍才换色。
+   日夜按钮自身的推移动画要留着。 */
+:root.theme-switching *,
+:root.theme-switching *::before,
+:root.theme-switching *::after{transition:none !important}
+:root.theme-switching #theme-toggle span{
+  transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .32s cubic-bezier(.4,0,.2,1) !important;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;scrollbar-width:thin;scrollbar-color:rgba(var(--accent-rgb),.2) transparent}
 *::-webkit-scrollbar{width:4px;height:4px}
 *::-webkit-scrollbar-track{background:transparent}
-*::-webkit-scrollbar-thumb{background:rgba(168,137,58,.2);border-radius:2px}
-*::-webkit-scrollbar-thumb:hover{background:rgba(168,137,58,.4)}
+*::-webkit-scrollbar-thumb{background:rgba(var(--accent-rgb),.2);border-radius:2px}
+*::-webkit-scrollbar-thumb:hover{background:rgba(var(--accent-rgb),.4)}
 html,body{height:100%;overflow:hidden}
 body{font-family:var(--font-body);background:var(--bg);color:var(--text)}
 
@@ -46,5 +148,5 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text)}
 body::after{
   content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  background-size:180px;opacity:.028;mix-blend-mode:overlay;
+  background-size:180px;opacity:var(--noise-opacity);mix-blend-mode:var(--noise-blend);
 }

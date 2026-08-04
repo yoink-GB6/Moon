@@ -8,9 +8,23 @@
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   const cv = document.createElement('canvas');
-  cv.style.cssText = 'position:fixed;inset:0;z-index:50;pointer-events:none;mix-blend-mode:screen;';
+  cv.style.cssText = 'position:fixed;inset:0;z-index:50;pointer-events:none;';
   document.body.prepend(cv);
   const ctx = cv.getContext('2d');
+
+  // 主题色：从 CSS 变量读裸 RGB，切换主题时重读。
+  // 浅色模式下星空本来就该看不见（白天没有星星），所以直接停掉循环——
+  // 否则每秒 60 次重绘画的全是看不见的东西，纯耗电。
+  let STAR = '168,137,58', STAR_HI = '255,245,210';
+  function readTheme() {
+    const cs = getComputedStyle(document.documentElement);
+    STAR    = cs.getPropertyValue('--star-rgb').trim()    || STAR;
+    STAR_HI = cs.getPropertyValue('--star-hi-rgb').trim() || STAR_HI;
+    cv.style.mixBlendMode = cs.getPropertyValue('--star-blend').trim() || 'screen';
+
+    if (document.documentElement.dataset.theme === 'light') stop();
+    else start();
+  }
 
   const DENSITY        = 16000;
   const COUNT_MIN      = 38;
@@ -189,7 +203,7 @@
           ctx.beginPath();
           ctx.moveTo(ax, ay);
           ctx.lineTo(pos[j].x, pos[j].y);
-          ctx.strokeStyle = `rgba(168,137,58,${la.toFixed(3)})`;
+          ctx.strokeStyle = `rgba(${STAR},${la.toFixed(3)})`;
           ctx.lineWidth = 0.75;
           ctx.stroke();
           linkCount[i]++;
@@ -204,7 +218,7 @@
       if (p.x < -12 || p.x > cw + 12 || p.y < -12 || p.y > ch + 12) continue;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(168,137,58,${p.alpha.toFixed(3)})`;
+      ctx.fillStyle = `rgba(${STAR},${p.alpha.toFixed(3)})`;
       ctx.fill();
     }
 
@@ -221,8 +235,8 @@
       const tx  = m.x - (m.vx / spd) * m.len;
       const ty  = m.y - (m.vy / spd) * m.len;
       const g   = ctx.createLinearGradient(tx, ty, m.x, m.y);
-      g.addColorStop(0, 'rgba(168,137,58,0)');
-      g.addColorStop(1, `rgba(255,245,210,${(m.life * 0.95).toFixed(3)})`);
+      g.addColorStop(0, `rgba(${STAR},0)`);
+      g.addColorStop(1, `rgba(${STAR_HI},${(m.life * 0.95).toFixed(3)})`);
       ctx.beginPath();
       ctx.moveTo(tx, ty);
       ctx.lineTo(m.x, m.y);
@@ -235,7 +249,17 @@
     /* 视差 */
     cv.style.transform = `translate(${currentOx.toFixed(2)}px,${currentOy.toFixed(2)}px)`;
 
-    requestAnimationFrame(loop);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  var rafId = null;
+  function start() {
+    if (rafId !== null) return;
+    rafId = requestAnimationFrame(loop);
+  }
+  function stop() {
+    if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+    ctx.clearRect(0, 0, cv.width, cv.height);
   }
 
   window.addEventListener('resize', function () { resize(); initStars(); });
@@ -243,5 +267,8 @@
   resize();
   initStars();
   nextMeteor = performance.now() + 2000;
-  loop();
+
+  // readTheme 会按当前主题决定 start / stop，所以放在最后调用
+  readTheme();
+  document.addEventListener('theme-change', readTheme);
 })();

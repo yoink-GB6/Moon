@@ -1,6 +1,6 @@
 // pages/geo.js
 import { isEditor, onAuthChange } from '../core/auth.js';
-import { escHtml, bindPanelToggle } from '../core/ui.js';
+import { escHtml } from '../core/ui.js';
 
 import * as State from './characters/state.js';
 import { loadAllData, subscribeRealtime, unsubscribeRealtime } from './characters/data-loader.js';
@@ -51,13 +51,8 @@ function buildHTML() {
     </div>
   </div>
 
-  <button id="chars-panel-expand" class="panel-expand-trigger" title="展开面板">‹</button>
 
   <div id="chars-panel" class="tl-panel">
-    <div class="map-panel-hdr" id="chars-panel-toggle">
-      <span id="chars-panel-title">地理结构</span>
-      <span id="chars-panel-chevron">‹</span>
-    </div>
     <div id="panel-geo-body" class="panel-body-section">
       <div class="geo-panel-search-box">
         <div class="geo-panel-search-wrap">
@@ -108,7 +103,6 @@ function buildHTML() {
 
 function bindControls() {
   const container = State.pageContainer;
-  bindPanelToggle(container, '#chars-panel', '#chars-panel-toggle', '#chars-panel-expand', '#chars-panel-chevron');
 }
 
 function render() {
@@ -177,7 +171,7 @@ function _bindGeoSearch() {
     focusedIdx  = -1;
 
     if (!hits.length) {
-      results.innerHTML = '<div class="geo-panel-results-empty">无匹配结果</div>';
+      results.innerHTML = '<div class="geo-panel-results-empty">恭喜你，哥伦布</div>';
       results.classList.add('open');
       return;
     }

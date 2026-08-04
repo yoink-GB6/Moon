@@ -81,7 +81,7 @@ function renderCountryDetail(detail) {
           escHtml(city.name) +
         '</span>';
       }).join('')
-    : '<div class="geo-empty" style="padding:16px 0">暂无城市</div>';
+    : '<div class="geo-empty" style="padding:16px 0">恭喜你，哥伦布</div>';
 
   detail.innerHTML =
     '<div class="geo-detail-header">' +
@@ -147,7 +147,7 @@ function renderCityDetail(detail) {
           (isEditor() ? '<div class="geo-item-actions"><button class="btn bn" data-edit-landmark="' + lm.id + '">✎</button></div>' : '') +
         '</div>';
       }).join('')
-    : '<div class="geo-empty" style="padding:16px 0">暂无地标</div>';
+    : '<div class="geo-empty" style="padding:16px 0">恭喜你，哥伦布</div>';
 
   const peopleHTML = people.length
     ? people.map(function(p) {
@@ -164,7 +164,7 @@ function renderCityDetail(detail) {
           '<span style="color:var(--muted);font-size:16px">›</span>' +
         '</div>';
       }).join('')
-    : '<div class="geo-empty" style="padding:16px 0">暂无关联人物</div>';
+    : '<div class="geo-empty" style="padding:16px 0">さみしい……</div>';
 
   detail.innerHTML =
     '<div class="geo-detail-header">' +

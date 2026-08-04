@@ -5,10 +5,9 @@ import * as State from '../state.js';
 import { closeModal, parseAvatarUrls, parseCharSections } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
 
-// 编辑中的图片列表：[{ type: 'existing'|'file'|'url', url: string|null, file: File|null, preview: string }]
 let _editImages = [];
-// 打开编辑时原有的 storage URL 列表，用于保存后清理被移除的文件
 let _originalStorageUrls = [];
+let _storageToDelete = [];
 
 function _isStorageUrl(url) {
   return url && url.includes('/storage/v1/object/public/avatars/');
@@ -46,7 +45,7 @@ function _charRowHTML(sec) {
   const preview = mdText.trim().replace(/\n/g, ' ').slice(0, 60) || '';
   const previewHTML = preview
     ? escHtml(preview) + (mdText.trim().length > 60 ? '…' : '')
-    : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
+    : '<span style="color:var(--muted);font-style:italic">恭喜你，哥伦布</span>';
   return '<div class="cm-row" draggable="false">' +
     '<div class="cm-row-collapsed">' +
       '<span class="cm-row-grip" title="拖拽排序">⠿</span>' +
@@ -87,7 +86,7 @@ function _collapseCharRow(row) {
     const flat = mdText.replace(/\n/g, ' ').slice(0, 60);
     preview.innerHTML = mdText
       ? escHtml(flat) + (mdText.length > 60 ? '…' : '')
-      : '<span style="color:var(--muted);font-style:italic">暂无内容</span>';
+      : '<span style="color:var(--muted);font-style:italic">恭喜你，哥伦布</span>';
   }
   row.querySelector('.cm-row-collapsed').style.display = '';
   row.querySelector('.cm-row-expanded').style.display  = 'none';
@@ -297,7 +296,7 @@ function _renderImagesGrid(container) {
   const grid = container.querySelector('#char-images-grid');
   if (!grid) return;
   if (!_editImages.length) {
-    grid.innerHTML = '<span class="char-images-empty">暂无图片</span>';
+    grid.innerHTML = '<span class="char-images-empty">恭喜你，哥伦布</span>';
     return;
   }
   grid.innerHTML = _editImages.map(function(img, i) {
@@ -316,7 +315,7 @@ function _renderImagesGrid(container) {
       if (isStorage) {
         const choice = await _imgDeleteDialog();
         if (choice === 'cancel') return;
-        if (choice === 'storage') await _deleteStorageUrls([img.url || img.preview]);
+        if (choice === 'storage') _storageToDelete.push(img.url || img.preview);
         // choice === 'unlink': 仅取消关联，不删 storage
       }
 
@@ -453,7 +452,7 @@ export async function openImageManager(charId = null) {
       }
     } catch (e) { grid.innerHTML = '<div class="char-images-empty">加载失败</div>'; return; }
 
-    if (!files.length) { grid.innerHTML = '<div class="char-images-empty">暂无图片</div>'; return; }
+    if (!files.length) { grid.innerHTML = '<div class="char-images-empty">恭喜你，哥伦布</div>'; return; }
 
     // 建立 filename → 关联角色名 的映射
     const filenameToChar = new Map();
@@ -647,7 +646,7 @@ async function _openLibraryPicker(container) {
     }
   } catch (e) { showToast('图库加载失败'); return; }
 
-  if (!allFiles.length) { showToast('图库暂无图片'); return; }
+  if (!allFiles.length) { showToast('恭喜你，哥伦布'); return; }
 
   // 已被其他角色关联的 URL 集合（不含当前编辑角色自己的图片）
   const usedFilenames = new Set();
@@ -815,6 +814,7 @@ export function openCharModal(char) {
 
   const existingUrls = parseAvatarUrls(char ? char.avatar_url : null);
   _originalStorageUrls = existingUrls.filter(_isStorageUrl);
+  _storageToDelete = [];
   _editImages = existingUrls.map(function(u) { return { type: 'existing', url: u, preview: u, file: null }; });
   _renderImagesGrid(container);
   container.querySelector('#char-url-row').style.display = 'none';
@@ -907,10 +907,7 @@ async function _doSave(container) {
       showToast('已创建');
     }
 
-    // 删除被移除的 storage 图片（原来有、现在没有的）
-    const keptUrls = new Set(uploadedUrls);
-    const removedUrls = _originalStorageUrls.filter(function(u) { return !keptUrls.has(u); });
-    if (removedUrls.length) _deleteStorageUrls(removedUrls);
+    if (_storageToDelete.length) _deleteStorageUrls(_storageToDelete);
 
     closeModal(container.querySelector('#char-modal'));
     await loadAllData();

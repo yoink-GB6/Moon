@@ -47,60 +47,31 @@ export function escHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-// ── 通用面板折叠/展开 ──────────────────────────────────
-/**
- * 为任意可折叠面板绑定折叠/展开事件，并初始化 chevron 初始状态。
- * @param {Element|Document} scope  - querySelector 的查询范围
- * @param {string} panelSel         - 面板选择器（添加/移除 .collapsed）
- * @param {string} toggleBtnSel     - 折叠按钮选择器（标题栏点击区域）
- * @param {string} [expandBtnSel]   - 浮动展开按钮选择器
- * @param {string} [chevronSel]     - 箭头文字元素选择器
- */
-export function bindPanelToggle(scope, panelSel, toggleBtnSel, expandBtnSel, chevronSel) {
-  function setChevron(collapsed) {
-    if (!chevronSel) return;
-    const chevron = scope.querySelector(chevronSel);
-    if (chevron) chevron.textContent = collapsed ? '›' : '‹';
-  }
+// ── Sidebar toggle ──
+// 手机端和电脑端共用同一个状态类 .collapsed，只是手机端默认收起、
+// 且展开时压一层遮罩；不再有 .open / .collapsed 两套并行的状态。
+const isMobile = () => window.matchMedia('(max-width:768px)').matches;
 
-  function toggle() {
-    const panel = scope.querySelector(panelSel);
-    if (!panel) return;
-    const collapsed = panel.classList.toggle('collapsed');
-    setChevron(collapsed);
-    if (expandBtnSel) {
-      const expandBtn = scope.querySelector(expandBtnSel);
-      if (expandBtn) expandBtn.classList.toggle('show', collapsed);
-    }
-  }
-
-  // 初始化 chevron，使其与当前面板状态一致（无需在 HTML 里写死字符）
-  const panel = scope.querySelector(panelSel);
-  if (panel) setChevron(panel.classList.contains('collapsed'));
-
-  scope.querySelector(toggleBtnSel)?.addEventListener('click', toggle);
-  if (expandBtnSel) scope.querySelector(expandBtnSel)?.addEventListener('click', toggle);
+function syncOverlay() {
+  const collapsed = document.getElementById('sidebar')?.classList.contains('collapsed');
+  document.getElementById('sidebar-overlay')?.classList.toggle('show', !collapsed && isMobile());
 }
 
-// ── Sidebar toggle ──
 export function initSidebar() {
-  const btn = document.getElementById('menu-btn');
-  const overlay = document.getElementById('sidebar-overlay');
-  const closeBtn = document.getElementById('sidebar-close');
-
-  btn?.addEventListener('click', toggleSidebar);
-  overlay?.addEventListener('click', closeSidebar);
-  closeBtn?.addEventListener('click', closeSidebar);
+  if (isMobile()) document.getElementById('sidebar')?.classList.add('collapsed');
+  document.getElementById('sidebar-overlay')?.addEventListener('click', closeSidebar);
+  window.addEventListener('resize', syncOverlay);
+  syncOverlay();
 }
 
 export function toggleSidebar() {
-  const sb = document.getElementById('sidebar');
-  const ov = document.getElementById('sidebar-overlay');
-  const open = sb.classList.toggle('open');
-  ov.classList.toggle('show', open);
+  document.getElementById('sidebar')?.classList.toggle('collapsed');
+  syncOverlay();
 }
 
+// 导航后调用：只在手机端收起，电脑端保持展开
 export function closeSidebar() {
-  document.getElementById('sidebar')?.classList.remove('open');
-  document.getElementById('sidebar-overlay')?.classList.remove('show');
+  if (!isMobile()) return;
+  document.getElementById('sidebar')?.classList.add('collapsed');
+  syncOverlay();
 }

@@ -49,7 +49,7 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
       '</div>' +
       (function() {
         const secs = parseCharSections(char.description);
-        if (!secs.length) return '<div style="font-size:14px;color:var(--muted);font-style:italic">暂无介绍</div>';
+        if (!secs.length) return '<div style="font-size:14px;color:var(--muted);font-style:italic">你不会想知道的 †</div>';
         return '<div id="char-ro-sections">' + sectionsHTML(secs) + '</div>';
       })() +
     '</div>';

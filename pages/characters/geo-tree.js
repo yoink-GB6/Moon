@@ -13,7 +13,7 @@ export function renderGeoTree() {
   if (!list) return;
 
   if (!State.allCountries.length && !State.allCities.some(c => !c.country_id)) {
-    list.innerHTML = '<div class="geo-empty">暂无数据</div>';
+    list.innerHTML = '<div class="geo-empty">恭喜你，哥伦布</div>';
     bindGeoTree();
     return;
   }
@@ -53,7 +53,7 @@ export function renderGeoTree() {
           '</div>';
         });
       } else {
-        out += '<div class="gt-empty-lm">暂无地标</div>';
+        out += '<div class="gt-empty-lm">恭喜你，哥伦布</div>';
       }
     }
     return out;
@@ -79,7 +79,7 @@ export function renderGeoTree() {
 
     if (isExpanded) {
       cities.forEach(function(city) { html += renderCityNode(city); });
-      if (!cities.length) html += '<div class="gt-empty-city">暂无城市</div>';
+      if (!cities.length) html += '<div class="gt-empty-city">恭喜你，哥伦布</div>';
     }
   });
 

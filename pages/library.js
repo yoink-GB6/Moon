@@ -3,7 +3,7 @@
 
 import { supaClient, setSyncStatus, dbError, safeUnsubscribe } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
-import { showToast, escHtml, confirmDialog, bindPanelToggle } from '../core/ui.js';
+import { showToast, escHtml, confirmDialog } from '../core/ui.js';
 
 function _copyText(text) {
   return navigator.clipboard.writeText(text).catch(() => {
@@ -62,57 +62,31 @@ function buildHTML() {
 <div class="lib-layout">
   <!-- Main content area -->
   <div class="lib-main">
-    <div class="lib-header">
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn bn" id="lib-sort-btn" title="切换排序方式">点赞排序</button>
-        <button class="btn bp" id="lib-add-btn">＋ 新建</button>
-      </div>
-    </div>
     <div class="lib-grid" id="lib-grid"></div>
   </div>
 
-  <!-- Floating expand button (shows when panel collapsed) -->
-  <button id="lib-expand" class="expand-btn-float" title="展开筛选">‹</button>
 
   <!-- Right sidebar filter panel -->
   <div class="lib-panel">
-    <div class="lib-panel-hdr" id="lib-panel-toggle">
-      <span>搜索 & 按tag筛选</span>
-      <span id="lib-panel-chevron">‹</span>
+    <!-- Actions：与面板等宽，中间短竖线分隔 -->
+    <div class="lib-actions">
+      <button id="lib-sort-btn" title="切换排序方式">点赞排序</button>
+      <button id="lib-add-btn">＋ 新建</button>
     </div>
+
     <div class="lib-panel-body">
-      <!-- Privacy unlock -->
-      <div style="margin-bottom:16px">
-      <!-- Search box -->
-      <div style="margin-bottom:16px">
-        <input 
-          id="lib-search-input" 
-          type="text" 
-          placeholder="搜索指令内容..." 
-          autocomplete="off"
-          style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px"
-        />
-      </div>
-      
-      <!-- Author filter -->
-      <div style="margin-bottom:16px;position:relative">
-        <input 
-          id="lib-author-input"
-          type="text"
-          placeholder="输入作者名筛选..."
-          autocomplete="off"
-          style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px"
-        />
+      <!-- 统一搜索：内容即时筛选，同时下拉匹配作者 -->
+      <div class="lib-search-wrap">
+        <input id="lib-search-input" type="text" placeholder="搜索内容 / 作者…" autocomplete="off"/>
         <div id="lib-author-suggestions" class="lib-author-suggestions"></div>
-        <button 
-          id="lib-author-clear" 
-          style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#889;cursor:pointer;font-size:16px;padding:4px;display:none"
-          title="清除作者筛选"
-        >✕</button>
       </div>
-      
+      <div id="lib-author-chip" class="lib-author-chip" style="display:none">
+        <span id="lib-author-chip-name"></span>
+        <button id="lib-author-clear" title="取消作者筛选">✕</button>
+      </div>
+
       <!-- Tag filter hint -->
-      <div style="font-size:12px;color:#889;margin-bottom:12px;line-height:1.6">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
         番外块：点按复制/长按展开<br>
         临时编辑：长按后双击文本<br>
         电脑端 右键 = 触屏 长按
@@ -172,7 +146,7 @@ function buildHTML() {
       <div id="lib-preview-content" style="white-space:pre-wrap;word-break:break-word;line-height:1.7;font-size:14px"></div>
     </div>
     
-    <div id="lib-preview-meta" style="margin-bottom:12px;font-size:13px;color:#889"></div>
+    <div id="lib-preview-meta" style="margin-bottom:12px;font-size:13px;color:var(--muted)"></div>
     
     <div class="mbtns" style="justify-content:space-between">
       <button class="btn bn" id="lib-preview-edit">编辑</button>
@@ -242,88 +216,65 @@ function bindControls(container) {
     if (e.key === 'Enter') addNewTag(container);
   });
   
-  // Search input
-  container.querySelector('#lib-search-input').addEventListener('input', e => {
-    searchKeyword = e.target.value.trim();
-    renderGrid(container.querySelector('.lib-layout'));
+  // ── 统一搜索：同一个框，左侧按内容筛选，下拉按作者匹配 ──
+  const searchInput = container.querySelector('#lib-search-input');
+  const authorSuggestions = container.querySelector('#lib-author-suggestions');
+  const authorChip = container.querySelector('#lib-author-chip');
+  const authorChipName = container.querySelector('#lib-author-chip-name');
+  const authorClearBtn = container.querySelector('#lib-author-clear');
+
+  let allAuthors = [];
+  const rerender = () => renderGrid(container.querySelector('.lib-layout'));
+  const hideSuggestions = () => { authorSuggestions.style.display = 'none'; };
+
+  function syncAuthorChip() {
+    authorChip.style.display = selectedAuthor ? '' : 'none';
+    authorChipName.textContent = selectedAuthor;
+  }
+
+  searchInput.addEventListener('input', e => {
+    const q = e.target.value.trim();
+    searchKeyword = q;
+    rerender();
+
+    if (!q) { hideSuggestions(); return; }
+
+    const matches = allAuthors.filter(a => a.toLowerCase().includes(q.toLowerCase()));
+    if (!matches.length) { hideSuggestions(); return; }
+
+    authorSuggestions.innerHTML = matches.map(author => {
+      const count = items.filter(item => item.author === author).length;
+      return `<div class="lib-author-suggestion" data-author="${escHtml(author)}">
+        ${escHtml(author)} <span style="color:var(--muted)">(${count})</span>
+      </div>`;
+    }).join('');
+    authorSuggestions.style.display = 'block';
   });
 
-  // Author input with autocomplete
-  const authorInput = container.querySelector('#lib-author-input');
-  const authorSuggestions = container.querySelector('#lib-author-suggestions');
-  const authorClearBtn = container.querySelector('#lib-author-clear');
-  
-  let allAuthors = [];  // Store all authors for filtering
-  
-  authorInput.addEventListener('input', e => {
-    const inputValue = e.target.value.trim();
-    
-    if (!inputValue) {
-      // Clear filter if input is empty
-      selectedAuthor = '';
-      authorSuggestions.innerHTML = '';
-      authorSuggestions.style.display = 'none';
-      authorClearBtn.style.display = 'none';
-      renderGrid(container.querySelector('.lib-layout'));
-      return;
-    }
-    
-    // Filter authors by input (case-insensitive substring match)
-    const matches = allAuthors.filter(author => 
-      author.toLowerCase().includes(inputValue.toLowerCase())
-    );
-    
-    if (matches.length > 0) {
-      // Show suggestions
-      authorSuggestions.innerHTML = matches.map(author => {
-        const count = items.filter(item => item.author === author).length;
-        return `<div class="lib-author-suggestion" data-author="${escHtml(author)}">
-          ${escHtml(author)} <span style="color:#889">(${count})</span>
-        </div>`;
-      }).join('');
-      authorSuggestions.style.display = 'block';
-    } else {
-      authorSuggestions.innerHTML = '<div style="padding:8px;color:#889;font-size:12px">无匹配作者</div>';
-      authorSuggestions.style.display = 'block';
-    }
-  });
-  
-  // Click on suggestion
+  // 选中作者 → 只看这个作者的全部内容，清掉关键词
   container.addEventListener('click', e => {
     const suggestion = e.target.closest('.lib-author-suggestion');
-    if (suggestion) {
-      const author = suggestion.dataset.author;
-      selectedAuthor = author;
-      authorInput.value = author;
-      authorSuggestions.innerHTML = '';
-      authorSuggestions.style.display = 'none';
-      authorClearBtn.style.display = '';
-      renderGrid(container.querySelector('.lib-layout'));
-    }
+    if (!suggestion) return;
+    selectedAuthor = suggestion.dataset.author;
+    searchKeyword = '';
+    searchInput.value = '';
+    hideSuggestions();
+    syncAuthorChip();
+    rerender();
   });
-  
-  // Clear button
+
   authorClearBtn.addEventListener('click', () => {
     selectedAuthor = '';
-    authorInput.value = '';
-    authorSuggestions.innerHTML = '';
-    authorSuggestions.style.display = 'none';
-    authorClearBtn.style.display = 'none';
-    authorInput.focus();
-    renderGrid(container.querySelector('.lib-layout'));
+    syncAuthorChip();
+    searchInput.focus();
+    rerender();
   });
-  
-  // Hide suggestions when clicking outside
+
   document.addEventListener('click', e => {
-    if (!container.contains(e.target)) {
-      authorSuggestions.style.display = 'none';
-    }
+    if (!container.contains(e.target)) hideSuggestions();
   });
-  
-  // Store allAuthors reference for use in input handler
-  container._setAuthors = (authors) => {
-    allAuthors = authors;
-  };
+
+  container._setAuthors = (authors) => { allAuthors = authors; };
 
   // Sort button
   container.querySelector('#lib-sort-btn').addEventListener('click', () => {
@@ -336,7 +287,6 @@ function bindControls(container) {
 
   // Sort buttons
   // Panel toggle
-  bindPanelToggle(container, '.lib-panel', '#lib-panel-toggle', '#lib-expand', '#lib-panel-chevron');
 }
 
 async function fetchAll() {
@@ -424,24 +374,25 @@ function renderTagList(tagListEl) {
   selectedTags = selectedTags.filter(tag => tags.includes(tag));
   
   if (!tags.length) {
-    tagListEl.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">暂无标签</div>';
+    tagListEl.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">wandering……</div>';
     return;
   }
   
   const editable = isEditor();
-  
+
   tagListEl.innerHTML = tags.map(tag => {
     const selected = selectedTags.includes(tag);
     const count = items.filter(item => item.tags.includes(tag)).length;
-    
-    // Edit/delete buttons (only visible in edit mode)
-    const actionBtns = editable 
+
+    // 条目本身对所有人开放；标签是从条目文本里拼出来的，
+    // 改条目里的 tag 名就等于改标签，所以这两个按钮仍只给编辑者
+    const actionBtns = editable
       ? `<div class="lib-tag-actions">
           <button class="lib-tag-action-btn lib-tag-edit" data-tag="${escHtml(tag)}" title="重命名">✎</button>
-          <button class="lib-tag-action-btn lib-tag-delete" data-tag="${escHtml(tag)}" title="删除">🗑</button>
+          <button class="lib-tag-action-btn lib-tag-delete" data-tag="${escHtml(tag)}" title="删除">⌫</button>
          </div>`
       : '';
-    
+
     return `<div class="lib-tag-filter ${selected ? 'selected' : ''}" data-tag="${escHtml(tag)}">
       <div class="lib-tag-main">
         <span class="lib-tag-name">${escHtml(tag)}</span>
@@ -519,7 +470,7 @@ function renderGrid(container) {
   }
   
   if (!filtered.length) {
-    let msg = '暂无内容';
+    let msg = 'wandering……';
     
     // Build filter description
     const filters = [];
@@ -833,7 +784,7 @@ function copyFromPreview(container) {
 function renderTagPicker(container, selectedItemTags) {
   const picker = container.querySelector('#lib-tag-picker');
   if (!tags.length && !selectedItemTags.length) {
-    picker.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:4px 0">暂无标签，请先添加</div>';
+    picker.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:4px 0">wandering……</div>';
     return;
   }
   const allTags = Array.from(new Set([...tags, ...selectedItemTags])).sort();
@@ -1131,13 +1082,13 @@ function updateSortButton(container) {
   if (!sortBtn) return;
 
   if (sortBy === 'likes') {
-    sortBtn.textContent = '❤ 点赞排序';
+    sortBtn.textContent = '♥ 点赞排序';
     sortBtn.title = '当前：按点赞数排序，点击切换为时间排序';
   } else if (sortBy === 'created') {
-    sortBtn.textContent = '⏱ 时间排序';
+    sortBtn.textContent = '◷ 时间排序';
     sortBtn.title = '当前：按创建时间排序，点击切换为随机排序';
   } else {
-    sortBtn.textContent = '🎲 随机排序';
+    sortBtn.textContent = '⁂ 随机排序';
     sortBtn.title = '当前：随机排序，点击切换为点赞排序';
   }
 }

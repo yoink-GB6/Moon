@@ -24,9 +24,8 @@ input[type=text],input[type=number],input[type=password],textarea{
   border-radius:4px;padding:8px 11px;font-size:14px;outline:none;width:100%;
   transition:border-color .2s;-webkit-appearance:none;resize:vertical;
 }
-input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(168,137,58,.15)}
+input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(var(--accent-rgb),.15)}
 
-.ctrl-label{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:7px;letter-spacing:.4px}
 .ctrl-note{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
 .small-btn{
   display:inline-block;vertical-align:middle;
@@ -51,46 +50,59 @@ input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .toast-item{
   position:fixed;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,.9);color:var(--text);padding:12px 24px;border-radius:4px;
+  background:var(--toast-bg);color:var(--text);padding:12px 24px;border-radius:4px;
   font-size:14px;white-space:nowrap;z-index:9999;
   opacity:0;pointer-events:none;transition:all .3s;
-  box-shadow:0 4px 16px rgba(0,0,0,.5);
+  box-shadow:0 4px 16px var(--shadow);
 }
 .toast-item.show{opacity:1}
 
 /* ── Password modal ── */
 #pw-modal{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  display:none;position:fixed;inset:0;background:var(--overlay);
   z-index:1000;align-items:center;justify-content:center;
 }
 #pw-modal.show{display:flex}
+/* 只有一个输入框：回车提交，Esc / 点击外部关闭，失败靠抖动反馈 */
 #pw-box{
   background:var(--panel);border:1px solid var(--border-hi);border-radius:4px;
-  padding:28px;width:320px;
-  box-shadow:0 0 0 1px var(--accent-muted),0 24px 80px rgba(0,0,0,.6);
+  padding:14px;width:260px;
+  box-shadow:0 0 0 1px var(--accent-muted),0 24px 80px var(--shadow);
 }
-#pw-box h2{font-size:16px;margin-bottom:16px;color:var(--accent-bright);display:flex;align-items:center;gap:10px}
-#pw-box h2::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--accent-dim),transparent)}
-#pw-error{color:var(--red);font-size:12px;margin-top:-8px;margin-bottom:8px;display:none}
+#pw-input{width:100%;text-align:center;letter-spacing:.3em}
+#pw-input.err{
+  border-color:var(--red);
+  animation:pw-shake .32s cubic-bezier(.36,.07,.19,.97);
+}
+@keyframes pw-shake{
+  10%,90%{transform:translateX(-2px)}
+  20%,80%{transform:translateX(4px)}
+  30%,50%,70%{transform:translateX(-6px)}
+  40%,60%{transform:translateX(6px)}
+}
+@media (prefers-reduced-motion:reduce){#pw-input.err{animation:none}}
 
 /* ── 弹窗遮罩背景（独立层，夹在星空画布之下）── */
 #modal-backdrop{
   position:fixed;inset:0;z-index:30;
-  background:rgba(0,0,0,.7);display:none;pointer-events:none;
+  background:var(--overlay);display:none;pointer-events:none;
 }
 body:has(.tl-modal-overlay.show) #modal-backdrop{display:block}
 
 /* ── Shared modal overlay + box (used by timeline & characters) ── */
+/* 跟着内容容器走：右侧面板展开时一起让位，和主内容对齐 */
 .tl-modal-overlay{
-  display:none;position:absolute;inset:0;
+  display:none;position:absolute;top:0;bottom:0;left:0;
+  right:var(--content-inset,0px);
   z-index:520;align-items:flex-end;justify-content:center;
+  transition:right .28s cubic-bezier(0.4,0,0.2,1);
 }
 .tl-modal-overlay.show{display:flex}
 .tl-modal{
   background:var(--panel);border:1px solid var(--border-hi);
   border-radius:8px 8px 0 0;padding:22px 20px 28px;
   width:100%;max-width:440px;max-height:88vh;overflow-y:auto;
-  box-shadow:0 0 0 1px var(--accent-muted),0 -8px 40px rgba(0,0,0,.6);
+  box-shadow:0 0 0 1px var(--accent-muted),0 -8px 40px var(--shadow);
   position:relative;
 }
 .tl-modal h2{
@@ -109,11 +121,11 @@ body:has(.tl-modal-overlay.show) #modal-backdrop{display:block}
 .tl-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
 .tl-tab{flex:1;padding:9px 4px;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;text-transform:uppercase;letter-spacing:.12em}
 .tl-tab.active{color:var(--accent-bright);border-bottom-color:var(--accent);font-weight:600}
-.tl-tab:hover:not(.active){color:var(--text);background:rgba(168,137,58,.06)}
+.tl-tab:hover:not(.active){color:var(--text);background:rgba(var(--accent-rgb),.06)}
 .tl-tab-content{display:flex;flex-direction:column;flex:1;overflow:hidden}
 .tl-section{flex-shrink:0}
 .tl-section-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);user-select:none;transition:background .1s}
-.tl-section-hdr:hover{background:rgba(168,137,58,.06)}
+.tl-section-hdr:hover{background:rgba(var(--accent-rgb),.06)}
 .tl-section-body{border-bottom:1px solid var(--border)}
 .tl-chevron{font-size:11px;color:var(--muted)}
 

@@ -77,7 +77,7 @@ export function renderCharactersTab(avatarCache) {
   const grid = container.querySelector('#chars-grid');
 
   if (!State.allChars.length) {
-    grid.innerHTML = '<div class="intro-empty">暂无人物</div>';
+    grid.innerHTML = '<div class="intro-empty">wandering……</div>';
     return;
   }
 
