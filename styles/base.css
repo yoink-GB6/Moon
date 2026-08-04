@@ -2,20 +2,20 @@
    全局变量 & 重置
 ════════════════════════════════════════ */
 :root {
-  /* 底色取 VSCode 编辑区那种带灰的黑，纯黑太硬。
+  /* 底色比纯黑抬一点点，留一丝呼吸感，但仍是接近黑的深色。
      整条质感阶梯一起抬高，保证 panel 始终比 bg 亮。 */
-  --bg:           #1e1e1e;
-  --panel:        #252423;
-  --surface-2:    #2b2a28;
-  --surface-3:    #32302e;
-  --border:       #3a3733;
-  --border-hi:    #494339;
+  --bg:           #101010;
+  --panel:        #181717;
+  --surface-2:    #1e1d1c;
+  --surface-3:    #242321;
+  --border:       #2b2825;
+  --border-hi:    #3a342c;
   --border-hover: #a8893a;  /* 可交互元素 hover 边框色 */
   --accent:       #cbbca8;
   --accent-bright:#c9c092;
   --accent-dim:   #6b5926;
-  --accent-muted: #3b3225;
-  --accent-bg:    #2a2620;
+  --accent-muted: #2e2619;
+  --accent-bg:    #1c1914;
   --green:        #4a7a42;
   --green-bright: #7aba72;
   --green-dim:    #3a6130;
@@ -25,11 +25,11 @@
   --red-dim:      #6b2626;
   --red-muted:    #2a1010;
   --amber:        #a87830;
-  --ib:           #2a2620;
-  --ibr:          #494339;
+  --ib:           #1c1914;
+  --ibr:          #3a342c;
   --text:         #cdc9c4;
   --muted:        #877f78;  /* 降低黄绿偏，更接近中性暖灰 */
-  --text-faint:   #5c5751;
+  --text-faint:   #4e4944;
   --sidebar-w:    220px;
   --topbar-h:     50px;
   /* 字体栈（无需外部加载） */
@@ -44,18 +44,18 @@
   --accent-rgb:   168,137,58;
   --green-rgb:    39,174,96;
   --red-rgb:      239,68,68;
-  --hover-solid:  #302c22;  /* 卡片/列表项的实色 hover 底 */
+  --hover-solid:  #222016;  /* 卡片/列表项的实色 hover 底 */
   --shadow-rgb:   0,0,0;    /* 各处投影/浮层，alpha 由使用处决定 */
-  --vignette:     #141414;  /* 径向暗角外圈 */
+  --vignette:     #0a0a0a;  /* 径向暗角外圈 */
   --grid-rgb:     255,255,255;  /* canvas 网格线/描边，需与背景反向 */
   --collapse-title: #b5b0a9;  /* 折叠区块标题：比正文略深的偏白，金色在这里太跳 */
   --text-rgb:     214,207,192;  /* canvas 内文字 */
   --hover-tint:   rgba(var(--accent-rgb),.07);
   --active-tint:  rgba(var(--accent-rgb),.10);
-  --panel-glass:  #222120;   /* 侧栏/顶栏底色：不透明，比卡片略深 */
+  --panel-glass:  #151413;   /* 侧栏/顶栏底色：不透明，比卡片略深 */
   --overlay:      rgba(0,0,0,.6);
   --shadow:       rgba(0,0,0,.75);
-  --toast-bg:     rgba(28,28,28,.96);
+  --toast-bg:     rgba(16,16,16,.96);
   --main-glow-1:  rgba(55,50,75,.05);
   --main-glow-2:  rgba(150,85,25,.05);
   /* canvas 用（JS 通过 themeRGB() 读取） */
