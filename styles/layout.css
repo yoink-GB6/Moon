@@ -124,3 +124,14 @@
 }
 #sidebar-overlay.show{display:block;opacity:1}
 
+/* 右侧面板遮罩（仅手机端）。z-index 压在面板(50)之下、页面内容之上，
+   既压暗内容又拦住点击，点它就收起面板。 */
+#panel-overlay{
+  display:none;position:absolute;inset:0;background:var(--overlay);
+  z-index:45;opacity:0;transition:opacity .3s;
+}
+#panel-overlay.show{display:block;opacity:1}
+/* characters/geo 的面板是 static 排在 flex 流里，z-index 对它无效，
+   改成 relative 才能浮到遮罩之上（仍然占布局位置） */
+.intro-body .tl-panel{position:relative;z-index:60}
+

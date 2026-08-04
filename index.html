@@ -13,11 +13,10 @@
 <!-- 必须在样式表之前同步执行，否则浅色模式下会闪一帧暗色 -->
 <script>
 (function(){
-  var t = localStorage.getItem('moon-theme');
-  if (t !== 'light' && t !== 'dark')
-    t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  var t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   document.documentElement.dataset.theme = t;
-  document.querySelector('meta[name="theme-color"]').content = t === 'light' ? '#f0eee6' : '#0c0c0c';
+  document.documentElement.style.colorScheme = t;
+  document.querySelector('meta[name="theme-color"]').content = t === 'light' ? '#f0eee6' : '#1e1e1e';
 })();
 </script>
 
@@ -75,6 +74,7 @@
     <!-- Main area -->
     <div id="main-content">
       <div id="page-root" style="flex:1;overflow:hidden;display:flex;flex-direction:column"></div>
+      <div id="panel-overlay"></div>
     </div>
   </div>
 </div>
@@ -307,14 +307,16 @@ const RIGHT_PANELS = ['#chars-panel', '.lib-panel', '#tl-panel'];
 const findRightPanel = () =>
   RIGHT_PANELS.reduce((f, s) => f || document.querySelector('#page-root ' + s), null);
 
-// 面板展开时对应按钮停在选中态
+// 面板展开时对应按钮停在选中态；手机端还要同步右侧面板的遮罩
 function syncToggleBtns() {
   const sb = document.getElementById('sidebar');
   document.getElementById('nav-btn')
     .classList.toggle('active', !sb.classList.contains('collapsed'));
   const p = findRightPanel();
-  document.getElementById('panel-btn')
-    .classList.toggle('active', !!p && !p.classList.contains('collapsed'));
+  const open = !!p && !p.classList.contains('collapsed');
+  document.getElementById('panel-btn').classList.toggle('active', open);
+  document.getElementById('panel-overlay')
+    .classList.toggle('show', open && window.matchMedia('(max-width:768px)').matches);
 }
 
 function syncPanelBtn() {
@@ -335,6 +337,10 @@ document.getElementById('panel-btn').addEventListener('click', () => {
 });
 window.addEventListener('resize', syncToggleBtns);
 document.getElementById('sidebar-overlay').addEventListener('click', syncToggleBtns);
+document.getElementById('panel-overlay').addEventListener('click', () => {
+  findRightPanel()?.classList.add('collapsed');
+  syncToggleBtns();
+});
 
 // 手机端屏幕放不下并排，点面板外部就收起（和左侧栏遮罩同一个道理）
 document.addEventListener('pointerdown', e => {
