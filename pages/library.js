@@ -4,6 +4,7 @@
 import { supaClient, setSyncStatus, dbError, safeUnsubscribe } from '../core/supabase-client.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { showToast, escHtml, confirmDialog } from '../core/ui.js';
+import { reflect } from '../core/router.js';
 
 function _copyText(text) {
   return navigator.clipboard.writeText(text).catch(() => {
@@ -32,6 +33,7 @@ let likedItems = new Set(); // Track liked items in current session (resets on p
 let _pressState = null;        // 模块级，供 unmount 清理长按定时器
 let _unsubAuth = null;         // 模块级，供 unmount 取消 auth 订阅
 let _libMounted = false;
+let _pendingRoute = null;   // 数据未到时挂起的深链动作
 
 export async function mount(container) {
   _libMounted = true;
@@ -67,7 +69,7 @@ function buildHTML() {
 
 
   <!-- Right sidebar filter panel -->
-  <div class="lib-panel">
+  <div class="lib-panel side-panel">
     <!-- Actions：与面板等宽，中间短竖线分隔 -->
     <div class="lib-actions">
       <button id="lib-sort-btn" title="切换排序方式">点赞排序</button>
@@ -313,6 +315,8 @@ async function fetchAll() {
     // Sort items based on current sortBy method
     sortItems();
     
+    if (_pendingRoute) { const fn = _pendingRoute; _pendingRoute = null; fn(); }
+
     // Extract all unique tags
     const tagSet = new Set();
     items.forEach(item => item.tags.forEach(tag => tagSet.add(tag)));
@@ -751,13 +755,27 @@ function openPreviewModal(item) {
   if (item.author) parts.push(`作者：${item.author}`);
   if (item.tags.length > 0) parts.push(`标签：${item.tags.join(', ')}`);
   metaEl.textContent = parts.join(' | ') || '';
-  
+
   modal.classList.add('show');
+  reflect('library', item.id);   // 让地址栏带上这条，可直接分享
 }
 
 function closePreviewModal(container) {
   container.querySelector('#lib-preview-modal').classList.remove('show');
   previewItem = null;
+  reflect('library');
+}
+
+// 由路由调用：#/library/123 → 打开 123 号的预览弹窗
+export function applyRoute(parts) {
+  const id = parts && parts[0];
+  if (!id) { if (previewItem) closePreviewModal(pageContainer); return; }
+  const open = () => {
+    const item = items.find(i => String(i.id) === String(id));
+    if (item) openPreviewModal(item);
+  };
+  // 数据可能还没到，等 fetchAll 完成后再试一次
+  if (items.length) open(); else _pendingRoute = open;
 }
 
 function _previewText(container) {

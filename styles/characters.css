@@ -29,9 +29,6 @@
 .geo-layout{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;flex:1}
 .geo-main{flex:1;overflow-y:auto;padding:24px 32px}
 
-/* ── 右侧面板（覆盖 timeline.css 中的 .tl-panel，仅在 .intro-body 内生效）── */
-.intro-body .tl-panel{width:260px;flex-shrink:0;background:var(--panel-glass);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width 0.28s ease;position:static;transform:none}
-.intro-body .tl-panel.collapsed{width:0;transform:none}
 
 .panel-body-section{display:flex;flex-direction:column;flex:1;overflow:hidden}
 .panel-search-box{padding:10px 12px;flex-shrink:0;border-bottom:1px solid var(--border)}
@@ -40,6 +37,10 @@
 .panel-search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),0.12)}
 .panel-search-clear{position:absolute;right:7px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;line-height:1;display:none;transition:color 0.15s}
 .panel-search-clear:hover{color:var(--text)}
+
+/* 交叉引用：人物详情里的国家/城市，点了跳到地理页 */
+.geo-xref{cursor:pointer;color:var(--accent);border-bottom:1px dotted var(--accent-dim);transition:color .15s}
+.geo-xref:hover{color:var(--accent-bright);border-bottom-color:var(--accent)}
 
 /* ── 人物列表（覆盖 timeline.css，仅在 .intro-body 内生效）── */
 .intro-body .tl-clist{flex:1;overflow-y:auto;padding:6px}

@@ -5,10 +5,8 @@
    手机端只是改成 fixed 覆盖 + 默认收起，交互路径与电脑端一致。
    顶栏保持可见（top 从 --topbar-h 起算），否则会盖住开合按钮。 */
 @media(max-width:768px){
-  #sidebar{position:fixed;top:var(--topbar-h);bottom:0;z-index:150}
-  #sidebar-overlay{top:var(--topbar-h)}
+  #sidebar{position:fixed;top:var(--topbar-h);bottom:0}
   #toast{bottom:16px}
-  .tl-panel{width:200px}
   .page-home{padding:20px}
   .tl-modal-overlay{position:fixed}
   /* 手机端右侧面板是覆盖式，内容和弹窗都不让位 */

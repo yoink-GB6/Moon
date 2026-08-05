@@ -1,6 +1,7 @@
 // pages/geo.js
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { escHtml } from '../core/ui.js';
+import { reflect } from '../core/router.js';
 
 import * as State from './characters/state.js';
 import { loadAllData, subscribeRealtime, unsubscribeRealtime } from './characters/data-loader.js';
@@ -26,6 +27,7 @@ export async function mount(container) {
   await loadAllData();
   _dataLoaded = true;
   render();
+  if (_pendingRoute) { const fn = _pendingRoute; _pendingRoute = null; fn(); }
   subscribeRealtime(() => render());
   updateUI();
 }
@@ -52,7 +54,7 @@ function buildHTML() {
   </div>
 
 
-  <div id="chars-panel" class="tl-panel">
+  <div id="chars-panel" class="side-panel">
     <div id="panel-geo-body" class="panel-body-section">
       <div class="geo-panel-search-box">
         <div class="geo-panel-search-wrap">
@@ -104,6 +106,33 @@ function buildHTML() {
 function bindControls() {
   const container = State.pageContainer;
 }
+
+// 由路由调用：#/geo/country/3 或 #/geo/city/7 → 选中并展开
+export function applyRoute(parts) {
+  if (!parts || !parts.length) return;
+  const [kind, id] = parts;
+  const open = () => {
+    if (kind === 'country') {
+      const co = State.allCountries.find(c => String(c.id) === String(id));
+      if (!co) return;
+      State.setSelectedCountry(co); State.setSelectedCity(null);
+      if (!State.expandedCountries.has(co.id)) State.toggleCountryExpanded(co.id);
+    } else if (kind === 'city') {
+      const ci = State.allCities.find(c => String(c.id) === String(id));
+      if (!ci) return;
+      const co = State.allCountries.find(c => c.id === ci.country_id);
+      State.setSelectedCity(ci);
+      if (co) {
+        State.setSelectedCountry(co);
+        if (!State.expandedCountries.has(co.id)) State.toggleCountryExpanded(co.id);
+      }
+    }
+    render();
+  };
+  if (_dataLoaded) open(); else _pendingRoute = open;
+}
+
+let _pendingRoute = null;   // 数据未到时挂起的深链动作
 
 function render() {
   if (!_dataLoaded) return;

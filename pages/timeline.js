@@ -12,10 +12,6 @@ let scale      = 60;
 let viewOffX   = 0;
 const MIN_SCALE = 5, MAX_SCALE = 260;
 
-const PALETTE = ['#7c83f7','#27ae60','#e67e22','#e74c3c','#9b59b6',
-                 '#1abc9c','#f39c12','#3498db','#e91e63','#00bcd4',
-                 '#8bc34a','#ff5722','#795548','#607d8b','#ffc107'];
-
 let canvas, ctx, wrap;
 let NODE_R = 18, STACK_GAP = 46;
 let imgCache = {};
@@ -93,7 +89,7 @@ function buildHTML() {
 
 
   <!-- Right panel -->
-  <div id="tl-panel" class="tl-panel">
+  <div id="tl-panel" class="side-panel">
     <!-- Tab bar removed - only one tab, so hide tabs -->
     <div style="display:none" class="tl-tabs">
       <button class="tl-tab active" data-tab="list">≡ 列表</button>
@@ -269,7 +265,6 @@ async function doQuickAdd(container) {
     const { data, error } = await supaClient.from('characters').insert({
       name,
       base_age: baseAge,
-      color: PALETTE[characters.length % PALETTE.length],
       sort_order: characters.length
     }).select().single();
     
@@ -444,10 +439,10 @@ function draw() {
     if (c.ageLimit==null) return;
     const lx=dispAgeToX(c.ageLimit);
     ctx.save();
-    ctx.strokeStyle=c.color+'55'; ctx.lineWidth=1.5; ctx.setLineDash([3,4]);
+    ctx.strokeStyle=`rgba(${TH.accent},.35)`; ctx.lineWidth=1.5; ctx.setLineDash([3,4]);
     ctx.beginPath(); ctx.moveTo(lx,ay-30); ctx.lineTo(lx,ay+10); ctx.stroke();
     ctx.setLineDash([]); ctx.restore();
-    ctx.save(); ctx.fillStyle=c.color+'88';
+    ctx.save(); ctx.fillStyle=`rgba(${TH.accent},.55)`;
     ctx.beginPath(); ctx.moveTo(lx,ay-8); ctx.lineTo(lx+5,ay); ctx.lineTo(lx,ay+8); ctx.lineTo(lx-5,ay); ctx.closePath(); ctx.fill();
     ctx.restore();
   });
@@ -460,7 +455,7 @@ function draw() {
       const cy=ay-idx*STACK_GAP;
       if (idx>0) {
         ctx.save();
-        ctx.strokeStyle=c.color+(isGone(c)?'30':'55'); ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+        ctx.strokeStyle=`rgba(${TH.accent},${isGone(c)?.18:.35})`; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
         ctx.beginPath(); ctx.moveTo(gx,ay); ctx.lineTo(gx,cy); ctx.stroke();
         ctx.setLineDash([]); ctx.restore();
       }
@@ -473,12 +468,6 @@ function draw() {
   if (scaleEl) scaleEl.textContent = scale.toFixed(0);
   if (countEl) countEl.textContent = characters.length;
   updateSidebar();
-}
-
-function lighten(hex,amt) {
-  const n=parseInt(hex.slice(1),16);
-  const r=Math.min(255,(n>>16)+amt),g=Math.min(255,((n>>8)&255)+amt),b=Math.min(255,(n&255)+amt);
-  return '#'+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1);
 }
 
 function drawNode(c,x,cy) {
@@ -497,11 +486,11 @@ function drawNode(c,x,cy) {
     ov.addColorStop(0,`rgba(${TH.shadow},0)`); ov.addColorStop(1,`rgba(${TH.shadow},.45)`);
     ctx.fillStyle=ov; ctx.fillRect(x-r,cy-r,r*2,r*2);
   } else {
-    const col=gone?'#555':c.color;
     const bg=ctx.createRadialGradient(x-r*.28,cy-r*.28,0,x,cy,r);
-    bg.addColorStop(0,gone?'#777':lighten(c.color,28)); bg.addColorStop(1,col);
+    bg.addColorStop(0,`rgba(${TH.accent},${gone?.18:.42})`);
+    bg.addColorStop(1,`rgba(${TH.accent},${gone?.10:.22})`);
     ctx.fillStyle=bg; ctx.fillRect(x-r,cy-r,r*2,r*2);
-    ctx.fillStyle=gone?'#aaa':'#fff';
+    ctx.fillStyle=gone?`rgba(${TH.txt},.45)`:`rgb(${TH.txt})`;
     ctx.font='bold '+Math.round(r*.72)+'px system-ui';
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(c.name.charAt(0).toUpperCase(),x,cy);
@@ -624,7 +613,7 @@ function updateSidebar() {
     const da=dispAge(c), gone=isGone(c);
     const av = c.avatar
       ? `<div class="tl-ci-av"><img src="${escHtml(c.avatar)}" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div>`
-      : `<div class="tl-ci-av" style="background:${gone?'var(--text-faint)':c.color}">${escHtml(c.name.charAt(0).toUpperCase())}</div>`;
+      : `<div class="tl-ci-av tl-ci-av-letter">${escHtml(c.name.charAt(0).toUpperCase())}</div>`;
     let meta = '';
     if (c.ageLimit!=null) meta += `<span class="limit-tag">上限${c.ageLimit}岁</span>`;
     if (gone)             meta += `${meta?' ':''}<span class="dead-tag">†消逝</span>`;
@@ -672,7 +661,7 @@ async function fetchAll() {
     if (cfgRes.error) throw cfgRes.error;
     characters = (charRes.data||[]).map((r,i) => ({
       id:r.id, name:r.name, baseAge:r.base_age, ageLimit:r.age_limit,
-      color:r.color||PALETTE[i%PALETTE.length], avatar:(function(v){if(!v)return undefined;try{const p=JSON.parse(v);return Array.isArray(p)?p[0]||undefined:v;}catch(_){return v;}})(r.avatar_url), sortOrder:r.sort_order||0
+      avatar:(function(v){if(!v)return undefined;try{const p=JSON.parse(v);return Array.isArray(p)?p[0]||undefined:v;}catch(_){return v;}})(r.avatar_url), sortOrder:r.sort_order||0
     }));
     const cfg=cfgRes.data;
     ageOffset=0; scale=cfg.scale||60; viewOffX=cfg.view_off_x||0;  // ageOffset always resets to 0 on page load
@@ -688,7 +677,6 @@ async function saveCharacter(c) {
       name:       c.name,
       base_age:   c.baseAge,
       age_limit:  c.ageLimit || null,
-      color:      c.color,
       avatar_url: c.avatar || null,
       sort_order: c.sortOrder || 0
     };

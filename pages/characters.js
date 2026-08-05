@@ -7,6 +7,8 @@ import * as State from './characters/state.js';
 import { loadAllData, subscribeRealtime, unsubscribeRealtime } from './characters/data-loader.js';
 import { renderCharactersTab, bindCharactersTab, buildCharCardHTML, bindCharCard } from './characters/characters-tab.js';
 import { setupCharModal, openImageManager } from './characters/modals/character-modal.js';
+import { openCharReadonly } from './characters/modals/char-readonly-modal.js';
+import { reflect } from '../core/router.js';
 
 let _unsubAuth = null;
 let _dataLoaded = false;
@@ -21,12 +23,30 @@ export async function mount(container) {
   await loadAllData();
   _dataLoaded = true;
   render();
+  if (_pendingRoute) { const fn = _pendingRoute; _pendingRoute = null; fn(); }
   subscribeRealtime(() => render());
   updateUI();
 }
 
+// 由路由调用：#/characters/45 → 打开 45 号的详情弹窗
+export function applyRoute(parts) {
+  const id = parts && parts[0];
+  if (!id) {
+    document.querySelector('#char-readonly-modal')?.classList.remove('show');
+    return;
+  }
+  const open = () => {
+    const char = State.allChars.find(c => String(c.id) === String(id));
+    if (char) openCharReadonly(char);
+  };
+  if (_dataLoaded) open(); else _pendingRoute = open;
+}
+
+let _pendingRoute = null;   // 数据未到时挂起的深链动作
+
 export function unmount() {
   _dataLoaded = false;
+  _pendingRoute = null;
   unsubscribeRealtime();
   if (_unsubAuth) { _unsubAuth(); _unsubAuth = null; }
 }
@@ -48,7 +68,7 @@ function buildHTML() {
   </div>
 
 
-  <div id="chars-panel" class="tl-panel">
+  <div id="chars-panel" class="side-panel">
     <div id="panel-chars-body" class="panel-body-section">
       <div class="panel-search-box">
         <div class="panel-search-wrap">
@@ -252,7 +272,9 @@ function _renderCharPanel(list, query, avatarCache) {
 
   list.innerHTML = geoHTML + chars.map(function(c) {
     const city    = c.city_id    ? State.allCities.find(function(ci) { return ci.id  === c.city_id;    }) : null;
-    const country = c.country_id ? State.allCountries.find(function(co) { return co.id === c.country_id; }) : null;
+    // country_id 为空时回退到城市所属国家，和上面搜索过滤器保持一致
+    const country = c.country_id ? State.allCountries.find(function(co) { return co.id === c.country_id; })
+                  : (city        ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null);
     const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
     const ageStr   = (c.base_age != null && c.base_age !== '') ? String(c.base_age) : '';
     const meta     = [ageStr ? ageStr + '岁' : '', location].filter(Boolean).join(' · ');

@@ -4,6 +4,7 @@
 import { escHtml } from '../../../core/ui.js';
 import * as State from '../state.js';
 import { parseAvatarUrls, pickRandomUrl, openImageViewer, parseCharSections, sectionsHTML } from '../utils.js';
+import { reflect, go } from '../../../core/router.js';
 
 export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
   const container = State.pageContainer;
@@ -16,8 +17,17 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
   }
 
   const city    = char.city_id    ? State.allCities.find(function(c)  { return c.id  === char.city_id;    }) : null;
-  const country = char.country_id ? State.allCountries.find(function(co) { return co.id === char.country_id; }) : null;
-  const location = [country && country.name, city && city.name].filter(Boolean).join(' › ');
+  // country_id 为空时回退到城市所属国家，和列表/搜索保持一致
+  const country = char.country_id
+    ? State.allCountries.find(function(co) { return co.id === char.country_id; })
+    : (city ? State.allCountries.find(function(co) { return co.id === city.country_id; }) : null);
+  // 交叉引用：点国家/城市直接跳到地理页对应节点
+  const geoLink = function(kind, obj) {
+    return '<span class="geo-xref" data-geo-kind="' + kind + '" data-geo-id="' + obj.id + '">'
+      + escHtml(obj.name) + '</span>';
+  };
+  const location = [country && geoLink('country', country), city && geoLink('city', city)]
+    .filter(Boolean).join(' › ');
   const age = (char.base_age != null && char.base_age !== '') ? String(char.base_age) + ' 岁' : '';
 
   const avatarUrl = fixedAvatarUrl !== undefined ? fixedAvatarUrl : pickRandomUrl(parseAvatarUrls(char.avatar_url));
@@ -33,7 +43,7 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
         '<div style="flex:1">' +
           '<h2 style="margin:0 0 4px;color:var(--border-hover)">' + escHtml(char.name) + '</h2>' +
           (age      ? '<div style="font-size:14px;color:var(--muted)">' + age + '</div>' : '') +
-          (location ? '<div style="font-size:14px;color:var(--muted)">' + escHtml(location) + '</div>' : '') +
+          (location ? '<div style="font-size:14px;color:var(--muted)">' + location + '</div>' : '') +
           (char.link_url ? (function() {
             var re = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, m, links = [], raw = char.link_url;
             while ((m = re.exec(raw)) !== null) links.push({ label: m[1], url: m[2] });
@@ -55,6 +65,17 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
     '</div>';
 
   overlay.classList.add('show');
+  reflect('characters', char.id);   // 地址栏带上这个人，可直接分享
+
+  // 交叉引用跳转。这些节点每次打开都随 innerHTML 重建，
+  // 所以不用 signal 也不会累积监听器（用了反而会被下面的 abort 清掉）
+  overlay.querySelectorAll('.geo-xref').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      overlay.classList.remove('show');
+      go('geo', el.dataset.geoKind, el.dataset.geoId);
+    });
+  });
 
   // 点击头像查看原图
   const viewTarget = overlay.querySelector('[data-viewimg]');
@@ -103,7 +124,7 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
     _mdOnOverlay = (e.target === overlay);
   }, { signal });
   overlay.addEventListener('mouseup', function(e) {
-    if (_mdOnOverlay && e.target === overlay) overlay.classList.remove('show');
+    if (_mdOnOverlay && e.target === overlay) { overlay.classList.remove('show'); reflect('characters'); }
     _mdOnOverlay = false;
   }, { signal });
 }

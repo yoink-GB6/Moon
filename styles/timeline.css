@@ -8,14 +8,6 @@
 }
 .tl-cw.grabbing{cursor:grabbing}
 .tl-cw canvas{display:block}
-.tl-panel{
-  position:absolute;right:0;top:0;bottom:0;z-index:50;
-  width:240px;background:var(--panel-glass);border-left:1px solid var(--border);
-  
-  display:flex;flex-direction:column;overflow:hidden;
-  transition:transform .28s cubic-bezier(0.4,0,0.2,1);
-}
-.tl-panel.collapsed{transform:translateX(100%)}
 .tl-offset-row{display:flex;align-items:center;gap:5px;margin-bottom:8px}
 .tl-ob{
   width:34px;height:34px;border-radius:4px;border:1px solid var(--border-hi);cursor:pointer;
@@ -43,7 +35,9 @@
 .tl-ci{display:flex;align-items:center;padding:7px 12px;cursor:pointer;gap:8px;transition:background .1s}
 .tl-ci:hover{background:var(--hover-solid)}
 .tl-ci:hover .tl-cedit{color:var(--accent)}
-.tl-ci-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+.tl-ci-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent)}
+/* 无头像时的首字母圆盘：不再用每人一色，统一走主题金 */
+.tl-ci-av-letter{background:rgba(var(--accent-rgb),.18);border:1px solid rgba(var(--accent-rgb),.3)}
 .tl-ci-info{flex:1;min-width:0}
 .tl-cname{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tl-cmeta{font-size:10px;color:var(--muted);margin-top:1px}

@@ -44,7 +44,7 @@
 
 /* ── Left sidebar ── */
 #sidebar{
-  position:absolute;left:0;top:0;bottom:0;z-index:100;
+  position:absolute;left:0;top:0;bottom:0;z-index:160;
   width:var(--sidebar-w);background:var(--panel-glass);border-right:1px solid var(--border);
   
   display:flex;flex-direction:column;overflow:hidden;
@@ -113,25 +113,24 @@
     radial-gradient(ellipse at 82% 72%, var(--main-glow-2) 0%, transparent 52%),
     var(--bg);
 }
-#main-content:has(.lib-panel:not(.collapsed)){--content-inset:240px}
-#main-content:has(#tl-panel:not(.collapsed)){--content-inset:240px}
-#main-content:has(#chars-panel:not(.collapsed)){--content-inset:260px}
+#main-content:has(.side-panel:not(.collapsed)){--content-inset:var(--panel-w)}
 
-/* ── Sidebar overlay (mobile) ── */
-#sidebar-overlay{
-  display:none;position:fixed;inset:0;background:var(--overlay);
-  z-index:140;opacity:0;transition:opacity .3s;
+/* ── 右侧页面面板：三个页面共用的外壳 ──
+   各 page 只负责面板里装什么，定位/宽度/折叠/层级都在这里统一。 */
+.side-panel{
+  position:absolute;right:0;top:0;bottom:0;z-index:150;
+  width:var(--panel-w);
+  background:var(--panel-glass);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:transform .28s cubic-bezier(0.4,0,0.2,1);
 }
-#sidebar-overlay.show{display:block;opacity:1}
+.side-panel.collapsed{transform:translateX(100%)}
 
-/* 右侧面板遮罩（仅手机端）。z-index 压在面板(50)之下、页面内容之上，
-   既压暗内容又拦住点击，点它就收起面板。 */
-#panel-overlay{
-  display:none;position:absolute;inset:0;background:var(--overlay);
-  z-index:45;opacity:0;transition:opacity .3s;
+/* ── 抽屉遮罩（仅手机端，左右两侧共用一个）──
+   从顶栏下方开始，不盖住顶栏。z-index 夹在内容之上、两侧抽屉之下。 */
+#scrim{
+  display:none;position:fixed;left:0;right:0;bottom:0;top:var(--topbar-h);
+  background:var(--overlay);z-index:140;opacity:0;transition:opacity .3s;
 }
-#panel-overlay.show{display:block;opacity:1}
-/* characters/geo 的面板是 static 排在 flex 流里，z-index 对它无效，
-   改成 relative 才能浮到遮罩之上（仍然占布局位置） */
-.intro-body .tl-panel{position:relative;z-index:60}
+#scrim.show{display:block;opacity:1}
 

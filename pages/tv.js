@@ -97,10 +97,9 @@ function _renderCols() {
   const hint   = _container.querySelector('#tv-hint');
   if (!colsEl || !hint) return;
 
-  if (!_urls.length) {
-    hint.textContent = 'Snow';
-    return;
-  }
+  hint.textContent = _urls.length ? '' : 'Snow';
+  hint.style.display = _urls.length ? 'none' : '';   // 空文本时别留一个空胶囊
+  if (!_urls.length) return;
 
   _colCount = _calcColCount();
   const display = _urls.slice().sort(() => Math.random() - 0.5);
@@ -109,9 +108,10 @@ function _renderCols() {
   const buckets = Array.from({ length: _colCount }, () => []);
   display.forEach((url, i) => buckets[i % _colCount].push(url));
 
-  // 两份相同副本上下拼接，实现无缝循环。
-  // 用 .tv-half 包住每一份，是为了能精确量出一个循环周期
-  // （直接用 scrollHeight/2 会漏掉两份之间那道 gap 的一半，日积月累会看到接缝跳动）
+  // 副本上下拼接实现无缝循环。份数不能写死 2 ——
+  // 一个循环周期等于「一份副本的高度」，所以必须保证
+  // 单份副本 ≥ 列的可视高度，否则绕回时底部没有内容可显示，就会看到空档 + 跳变。
+  // 先按 2 份渲染，量完真实高度后再在 _measure 里补足。
   colsEl.innerHTML = buckets.map(urls => {
     const half = `<div class="tv-half">${urls.map(_cardHTML).join('')}</div>`;
     return `<div class="tv-col"><div class="tv-col-track">${half + half}</div></div>`;
@@ -143,14 +143,24 @@ function _renderCols() {
   });
 }
 
-// 循环周期 = 一份副本的高度 + 一道 gap
+// 循环周期 = 一份副本的高度 + 一道 gap。
+// 同时保证轨道总高 ≥ 周期 + 列高，不够就再复制几份。
 function _measure() {
   requestAnimationFrame(() => {
     _cols.forEach(c => {
       const half = c.track.querySelector('.tv-half');
       if (!half) return;
       const gap = parseFloat(getComputedStyle(c.track).rowGap) || 0;
-      c.period = half.offsetHeight + gap;
+      const period = half.offsetHeight + gap;
+      if (period <= gap) return;   // 该列没有内容
+
+      const colH = c.track.parentElement.clientHeight;
+      const need = Math.max(2, Math.ceil((period + colH) / period) + 1);
+      const have = c.track.querySelectorAll('.tv-half').length;
+      for (let i = have; i < need; i++) {
+        c.track.appendChild(half.cloneNode(true));
+      }
+      c.period = period;
     });
   });
 }

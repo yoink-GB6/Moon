@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>hello~</title>
-<meta name="theme-color" content="#0c0c0c">
+<meta name="theme-color" content="#101010">
 
 <!-- 必须在样式表之前同步执行，否则浅色模式下会闪一帧暗色 -->
 <script>
@@ -16,7 +16,7 @@
   var t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   document.documentElement.dataset.theme = t;
   document.documentElement.style.colorScheme = t;
-  document.querySelector('meta[name="theme-color"]').content = t === 'light' ? '#f0eee6' : '#1e1e1e';
+  document.querySelector('meta[name="theme-color"]').content = t === "light" ? "#f0eee6" : "#101010";
 })();
 </script>
 
@@ -69,12 +69,11 @@
       <button id="lock-btn" class="sidebar-btn" onclick="showPwModal()">readonly</button>
     </div>
 
-    <div id="sidebar-overlay"></div>
+    <div id="scrim"></div>
 
     <!-- Main area -->
     <div id="main-content">
       <div id="page-root" style="flex:1;overflow:hidden;display:flex;flex-direction:column"></div>
-      <div id="panel-overlay"></div>
     </div>
   </div>
 </div>
@@ -92,9 +91,11 @@
 <script src="core/starfield.js"></script>
 <script type="module">
 const _V = Date.now(); // 缓存破坏版本号，每次加载页面时生成
-import { showToast, initSidebar, toggleSidebar, closeSidebar, confirmDialog } from './core/ui.js';
+import { showToast, initSidebar, toggleSidebar, closeSidebar, toggleRightPanel,
+         initRightPanel, findRightPanel, confirmDialog } from './core/ui.js';
 import { isEditor, tryUnlock, lock, onAuthChange, initAuth } from './core/auth.js';
 import { initTheme, toggleTheme } from './core/theme.js';
+import { parseHash, go, onRouteChange } from './core/router.js';
 import { iconSun, iconCloud, iconCloudSm, iconBird, iconHorizon,
          moonCrescent, iconConstellation,
          iconStar, iconStarSm } from './core/icons.js';
@@ -163,9 +164,8 @@ function buildNav() {
   `).join('');
   nav.querySelectorAll('.nav-item').forEach(el => {
     el.addEventListener('click', () => {
-      navigate(el.dataset.id);
+      go(el.dataset.id);
       closeSidebar();
-      syncToggleBtns();
     });
   });
 }
@@ -181,9 +181,14 @@ async function tryLoad(loader, maxAttempts = 3) {
   }
 }
 
-async function navigate(id) {
+// parts = hash 里页面 id 之后的片段，交给页面模块自己解释（通常是要打开哪个弹窗）
+async function navigate(id, parts = []) {
   const route = ROUTES.find(r => r.id === id) || ROUTES[0];
-  if (currentRoute?.id === route.id) return;
+  // 同一页只需把新的 parts 交给它，不重新挂载
+  if (currentRoute?.id === route.id) {
+    currentModule?.applyRoute?.(parts);
+    return;
+  }
 
   if (currentModule?.unmount) currentModule.unmount();
 
@@ -197,7 +202,7 @@ async function navigate(id) {
 
   const root = document.getElementById('page-root');
   root.innerHTML = '';
-  syncPanelBtn();  // 先隐藏；挂载完再按新页面是否有右侧面板决定
+  syncToggleBtns();  // 先隐藏；挂载完再按新页面是否有右侧面板决定
 
   if (route.placeholder) {
     root.innerHTML = `
@@ -219,7 +224,8 @@ async function navigate(id) {
     }
     currentModule = mod;
     await mod.mount(root);
-    syncPanelBtn();
+    mod.applyRoute?.(parts);
+    initRightPanel();
     sessionStorage.removeItem('_navReloadAttempted');
   } catch(e) {
     if (seq !== _navSeq) return;
@@ -302,66 +308,31 @@ document.querySelector('#theme-toggle .th-night').innerHTML =
   iconConstellation + iconStarSm + moonCrescent + iconCloud + iconStar;
 
 // ── 顶栏左右按钮 ───────────────────────────────────
-// 右侧面板由各 page 自己渲染，这里统一按选择器找当前页的那一个
-const RIGHT_PANELS = ['#chars-panel', '.lib-panel', '#tl-panel'];
-const findRightPanel = () =>
-  RIGHT_PANELS.reduce((f, s) => f || document.querySelector('#page-root ' + s), null);
-
-// 面板展开时对应按钮停在选中态；手机端还要同步右侧面板的遮罩
+// 抽屉状态由 core/ui.js 统一管理，这里只负责把状态映射到按钮外观。
 function syncToggleBtns() {
   const sb = document.getElementById('sidebar');
+  const p  = findRightPanel();
   document.getElementById('nav-btn')
     .classList.toggle('active', !sb.classList.contains('collapsed'));
-  const p = findRightPanel();
-  const open = !!p && !p.classList.contains('collapsed');
-  document.getElementById('panel-btn').classList.toggle('active', open);
-  document.getElementById('panel-overlay')
-    .classList.toggle('show', open && window.matchMedia('(max-width:768px)').matches);
+  const btn = document.getElementById('panel-btn');
+  btn.hidden = !p;
+  btn.classList.toggle('active', !!p && !p.classList.contains('collapsed'));
 }
+document.addEventListener('drawer-change', syncToggleBtns);
 
-function syncPanelBtn() {
-  const p = findRightPanel();
-  document.getElementById('panel-btn').hidden = !p;
-  // 手机端宽度不够，右侧栏默认收起；电脑端默认展开
-  if (p && window.matchMedia('(max-width:768px)').matches) p.classList.add('collapsed');
-  syncToggleBtns();
-}
-
-document.getElementById('nav-btn').addEventListener('click', () => {
-  lockTopbar(); toggleSidebar(); syncToggleBtns();
-});
-document.getElementById('panel-btn').addEventListener('click', () => {
-  lockTopbar();
-  findRightPanel()?.classList.toggle('collapsed');
-  syncToggleBtns();
-});
-window.addEventListener('resize', syncToggleBtns);
-document.getElementById('sidebar-overlay').addEventListener('click', syncToggleBtns);
-document.getElementById('panel-overlay').addEventListener('click', () => {
-  findRightPanel()?.classList.add('collapsed');
-  syncToggleBtns();
-});
-
-// 手机端屏幕放不下并排，点面板外部就收起（和左侧栏遮罩同一个道理）
-document.addEventListener('pointerdown', e => {
-  if (!window.matchMedia('(max-width:768px)').matches) return;
-  const p = findRightPanel();
-  if (!p || p.classList.contains('collapsed')) return;
-  if (p.contains(e.target) || e.target.closest('#panel-btn')) return;
-  p.classList.add('collapsed');
-  syncToggleBtns();
-}, true);
+document.getElementById('nav-btn').addEventListener('click', () => { lockTopbar(); toggleSidebar(); });
+document.getElementById('panel-btn').addEventListener('click', () => { lockTopbar(); toggleRightPanel(); });
 
 // ── 顶栏随滚动收起 ─────────────────────────────────
 // 各 page 有自己的滚动容器（html/body 是 overflow:hidden），
 // scroll 不冒泡但会捕获，所以在 document 上捕获监听，按来源分别记录位置。
 const _lastScroll = new WeakMap();
-let _topbarLock = 0;   // 收/放之后的冷却，见下方说明
+let _topbarLock = 0;
 
 // 只认页面主内容的滚动。弹窗、侧栏、右侧面板自己的滚动不该动顶栏。
-const IGNORE_SCROLL = '.tl-modal-overlay,#pw-modal,#sidebar,.lib-panel,#tl-panel,#chars-panel';
+const IGNORE_SCROLL = '.tl-modal-overlay,#pw-modal,#sidebar,.side-panel';
 
-// 侧栏/面板开合会改变内容区宽度 → 多列重排 → 高度变化 → 浏览器补发 scroll 事件。
+// 抽屉开合会改变内容区宽度 → 多列重排 → 高度变化 → 浏览器补发 scroll 事件。
 // 那不是用户滚的，不该动顶栏，所以在动画期间锁住。
 function lockTopbar(ms = 600) { _topbarLock = performance.now() + ms; }
 
@@ -399,7 +370,11 @@ initAuth();      // 异步恢复会话；恢复完 onAuthChange 会把 UI 刷成
 initSidebar();
 syncToggleBtns();
 buildNav();
-navigate('library');
+
+// hash 是唯一的真实来源：地址栏变了就跟着走
+onRouteChange(({ page, parts }) => navigate(page || 'library', parts));
+const _r0 = parseHash();
+navigate(_r0.page || 'library', _r0.parts);
 </script>
 
 </body>
