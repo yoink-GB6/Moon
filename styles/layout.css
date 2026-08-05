@@ -126,6 +126,14 @@
 }
 .side-panel.collapsed{transform:translateX(100%)}
 
+/* 内容区让出右侧面板的宽度。所有页面共用这一条，各页只需在自己的
+   内容容器上挂 .panel-inset，不要各写各的（之前只有 library 写了，
+   所以 geo/characters 变成了覆盖式）。 */
+.panel-inset{
+  margin-right:var(--content-inset,0px);
+  transition:margin-right .28s cubic-bezier(0.4,0,0.2,1);
+}
+
 /* ── 抽屉遮罩（仅手机端，左右两侧共用一个）──
    从顶栏下方开始，不盖住顶栏。z-index 夹在内容之上、两侧抽屉之下。 */
 #scrim{

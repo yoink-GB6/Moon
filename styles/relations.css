@@ -1,0 +1,176 @@
+/* ════════════════════════════════════════
+   RELATIONS PAGE — 人物关系拓扑图
+════════════════════════════════════════ */
+.rel-layout{position:relative;height:100%;overflow:hidden}
+
+.rel-canvas{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  overflow:hidden;cursor:grab;touch-action:none;user-select:none;
+}
+.rel-canvas:active{cursor:grabbing}
+
+/* 连线层和节点层共用同一套世界坐标，一起套这个 transform */
+.rel-world{position:absolute;top:0;left:0;transform-origin:0 0}
+.rel-edges{position:absolute;top:0;left:0;overflow:visible}
+.rel-nodes{position:absolute;top:0;left:0}
+
+/* ── 连线 ── */
+.rel-edge{
+  stroke:rgba(var(--accent-rgb),.28);stroke-width:1.4;
+  transition:stroke .18s,stroke-width .18s;
+}
+.rel-edge-label{
+  fill:var(--muted);font-size:12px;text-anchor:middle;
+  font-family:var(--font-body);paint-order:stroke;
+  stroke:var(--bg);stroke-width:4px;stroke-linejoin:round;
+  transition:fill .18s,opacity .18s;
+}
+/* 有选中时把无关的压暗，是这类图能看清的关键 */
+.rel-layout.has-selection .rel-edge{stroke:rgba(var(--accent-rgb),.07)}
+.rel-layout.has-selection .rel-edge-label{opacity:.18}
+.rel-layout.has-selection .rel-edge.near{stroke:var(--accent);stroke-width:2}
+.rel-layout.has-selection .rel-edge-label.near{opacity:1;fill:var(--accent)}
+
+/* ── 节点 ── */
+.rel-node{
+  position:absolute;transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  cursor:pointer;transition:opacity .18s;
+}
+.rel-node-av{
+  width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(var(--accent-rgb),.18);border:2px solid var(--border-hi);
+  color:var(--accent);font-size:19px;font-weight:700;
+  transition:border-color .18s,box-shadow .18s;
+}
+.rel-node-av img{width:100%;height:100%;object-fit:cover;display:block}
+.rel-node-name{
+  font-size:12px;color:var(--text);max-width:96px;text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  paint-order:stroke;text-shadow:0 1px 3px var(--bg),0 0 4px var(--bg);
+}
+.rel-node.isolated .rel-node-av{border-style:dashed;opacity:.6}
+
+.rel-node:hover .rel-node-av{border-color:var(--accent)}
+.rel-layout.has-selection .rel-node{opacity:.25}
+.rel-layout.has-selection .rel-node.near{opacity:1}
+.rel-layout.has-selection .rel-node.self{opacity:1}
+.rel-layout.has-selection .rel-node.self .rel-node-av{
+  border-color:var(--accent);box-shadow:0 0 0 4px rgba(var(--accent-rgb),.22);
+}
+
+
+@media(max-width:768px){
+  .rel-node-av{width:42px;height:42px;font-size:16px}
+  .rel-node-name{font-size:11px;max-width:74px}
+}
+
+/* ── 右侧栏列表在关系网里的补充样式 ──
+   .active-item 原本只在 characters.css 里以 .intro-body 前缀定义，
+   关系网不在那个作用域内，所以选中项没有高亮——这里补上。 */
+#rel-list .tl-ci{border-left:3px solid transparent;transition:background .15s,border-color .15s}
+#rel-list .tl-ci:hover{background:var(--hover-tint)}
+#rel-list .tl-ci.active-item{background:var(--active-tint);border-left-color:var(--accent)}
+#rel-list .tl-ci.active-item .tl-cname{color:var(--accent-bright)}
+#rel-list .tl-cedit{background:none;border:none;cursor:pointer}
+
+/* ── 人物选择器（＋关系 弹窗里的自动匹配下拉）── */
+.rel-pick{position:relative;margin-bottom:11px}
+.rel-pick input{margin-bottom:0}
+.rel-sugg{
+  /* 用 fixed 而不是 absolute：候选框的祖先里有两层 overflow
+     （.rel-edit-row 的圆角裁切 和 .cm-list 的滚动），absolute 会被裁掉看不见。
+     位置由 JS 按输入框的 boundingRect 现算。 */
+  display:none;position:fixed;z-index:600;
+  background:var(--panel);border:1px solid var(--border-hi);
+  border-radius:0 0 6px 6px;max-height:200px;overflow-y:auto;
+  box-shadow:0 6px 18px var(--shadow);
+}
+.rel-sugg-item{padding:8px 12px;cursor:pointer;font-size:13px;transition:background .12s}
+.rel-sugg-item:hover{background:var(--hover-tint);color:var(--accent)}
+
+/* ── 年龄偏移：和 ＋关系/＋年龄 同款，三等分 + 短竖线分隔 ── */
+.rel-offset{position:relative}
+.rel-offset::before,.rel-offset::after{
+  content:'';position:absolute;top:50%;transform:translateY(-50%);
+  width:1px;height:16px;background:var(--border);
+}
+.rel-offset::before{left:33.333%}
+.rel-offset::after{left:66.666%}
+.rel-offset-step{
+  flex:1 1 0;height:44px;
+  background:none;border:none;cursor:pointer;
+  color:var(--muted);font-size:15px;font-weight:700;
+  transition:background .15s,color .15s;
+}
+.rel-offset-step:hover{background:var(--hover-tint);color:var(--accent)}
+#rel-offset-input{
+  flex:1 1 0;min-width:0;height:44px;margin-bottom:0;
+  background:none !important;border:none !important;border-radius:0 !important;
+  text-align:center;font-size:15px;font-weight:700;
+  color:var(--accent) !important;font-variant-numeric:tabular-nums;
+}
+#rel-offset-input:focus{box-shadow:none !important;background:var(--hover-tint) !important}
+/* 去掉数字输入框自带的上下小箭头，靠两侧按钮加减 */
+#rel-offset-input::-webkit-outer-spin-button,
+#rel-offset-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+#rel-offset-input{-moz-appearance:textfield}
+
+/* 年龄 / 上限也不要上下小箭头，直接输数字 */
+#rel-edit-age::-webkit-outer-spin-button,#rel-edit-age::-webkit-inner-spin-button,
+#rel-edit-limit::-webkit-outer-spin-button,#rel-edit-limit::-webkit-inner-spin-button{
+  -webkit-appearance:none;margin:0;
+}
+#rel-edit-age,#rel-edit-limit{-moz-appearance:textfield}
+
+/* ── 右侧栏的竖直时间轴 ──
+   一条贯穿的竖线 + 每行一个刻度，行按展示年龄排序 */
+#rel-list{position:relative}
+#rel-list::before{
+  content:'';position:absolute;left:30px;top:0;bottom:0;width:1px;
+  background:linear-gradient(to bottom,transparent,var(--border) 6%,var(--border) 94%,transparent);
+  pointer-events:none;
+}
+#rel-list .rel-row{position:relative;padding-left:44px}
+.rel-tick{
+  position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:30px;text-align:right;padding-right:8px;
+  font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;
+}
+.rel-tick::after{
+  content:'';position:absolute;right:-4px;top:50%;transform:translateY(-50%);
+  width:8px;height:1px;background:var(--accent-dim);
+}
+#rel-list .rel-row.dead .rel-tick{color:var(--red)}
+#rel-list .rel-row.dead .rel-tick::after{background:var(--red-dim)}
+#rel-list .rel-row.dead .tl-cname{color:var(--text-faint);text-decoration:line-through}
+#rel-list .rel-row.dead .tl-ci-av{opacity:.45;filter:grayscale(1)}
+
+/* 图上的「消逝」节点 */
+.rel-node.dead .rel-node-av{filter:grayscale(1);opacity:.45;border-style:dotted;border-color:var(--red-dim)}
+.rel-node.dead .rel-node-name{color:var(--text-faint);text-decoration:line-through}
+
+/* ── ✎ 弹窗里的关系行：名字 │ 关系 │ 删除 ── */
+.rel-edit-row{
+  display:flex;align-items:center;gap:0;
+  border:1px solid var(--border);border-radius:4px;
+  background:var(--bg);overflow:hidden;
+}
+/* 两个字段等宽，中间一道分隔线；名字是可输入的自动补全框 */
+.rel-edit-cell{flex:1 1 0;min-width:0}
+.rel-edit-row .rel-pick{margin-bottom:0}
+.rel-edit-row input{
+  width:100%;margin-bottom:0 !important;
+  background:transparent !important;border:none !important;border-radius:0 !important;
+  padding:8px 10px !important;font-size:12px;
+}
+.rel-edit-row .rel-edit-who{color:var(--text) !important}
+.rel-edit-row .rel-edit-label{color:var(--accent) !important;border-left:1px solid var(--border) !important}
+.rel-edit-row input:focus{box-shadow:none !important;background:var(--hover-tint) !important}
+.rel-edit-del{
+  flex-shrink:0;width:32px;align-self:stretch;
+  background:transparent;border:none;border-left:1px solid var(--border);
+  color:var(--text-faint);cursor:pointer;font-size:12px;transition:all .15s;
+}
+.rel-edit-del:hover{color:var(--red-bright);background:rgba(var(--red-rgb),.1)}

@@ -10,17 +10,19 @@ import * as State from './state.js';
 export async function loadAllData() {
   setSyncStatus('syncing');
   try {
-    const [chars, countries, cities, landmarks] = await Promise.all([
+    const [chars, countries, cities, landmarks, relations] = await Promise.all([
       supaClient.from('characters').select('*').order('name'),
       supaClient.from('countries').select('*').order('name'),
       supaClient.from('cities').select('*').order('name'),
-      supaClient.from('landmarks').select('*').order('created_at')
+      supaClient.from('landmarks').select('*').order('created_at'),
+      supaClient.from('character_relations').select('*')
     ]);
-    
+
     State.setAllChars(chars.data || []);
     State.setAllCountries(countries.data || []);
     State.setAllCities(cities.data || []);
     State.setAllLandmarks(landmarks.data || []);
+    State.setAllRelations(relations.data || []);
     
     setSyncStatus('ok');
     return true;

@@ -57,18 +57,18 @@ function buildHTML() {
   return `
 <div class="intro-body">
   <div class="intro-row">
-  <div class="intro-main">
+  <div class="intro-main panel-inset">
     <div class="intro-content" id="tab-characters">
-      <div class="intro-header">
-        <button class="btn bp" id="chars-add-btn" style="display:none">＋ 新建</button>
-        <button class="btn bn" id="chars-img-mgr-btn" style="display:none">🖼 图库管理</button>
-      </div>
       <div class="intro-grid" id="chars-grid"></div>
     </div>
   </div>
 
 
   <div id="chars-panel" class="side-panel">
+    <div class="lib-actions" id="chars-actions" style="display:none">
+      <button id="chars-add-btn">＋ 新建</button>
+      <button id="chars-img-mgr-btn">图库管理</button>
+    </div>
     <div id="panel-chars-body" class="panel-body-section">
       <div class="panel-search-box">
         <div class="panel-search-wrap">
@@ -91,6 +91,15 @@ function buildHTML() {
     <label>链接</label><input id="char-link" type="text" placeholder="[名称](https://...) [名称2](https://...)"/>
     <label>所属国家 / 势力</label><div class="tl-select" id="char-country-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-country"/><label>所属城市</label><div class="tl-select" id="char-city-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-city"/>
     <div id="char-sec-container"></div>
+    <label>人物关系</label>
+    <div id="char-rel-section" style="margin-bottom:16px">
+      <div id="char-rel-list" class="cm-list"></div>
+      <div class="char-rel-add">
+        <div class="tl-select" id="char-rel-select"><div class="tl-select-trigger"><span class="tl-select-val">选择人物</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-rel-target"/>
+        <input id="char-rel-label" type="text" placeholder="关系（如：师徒）" autocomplete="off"/>
+        <button class="btn bn" id="char-rel-add-btn">添加</button>
+      </div>
+    </div>
     <label>图片</label>
     <div id="char-images-section" style="margin-bottom:16px">
       <div id="char-images-grid" class="char-images-grid"></div>
@@ -137,7 +146,7 @@ function bindSidePanel() {
       const q = e.target.value.trim().toLowerCase();
       if (searchClear) searchClear.style.display = q ? 'block' : 'none';
       _geoFilter = null;
-      _filterCharGrid(null);
+      _picked.clear(); _filterCharGrid();
       renderPanelList(q);
     });
   }
@@ -146,13 +155,14 @@ function bindSidePanel() {
       if (searchInput) { searchInput.value = ''; searchInput.focus(); }
       searchClear.style.display = 'none';
       _geoFilter = null;
-      _filterCharGrid(null);
+      _picked.clear(); _filterCharGrid();
       renderPanelList('');
     });
   }
 }
 
-let _geoFilter = null; // { type: 'country'|'city', id }
+let _geoFilter = null;          // { type: 'country'|'city', id }
+const _picked = new Set();      // 右侧栏累加选中的人物 id，空集合=显示全部
 
 
 function _filterCharGridByGeo() {
@@ -289,49 +299,57 @@ function _renderCharPanel(list, query, avatarCache) {
       '</div></div>';
   }).join('');
 
+  // 人物条目是累加多选：点一个加一个，再点同一个取消
   list.querySelectorAll('.tl-ci[data-char-id]').forEach(function(item) {
     item.addEventListener('click', function() {
       const id = parseInt(item.dataset.charId);
-      list.querySelectorAll('.tl-ci').forEach(function(el) { el.classList.remove('active-item'); });
-      item.classList.add('active-item');
-      _filterCharGrid(id);
+      _geoFilter = null;
+      if (_picked.has(id)) _picked.delete(id); else _picked.add(id);
+      _syncPickedMarks();
+      _filterCharGrid();
     });
   });
 
+  // 地理条目仍是单选（换一个地方就是换一批人）
   list.querySelectorAll('.tl-ci-geo').forEach(function(item) {
     item.addEventListener('click', function() {
+      _picked.clear();
       list.querySelectorAll('.tl-ci').forEach(function(el) { el.classList.remove('active-item'); });
       item.classList.add('active-item');
       _geoFilter = { type: item.dataset.geoType, id: parseInt(item.dataset.geoId) };
       _filterCharGridByGeo();
     });
   });
+
+  _syncPickedMarks();
 }
 
-function _filterCharGrid(charId) {
+function _syncPickedMarks() {
   const container = State.pageContainer;
-  const clearBtn  = container.querySelector('#chars-search-clear');
+  container.querySelectorAll('#chars-panel-list .tl-ci[data-char-id]').forEach(function(el) {
+    el.classList.toggle('active-item', _picked.has(parseInt(el.dataset.charId)));
+  });
+}
 
-  if (charId == null) {
-    if (clearBtn) clearBtn.style.display = 'none';
-    container.querySelectorAll('#chars-panel-list .tl-ci').forEach(function(el) { el.classList.remove('active-item'); });
-    renderCharactersTab(_avatarCache);
-    return;
-  }
-
-  if (clearBtn) clearBtn.style.display = 'block';
-  const char = State.allChars.find(function(c) { return c.id === charId; });
-  if (!char) return;
+// 按 _picked 里选中的人渲染主区；空集合 = 显示全部
+function _filterCharGrid() {
+  const container = State.pageContainer;
   const grid = container.querySelector('#chars-grid');
   if (!grid) return;
 
-  const avatarUrl = (_avatarCache && _avatarCache.has(char.id))
-    ? _avatarCache.get(char.id)
-    : pickRandomUrl(parseAvatarUrls(char.avatar_url));
+  if (!_picked.size) { renderCharactersTab(_avatarCache); return; }
 
-  grid.innerHTML = buildCharCardHTML(char, avatarUrl);
-  const card = grid.querySelector('.intro-card');
-  if (card) bindCharCard(card, char);
+  const chars = State.allChars.filter(function(c) { return _picked.has(c.id); });
+  grid.innerHTML = chars.map(function(char) {
+    const avatarUrl = (_avatarCache && _avatarCache.has(char.id))
+      ? _avatarCache.get(char.id)
+      : pickRandomUrl(parseAvatarUrls(char.avatar_url));
+    return buildCharCardHTML(char, avatarUrl);
+  }).join('');
+  grid.querySelectorAll('.intro-card').forEach(function(card) {
+    const char = State.allChars.find(function(c) { return c.id === parseInt(card.dataset.id); });
+    if (char) bindCharCard(card, char);
+  });
 }
 
 // ── UI ────────────────────────────────────────────────────────
@@ -339,8 +357,7 @@ function _filterCharGrid(charId) {
 function updateUI() {
   const container = State.pageContainer;
   const editor = isEditor();
-  const addBtn = container.querySelector('#chars-add-btn');
-  if (addBtn) addBtn.style.display = editor ? 'block' : 'none';
-  const mgrBtn = container.querySelector('#chars-img-mgr-btn');
-  if (mgrBtn) mgrBtn.style.display = editor ? 'block' : 'none';
+  // 两个按钮整条一起显隐（在右侧栏顶部，和 library 的排序/新建同款）
+  const actions = container.querySelector('#chars-actions');
+  if (actions) actions.style.display = editor ? '' : 'none';
 }

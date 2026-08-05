@@ -6,6 +6,7 @@ export let allChars = [];
 export let allCountries = [];
 export let allCities = [];
 export let allLandmarks = [];
+export let allRelations = [];   // character_relations：{id,a_id,b_id,label}
 
 // ========== UI 状态 ==========
 export let currentTab = 'characters';
@@ -33,6 +34,7 @@ export function setAllChars(data) { allChars = data; }
 export function setAllCountries(data) { allCountries = data; }
 export function setAllCities(data) { allCities = data; }
 export function setAllLandmarks(data) { allLandmarks = data; }
+export function setAllRelations(data) { allRelations = data; }
 
 export function setCurrentTab(tab) { currentTab = tab; }
 export function setSelectedCountry(country) { selectedCountry = country; }

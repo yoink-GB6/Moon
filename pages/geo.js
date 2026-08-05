@@ -44,7 +44,7 @@ function buildHTML() {
   return `
 <div class="intro-body">
   <div class="intro-row">
-  <div class="intro-main">
+  <div class="intro-main panel-inset">
     <div class="intro-content geo-layout" id="tab-geography" style="display:flex">
       <div class="geo-main">
         <div id="geo-detail-view" class="geo-detail"></div>

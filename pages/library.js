@@ -63,7 +63,7 @@ function buildHTML() {
   return `
 <div class="lib-layout">
   <!-- Main content area -->
-  <div class="lib-main">
+  <div class="lib-main panel-inset">
     <div class="lib-grid" id="lib-grid"></div>
   </div>
 

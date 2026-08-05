@@ -1,5 +1,5 @@
 // pages/characters/modals/character-modal.js
-import { supaClient } from '../../../core/supabase-client.js';
+import { supaClient, dbError } from '../../../core/supabase-client.js';
 import { showToast, escHtml, confirmDialog } from '../../../core/ui.js';
 import * as State from '../state.js';
 import { closeModal, parseAvatarUrls, parseCharSections } from '../utils.js';
@@ -812,6 +812,8 @@ export function openCharModal(char) {
   });
   refreshCitySelect(initCountry ? String(initCountry) : '', initCity ? String(initCity.id) : '');
 
+  _renderRelations(container, char);
+
   const existingUrls = parseAvatarUrls(char ? char.avatar_url : null);
   _originalStorageUrls = existingUrls.filter(_isStorageUrl);
   _storageToDelete = [];
@@ -933,4 +935,80 @@ async function deleteCharacter() {
   } catch (e) {
     showToast('删除失败: ' + e.message);
   }
+}
+
+
+// ── 人物关系 ─────────────────────────────────────────────────
+// 无向边，数据库里强制 a_id < b_id + unique(a_id,b_id)，
+// 所以前端写入前先把两个 id 排序，重复添加会走 upsert 改标签而不是报错。
+
+function _relPair(x, y) {
+  const a = Math.min(Number(x), Number(y));
+  const b = Math.max(Number(x), Number(y));
+  return { a_id: a, b_id: b };
+}
+
+function _renderRelations(container, char) {
+  const sec = container.querySelector('#char-rel-section');
+  if (!sec) return;
+  // 新建人物时还没有 id，没法挂关系
+  sec.style.display = char ? '' : 'none';
+  if (!char) return;
+
+  const list = container.querySelector('#char-rel-list');
+  const mine = (State.allRelations || []).filter(function(r) {
+    return String(r.a_id) === String(char.id) || String(r.b_id) === String(char.id);
+  });
+
+  list.innerHTML = mine.length
+    ? mine.map(function(r) {
+        const otherId = String(r.a_id) === String(char.id) ? r.b_id : r.a_id;
+        const other = State.allChars.find(function(c) { return String(c.id) === String(otherId); });
+        return '<div class="cm-row-collapsed char-rel-row">' +
+          '<span style="flex:1">' + escHtml(other ? other.name : '#' + otherId) + '</span>' +
+          '<span style="color:var(--muted);font-size:12px">' + escHtml(r.label || '—') + '</span>' +
+          '<button class="cm-row-collapse" data-del-rel="' + r.id + '">删除</button>' +
+        '</div>';
+      }).join('')
+    : '<div style="font-size:12px;color:var(--muted);padding:4px 0">さみしい……</div>';
+
+  list.querySelectorAll('[data-del-rel]').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      const id = btn.dataset.delRel;
+      const { error } = await supaClient.from('character_relations').delete().eq('id', id);
+      if (error) return dbError('删除关系', error);
+      State.setAllRelations((State.allRelations || []).filter(function(r) { return String(r.id) !== String(id); }));
+      _renderRelations(container, char);
+    });
+  });
+
+  // 候选人下拉：排除自己和已有关系的人
+  const taken = new Set(mine.map(function(r) {
+    return String(String(r.a_id) === String(char.id) ? r.b_id : r.a_id);
+  }));
+  const opts = [{ value: '', label: '选择人物' }].concat(
+    State.allChars
+      .filter(function(c) { return String(c.id) !== String(char.id) && !taken.has(String(c.id)); })
+      .map(function(c) { return { value: String(c.id), label: c.name }; })
+  );
+  const wrap = container.querySelector('#char-rel-select');
+  if (wrap._cleanupTlSelect) wrap._cleanupTlSelect();
+  initTlSelect(wrap, opts, '', function() {});
+
+  const addBtn = container.querySelector('#char-rel-add-btn');
+  const fresh = addBtn.cloneNode(true);          // 清掉上一次打开累积的监听
+  addBtn.parentNode.replaceChild(fresh, addBtn);
+  fresh.addEventListener('click', async function() {
+    const targetId = container.querySelector('#char-rel-target').value;
+    const label    = container.querySelector('#char-rel-label').value.trim();
+    if (!targetId) return showToast('先选一个人物');
+    const row = Object.assign(_relPair(char.id, targetId), { label: label });
+    const { data, error } = await supaClient.from('character_relations')
+      .upsert(row, { onConflict: 'a_id,b_id' }).select().single();
+    if (error) return dbError('添加关系', error);
+    const rest = (State.allRelations || []).filter(function(r) { return r.id !== data.id; });
+    State.setAllRelations(rest.concat([data]));
+    container.querySelector('#char-rel-label').value = '';
+    _renderRelations(container, char);
+  });
 }

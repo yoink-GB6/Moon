@@ -6,7 +6,7 @@
    上下不留 padding，让内容一直滚到边缘，不然会显出一个"框"。 */
 /* 滚动放在这一层。多列布局的元素高度必须是 auto，
    一旦给它固定高度，内容就会往右溢出成更多列而不是往下延伸。 */
-.lib-main{position:absolute;top:0;left:0;right:var(--content-inset,0px);bottom:0;overflow-y:auto;overflow-x:hidden;padding:0 28px;transition:right .28s cubic-bezier(0.4,0,0.2,1)}
+.lib-main{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;padding:0 28px}
 .lib-main::-webkit-scrollbar{width:4px}
 .lib-main::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:3px}
 /* 排序 / 新建：与面板等宽，中间一道短竖线分隔（同侧栏大按钮语言） */
