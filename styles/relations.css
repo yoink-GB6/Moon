@@ -61,10 +61,11 @@
 }
 
 
-@media(max-width:768px){
-  .rel-node-av{width:42px;height:42px;font-size:16px}
-  .rel-node-name{font-size:11px;max-width:74px}
-}
+/* 注意：节点尺寸不要按屏幕宽度分档改。
+   节点在 .rel-world 里，整层被 transform:scale() 缩放，
+   一旦手机端把头像改小，等于改变了「世界」里的几何比例——
+   节点相对连线变小，看起来就是人和人离得更远。
+   设备差异交给 _fit() 的缩放倍率去吸收，这里保持单一定义。 */
 
 /* ── 右侧栏列表在关系网里的补充样式 ──
    .active-item 原本只在 characters.css 里以 .intro-body 前缀定义，
