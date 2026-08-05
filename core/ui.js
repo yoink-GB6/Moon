@@ -47,6 +47,52 @@ export function escHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+// ── Combobox（可输入搜索的下拉）────────────────────────────
+// 结构约定：input 的父元素里放一个 <div class="cb-sugg"></div>。
+// 候选框用 fixed 定位（祖先常有 overflow 裁切），位置按 input 的 rect 现算。
+// 选中后在 input 上派发 'pick' 事件，detail 是选项 id；同时写 input.dataset.id。
+// getItems() 每次现取，返回 [{id, name}]，这样选项变了不用重新绑定。
+export function bindCombobox(input, getItems, opts = {}) {
+  const box  = input.parentElement.querySelector('.cb-sugg');
+  const on   = opts.bind || ((el, t, fn) => el.addEventListener(t, fn));
+  const max  = opts.max || 8;
+  const close = () => { box.style.display = 'none'; };
+  const find = id => getItems().find(x => String(x.id) === String(id));
+
+  on(input, 'input', () => {
+    input.dataset.id = '';
+    const q = input.value.trim().toLowerCase();
+    const hit = q ? getItems().filter(x => x.name.toLowerCase().includes(q)).slice(0, max) : [];
+    if (!hit.length) return close();
+    box.innerHTML = hit.map(x =>
+      '<div class="cb-item" data-id="' + escHtml(String(x.id)) + '">' + escHtml(x.name) + '</div>').join('');
+    const r = input.getBoundingClientRect();
+    box.style.left  = r.left + 'px';
+    box.style.top   = r.bottom + 'px';
+    box.style.width = r.width + 'px';
+    box.style.display = 'block';
+  });
+
+  on(box, 'click', e => {
+    const it = e.target.closest('.cb-item');
+    if (!it) return;
+    const rec = find(it.dataset.id);
+    input.value = rec ? rec.name : '';
+    input.dataset.id = it.dataset.id;
+    close();
+    input.dispatchEvent(new CustomEvent('pick', { detail: it.dataset.id }));
+  });
+
+  // 可以随便输入用来搜索，但失焦时必须落回一个真实选项，
+  // 否则把文字退回当前选中的那个（没选过就清空）
+  on(input, 'blur', () => setTimeout(() => {
+    close();
+    const rec = input.dataset.id ? find(input.dataset.id) : null;
+    if (!rec) { input.value = ''; return; }
+    if (input.value !== rec.name) input.value = rec.name;
+  }, 160));
+}
+
 // ── 抽屉（左侧导航栏 / 右侧页面面板）────────────────────────
 // 两侧共用同一套状态：.collapsed 表示收起，展开时手机端压一层 #scrim。
 // 右侧面板由各 page 自己渲染，统一带 .side-panel 类，这里按类找。

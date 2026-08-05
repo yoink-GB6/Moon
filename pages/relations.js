@@ -10,7 +10,7 @@
 // 两层一起套同一个 transform，平移缩放就同步了。
 
 import { supaClient, setSyncStatus, dbError } from '../core/supabase-client.js';
-import { escHtml, showToast } from '../core/ui.js';
+import { escHtml, showToast, bindCombobox } from '../core/ui.js';
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { parseAvatarUrls, pickRandomUrl } from './characters/utils.js';
 import { openCharReadonly } from './characters/modals/char-readonly-modal.js';
@@ -107,9 +107,9 @@ function _skeleton() {
   <div class="tl-modal" onmousedown="event.stopPropagation()">
     <h2>添加关系</h2>
     <label>人物 A</label>
-    <div class="rel-pick"><input id="rel-a" type="text" placeholder="输入名字搜索…" autocomplete="off"/><div class="rel-sugg"></div></div>
+    <div class="rel-pick"><input id="rel-a" type="text" placeholder="输入名字搜索…" autocomplete="off"/><div class="cb-sugg"></div></div>
     <label>人物 B</label>
-    <div class="rel-pick"><input id="rel-b" type="text" placeholder="输入名字搜索…" autocomplete="off"/><div class="rel-sugg"></div></div>
+    <div class="rel-pick"><input id="rel-b" type="text" placeholder="输入名字搜索…" autocomplete="off"/><div class="cb-sugg"></div></div>
     <label>关系</label>
     <input id="rel-label" type="text" placeholder="如：师徒" autocomplete="off"/>
     <div class="mbtns" style="justify-content:flex-end">
@@ -590,43 +590,10 @@ async function _reload() {
   _renderList(_query());
 }
 
-// 输入框 + 下拉候选：输入名字实时匹配，选中后把 id 记在 dataset 上
-// 自动补全（combobox）：输入名字 → 下拉候选 → 选中后把 id 记在 dataset.id 上。
+// combobox 本体在 core/ui.js，这里只提供候选来源。
 // persist=false 用于弹窗里动态重建的行，监听器随节点一起销毁，不必登记 cleanup。
 function _bindPicker(input, persist = true) {
-  const box = input.parentElement.querySelector('.rel-sugg');
-  const close = () => { box.style.display = 'none'; };
-  const bind = persist ? _on : ((el, t, fn) => el.addEventListener(t, fn));
-  bind(input, 'input', () => {
-    input.dataset.id = '';
-    const q = input.value.trim().toLowerCase();
-    if (!q) return close();
-    const hit = _nodes.filter(n => n.name.toLowerCase().includes(q)).slice(0, 8);
-    if (!hit.length) return close();
-    box.innerHTML = hit.map(n =>
-      `<div class="rel-sugg-item" data-id="${n.id}">${escHtml(n.name)}</div>`).join('');
-    const r = input.getBoundingClientRect();
-    box.style.left  = r.left + 'px';
-    box.style.top   = r.bottom + 'px';
-    box.style.width = r.width + 'px';
-    box.style.display = 'block';
-  });
-  bind(box, 'click', e => {
-    const it = e.target.closest('.rel-sugg-item');
-    if (!it) return;
-    input.value = _byId.get(it.dataset.id)?.name || '';
-    input.dataset.id = it.dataset.id;
-    close();
-    input.dispatchEvent(new CustomEvent('pick', { detail: it.dataset.id }));
-  });
-  // 真正的 combobox：可以随便输入用来搜索，但失焦时必须落回一个真实选项，
-  // 否则把文字退回当前选中的那个人（没选过就清空）
-  bind(input, 'blur', () => setTimeout(() => {
-    close();
-    const picked = input.dataset.id ? _byId.get(input.dataset.id) : null;
-    if (!picked) { input.value = ''; return; }
-    if (input.value !== picked.name) input.value = picked.name;
-  }, 160));
+  bindCombobox(input, () => _nodes, persist ? { bind: _on } : {});
 }
 
 // 年龄偏移：纯展示层状态，不写库，换页就归零
@@ -813,7 +780,7 @@ function _renderEditRelations() {
       <div class="rel-pick rel-edit-cell">
         <input class="rel-edit-who" value="${escHtml(other ? other.name : (r.otherId ? '#' + r.otherId : ''))}"
                data-id="${r.otherId}" placeholder="输入名字搜索…" autocomplete="off"/>
-        <div class="rel-sugg"></div>
+        <div class="cb-sugg"></div>
       </div>
       <input class="rel-edit-label rel-edit-cell" value="${escHtml(r.label)}"
              placeholder="关系" autocomplete="off"/>

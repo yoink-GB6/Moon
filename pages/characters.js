@@ -95,7 +95,7 @@ function buildHTML() {
     <div id="char-rel-section" style="margin-bottom:16px">
       <div id="char-rel-list" class="cm-list"></div>
       <div class="char-rel-add">
-        <div class="tl-select" id="char-rel-select"><div class="tl-select-trigger"><span class="tl-select-val">选择人物</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-rel-target"/>
+        <div class="rel-pick"><input id="char-rel-target" type="text" placeholder="输入名字搜索…" autocomplete="off"/><div class="cb-sugg"></div></div>
         <input id="char-rel-label" type="text" placeholder="关系（如：师徒）" autocomplete="off"/>
         <button class="btn bn" id="char-rel-add-btn">添加</button>
       </div>

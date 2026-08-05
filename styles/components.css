@@ -144,3 +144,16 @@ body:has(.tl-modal-overlay.show) #modal-backdrop{display:block}
 .tl-empty{padding:20px 13px;color:var(--muted);font-size:12px;line-height:1.9}
 
 #char-file-input{display:none}
+
+/* ── Combobox 候选下拉（core/ui.js bindCombobox）──
+   用 fixed 而不是 absolute：候选框的祖先里常有 overflow 裁切
+   （.rel-edit-row 的圆角裁切、.cm-list 的滚动），absolute 会被裁掉看不见。
+   位置由 JS 按输入框的 boundingRect 现算。 */
+.cb-sugg{
+  display:none;position:fixed;z-index:600;
+  background:var(--panel);border:1px solid var(--border-hi);
+  border-radius:0 0 6px 6px;max-height:200px;overflow-y:auto;
+  box-shadow:0 6px 18px var(--shadow);
+}
+.cb-item{padding:8px 12px;cursor:pointer;font-size:13px;transition:background .12s}
+.cb-item:hover{background:var(--hover-tint);color:var(--accent)}

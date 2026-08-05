@@ -309,7 +309,8 @@
 
 /* ── 人物关系编辑（人物弹窗内）── */
 .char-rel-add{display:flex;gap:6px;align-items:center;margin-top:8px}
-.char-rel-add .tl-select{flex:1;min-width:0}
-.char-rel-add input{flex:1;min-width:0;margin-bottom:0}
+.char-rel-add .rel-pick{flex:1;min-width:0;margin-bottom:0}
+.char-rel-add .rel-pick input{width:100%;box-sizing:border-box}
+.char-rel-add>input{flex:1;min-width:0;margin-bottom:0}
 .char-rel-add .btn{flex-shrink:0}
 .char-rel-row{border:1px solid var(--border);border-radius:4px;margin-bottom:4px;gap:8px}

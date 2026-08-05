@@ -76,20 +76,9 @@
 #rel-list .tl-ci.active-item .tl-cname{color:var(--accent-bright)}
 #rel-list .tl-cedit{background:none;border:none;cursor:pointer}
 
-/* ── 人物选择器（＋关系 弹窗里的自动匹配下拉）── */
-.rel-pick{position:relative;margin-bottom:11px}
+/* 人物选择器的外壳；下拉本体是 .cb-sugg，在 components.css */
+.rel-pick{margin-bottom:11px}
 .rel-pick input{margin-bottom:0}
-.rel-sugg{
-  /* 用 fixed 而不是 absolute：候选框的祖先里有两层 overflow
-     （.rel-edit-row 的圆角裁切 和 .cm-list 的滚动），absolute 会被裁掉看不见。
-     位置由 JS 按输入框的 boundingRect 现算。 */
-  display:none;position:fixed;z-index:600;
-  background:var(--panel);border:1px solid var(--border-hi);
-  border-radius:0 0 6px 6px;max-height:200px;overflow-y:auto;
-  box-shadow:0 6px 18px var(--shadow);
-}
-.rel-sugg-item{padding:8px 12px;cursor:pointer;font-size:13px;transition:background .12s}
-.rel-sugg-item:hover{background:var(--hover-tint);color:var(--accent)}
 
 /* ── 年龄偏移：和 ＋关系/＋年龄 同款，三等分 + 短竖线分隔 ── */
 .rel-offset{position:relative}

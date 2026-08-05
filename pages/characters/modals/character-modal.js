@@ -1,6 +1,6 @@
 // pages/characters/modals/character-modal.js
 import { supaClient, dbError } from '../../../core/supabase-client.js';
-import { showToast, escHtml, confirmDialog } from '../../../core/ui.js';
+import { showToast, escHtml, confirmDialog, bindCombobox } from '../../../core/ui.js';
 import * as State from '../state.js';
 import { closeModal, parseAvatarUrls, parseCharSections } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
@@ -15,6 +15,24 @@ function _isStorageUrl(url) {
 
 function _storageFilename(url) {
   return url.split('/avatars/').pop();
+}
+
+const MIME_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp', 'image/avif': 'avif' };
+
+// 外链图片一律转存到 storage：下载 → 上传 → 返回 storage 公开地址。
+// 图库管理的 URL 导入和人物弹窗的「🔗 URL」原本各写了一份，行为容易走偏，这里合成一份。
+async function _importUrlToStorage(url) {
+  if (_isStorageUrl(url)) return url;          // 已经在 storage 里，不重复上传
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const blob = await resp.blob();
+  if (!blob.type.startsWith('image/')) throw new Error('不是图片：' + (blob.type || '未知类型'));
+  const ext      = MIME_EXT[blob.type] || 'jpg';
+  const filename = Date.now() + '_' + Math.random().toString(36).slice(2, 11) + '.' + ext;
+  const { data, error } = await supaClient.storage.from('avatars')
+    .upload(filename, blob, { upsert: true, contentType: blob.type });
+  if (error) throw error;
+  return supaClient.storage.from('avatars').getPublicUrl(data.path).data.publicUrl;
 }
 
 async function _deleteStorageUrls(urls) {
@@ -604,19 +622,10 @@ export async function openImageManager(charId = null) {
     const urls = (textarea.value || '').split('\n').map(s => s.trim()).filter(Boolean);
     if (!urls.length) return;
     showToast('导入中…');
-    const mimeExt = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp', 'image/avif': 'avif' };
     let ok = 0, fail = 0;
     for (const url of urls) {
       try {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error('fetch failed');
-        const blob = await resp.blob();
-        const ext  = mimeExt[blob.type] || 'jpg';
-        const filename = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.' + ext;
-        const { error } = await supaClient.storage.from('avatars').upload(filename, blob, { upsert: false, contentType: blob.type });
-        if (error) throw error;
-        const pubUrl = supaClient.storage.from('avatars').getPublicUrl(filename).data.publicUrl;
-        await _linkUrl(pubUrl);
+        await _linkUrl(await _importUrlToStorage(url));
         ok++;
       } catch (_) { fail++; }
     }
@@ -862,25 +871,11 @@ async function _doSave(container) {
         if (error) throw error;
         uploadedUrls.push(supaClient.storage.from('avatars').getPublicUrl(data.path).data.publicUrl);
       } else if (img.type === 'url') {
-        if (_isStorageUrl(img.url)) {
-          // 已经是 storage 地址，直接保留，不重复上传
-          uploadedUrls.push(img.url);
-        } else {
-        // 从外部 URL 下载后转存到 storage
-        let blob;
         try {
-          const resp = await fetch(img.url);
-          if (!resp.ok) throw new Error('HTTP ' + resp.status);
-          blob = await resp.blob();
-        } catch (fetchErr) {
-          throw new Error('无法获取图片 ' + img.url + '：' + fetchErr.message);
-        }
-        const mimeExt = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp', 'image/avif': 'avif' };
-        const ext      = mimeExt[blob.type] || 'jpg';
-        const filename = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.' + ext;
-        const { data, error } = await supaClient.storage.from('avatars').upload(filename, blob, { upsert: true, contentType: blob.type });
-        if (error) throw error;
-        uploadedUrls.push(supaClient.storage.from('avatars').getPublicUrl(data.path).data.publicUrl);
+          uploadedUrls.push(await _importUrlToStorage(img.url));
+        } catch (err) {
+          // 只存 storage 地址，不留外链，所以拉不下来就整次中止
+          throw new Error('拉取图片失败 ' + img.url + '：' + err.message);
         }
       } else {
         // existing：已在 storage 中的 URL，直接保留
@@ -982,26 +977,27 @@ function _renderRelations(container, char) {
     });
   });
 
-  // 候选人下拉：排除自己和已有关系的人
+  // 候选人：排除自己和已有关系的人。每次现取，所以只绑一次就够
+  const target = container.querySelector('#char-rel-target');
   const taken = new Set(mine.map(function(r) {
     return String(String(r.a_id) === String(char.id) ? r.b_id : r.a_id);
   }));
-  const opts = [{ value: '', label: '选择人物' }].concat(
-    State.allChars
-      .filter(function(c) { return String(c.id) !== String(char.id) && !taken.has(String(c.id)); })
-      .map(function(c) { return { value: String(c.id), label: c.name }; })
-  );
-  const wrap = container.querySelector('#char-rel-select');
-  if (wrap._cleanupTlSelect) wrap._cleanupTlSelect();
-  initTlSelect(wrap, opts, '', function() {});
+  if (!target._cbBound) {
+    target._cbBound = true;
+    bindCombobox(target, function() { return target._cbItems || []; });
+  }
+  target._cbItems = State.allChars.filter(function(c) {
+    return String(c.id) !== String(char.id) && !taken.has(String(c.id));
+  });
+  target.value = ''; target.dataset.id = '';
 
   const addBtn = container.querySelector('#char-rel-add-btn');
   const fresh = addBtn.cloneNode(true);          // 清掉上一次打开累积的监听
   addBtn.parentNode.replaceChild(fresh, addBtn);
   fresh.addEventListener('click', async function() {
-    const targetId = container.querySelector('#char-rel-target').value;
+    const targetId = container.querySelector('#char-rel-target').dataset.id;
     const label    = container.querySelector('#char-rel-label').value.trim();
-    if (!targetId) return showToast('先选一个人物');
+    if (!targetId) return showToast('先从候选里选一个人物');
     const row = Object.assign(_relPair(char.id, targetId), { label: label });
     const { data, error } = await supaClient.from('character_relations')
       .upsert(row, { onConflict: 'a_id,b_id' }).select().single();
