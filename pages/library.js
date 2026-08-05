@@ -112,7 +112,7 @@ function buildHTML() {
     <label>标签</label>
     <div id="lib-tag-picker" class="lib-tag-picker"></div>
     <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:12px">
-      <input id="lib-new-tag" type="text" placeholder="新增标签" autocomplete="off" style="flex:1"/>
+      <input id="lib-new-tag" type="text" placeholder="新增标签" autocomplete="off" style="flex:1;margin-bottom:0"/>
       <button class="btn bn" id="lib-add-tag-btn">添加</button>
     </div>
 
@@ -121,7 +121,7 @@ function buildHTML() {
       <button class="btn bp" id="lib-modal-save">保存</button>
     </div>
     <div class="mbtns" style="justify-content:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-      <button class="btn br" id="lib-modal-delete" style="min-width:120px;display:none">🗑 删除</button>
+      <button class="btn br" id="lib-modal-delete" style="min-width:120px;display:none">删除</button>
     </div>
   </div>
 </div>
