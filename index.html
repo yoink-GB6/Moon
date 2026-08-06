@@ -96,6 +96,7 @@ import { showToast, initSidebar, toggleSidebar, closeSidebar, toggleRightPanel,
 import { isEditor, tryUnlock, lock, onAuthChange, initAuth } from './core/auth.js';
 import { initTheme, toggleTheme } from './core/theme.js';
 import { parseHash, go, onRouteChange } from './core/router.js';
+import { initAnalytics } from './core/analytics.js';
 import { iconSun, iconCloud, iconCloudSm, iconBird, iconHorizon,
          moonCrescent, iconConstellation,
          iconStar, iconStarSm } from './core/icons.js';
@@ -367,7 +368,8 @@ document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
 
 // ── Init ───────────────────────────────────────────
 initTheme();
-initAuth();      // 异步恢复会话；恢复完 onAuthChange 会把 UI 刷成 EDITING
+// 先等会话恢复再开统计，否则我自己的访问会因为「还不知道是编辑者」被记进去
+initAuth().then(initAnalytics);
 initSidebar();
 syncToggleBtns();
 buildNav();
