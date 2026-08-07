@@ -20,7 +20,7 @@
 
 /* ── Inputs ── */
 input[type=text],input[type=number],input[type=password],textarea{
-  background:var(--ib);border:1px solid var(--ibr);color:var(--text);
+  background:var(--ib);border:1px solid var(--border-hi);color:var(--text);
   border-radius:4px;padding:8px 11px;font-size:14px;outline:none;width:100%;
   transition:border-color .2s;-webkit-appearance:none;resize:vertical;
 }
@@ -102,7 +102,9 @@ body:has(.tl-modal-overlay.show) #modal-backdrop{display:block}
 }
 .tl-modal h2::after{
   content:'';flex:1;height:1px;
-  background:linear-gradient(90deg,var(--accent-dim),transparent);
+  /* 起点用 border-hover(l56) 而不是 accent-dim(l44)：标题文字是 l78 的亮金，
+     线太暗就成了两个色，读着脏 */
+  background:linear-gradient(90deg,var(--border-hover),transparent);
 }
 .tl-modal label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
 .tl-modal input[type=text],.tl-modal input[type=number]{margin-bottom:11px;font-size:14px;padding:9px 11px}
@@ -129,8 +131,6 @@ body:has(.tl-modal-overlay.show) #modal-backdrop{display:block}
      tl- 前缀是历史遗留，现在由 characters / relations 共用）
 ════════════════════════════════════════ */
 .tl-clist{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:5px 0}
-.tl-clist::-webkit-scrollbar{width:3px}
-.tl-clist::-webkit-scrollbar-thumb{background:var(--ibr);border-radius:3px}
 .tl-ci{display:flex;align-items:center;padding:7px 12px;cursor:pointer;gap:8px;transition:background .1s}
 .tl-ci:hover{background:var(--hover-solid)}
 .tl-ci:hover .tl-cedit{color:var(--accent)}

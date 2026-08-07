@@ -1049,10 +1049,9 @@ async function likeItem(itemId) {
       likeArea.title = '点赞';
     }
   }
-  
-  // Show toast immediately
-  showToast(isLiking ? '已 ♥' : '不 ♥');
-  
+
+  // 心形本身已经变色了，再弹一条 toast 是重复反馈
+
   // Save to database in background
   setSyncStatus('syncing');
   try {

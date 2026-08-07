@@ -3,20 +3,36 @@
 ════════════════════════════════════════ */
 :root {
   /* 底色比纯黑抬一点点，留一丝呼吸感，但仍是接近黑的深色。
-     整条质感阶梯一起抬高，保证 panel 始终比 bg 亮。 */
+     整条质感阶梯一起抬高，保证 panel 始终比 bg 亮。
+
+     ── 中性色一律走色相 240°、饱和 2–3%（几乎是灰，只留一丝冷）──
+     改之前整条灰阶坐在 28–34°，也就是橙色区，而金色在 45° 的黄色区。
+     单个看饱和度只有 6–8%、说不出毛病，但它们铺满了页面 95% 的面积：
+     大面积的微橙 + 小面积的黄，两套暖色差 15° 互相打架，合起来就读成"浸在褐色里"。
+     现在把暖度全部留给金色，冷灰衬暖金，金才显得纯。
+     明度一个都没动，所以质感阶梯和整体亮度观感不变，变的只是色偏。 */
   --bg:           #101010;
-  --panel:        #181717;
-  --surface-2:    #1e1d1c;
-  --surface-3:    #242321;
-  --border:       #2b2825;
-  --border-hi:    #3a342c;
-  --border-hover: #a8893a;  /* 可交互元素 hover 边框色 */
-  --accent:       #cbbca8;
-  --accent-bright:#c9c092;
-  --accent-dim:   #6b5926;
-  --accent-muted: #2e2619;
-  --accent-bg:    #1c1914;
-  --green:        #4a7a42;
+  --panel:        #181819;
+  --surface-2:    #1b1b1d;
+  --border:       #28282a;
+  --border-hi:    #313135;
+  /* ── 金色梯：全部锁在色相 45°，饱和度随明度呈拱形 ──
+     改之前这几档是各自手调的，色相从 34° 散到 50°：
+     .nav-item.active 一条规则里就同时出现 34°(竖条) / 43°(底) / 50°(文字)，
+     弹窗标题 50° 配下面那条 45° 的横线也不是一个黄。
+     单看每个色都还行，凑一起就"脏"——问题从来不是太黄，是好几种黄。
+     黄色在低明度读不出彩度（会塌成褐），所以两头收饱和、中段给足。
+
+     中低两档还整体提了明度：褐色在色彩学上就是"暗的橙黄"，没有独立色相，
+     所以黄色只要明度压到 50% 以下就必然读成褐/黄铜，光调色相和饱和度救不回来。 */
+  --border-hover: #d0af4e;  /* h45 s58 l56  可交互元素 hover 边框色 */
+  --accent:       #ccc2a4;  /* h45 s28 l72  只挪色相不挪明度，正文金亮度不变 */
+  --accent-bright:#e0d4ae;  /* h45 s45 l78  原来叫 bright 却比 accent 还暗，这次真的更亮 */
+  --accent-dim:   #ab8d36;  /* h45 s52 l44  细装饰线/箭头/分隔线，再暗就回到黄铜 */
+  /* 面状的金必须是半透明的：不透明的暗黄在深底上就是一块泥，
+     而半透明是拿亮金去「染」底色，底透上来，读到的是被金光染过的面。
+     tag、点赞按钮一直用 rgba 所以看着干净，按钮和弹窗描边用了色块就发绿。 */
+  --accent-muted: rgba(var(--accent-rgb),.14);
   --green-bright: #7aba72;
   --green-dim:    #3a6130;
   --green-muted:  #142110;
@@ -24,12 +40,10 @@
   --red-bright:   #e07070;
   --red-dim:      #6b2626;
   --red-muted:    #2a1010;
-  --amber:        #a87830;
-  --ib:           #1c1914;
-  --ibr:          #3a342c;
-  --text:         #cdc9c4;
-  --muted:        #877f78;  /* 降低黄绿偏，更接近中性暖灰 */
-  --text-faint:   #4e4944;
+  --ib:           #161618;
+  --text:         #c8c8cb;
+  --muted:        #7c7c83;  /* 近中性微冷，74 处引用，是灰阶去暖影响最大的一个 */
+  --text-faint:   #48484c;
   --sidebar-w:    220px;
   --panel-w:      var(--sidebar-w);  /* 右侧面板与左侧导航栏等宽 */
   --topbar-h:     50px;
@@ -42,23 +56,21 @@
   --font-title:   'Palatino Linotype','Palatino','Book Antiqua','Georgia',serif;
 
   /* ── 语义色：需要透明叠加的存裸 RGB，CSS 与 JS 共用一份定义 ── */
-  --accent-rgb:   168,137,58;
+  --accent-rgb:   208,175,78;   /* = --border-hover #d0af4e，CSS 的 rgba() 与 JS 的 themeRGB() 共用 */
   --green-rgb:    39,174,96;
   --red-rgb:      239,68,68;
-  --hover-solid:  #222016;  /* 卡片/列表项的实色 hover 底 */
+  --hover-solid:  #201e18;  /* h45 s14 l11  卡片/列表项的实色 hover 底，原 #222016 是 50° 的深橄榄 */
   --shadow-rgb:   0,0,0;    /* 各处投影/浮层，alpha 由使用处决定 */
   --vignette:     #0a0a0a;  /* 径向暗角外圈 */
-  --grid-rgb:     255,255,255;  /* canvas 网格线/描边，需与背景反向 */
-  --collapse-title: #b5b0a9;  /* 折叠区块标题：比正文略深的偏白，金色在这里太跳 */
-  --text-rgb:     214,207,192;  /* canvas 内文字 */
+  --collapse-title: #aeaeb2;  /* 折叠区块标题：比正文略深的偏白，金色在这里太跳 */
   --hover-tint:   rgba(var(--accent-rgb),.07);
   --active-tint:  rgba(var(--accent-rgb),.10);
-  --panel-glass:  #151413;   /* 侧栏/顶栏底色：不透明，比卡片略深 */
+  --panel-glass:  #141415;   /* 侧栏/顶栏底色：不透明，比卡片略深 */
   --overlay:      rgba(0,0,0,.6);
   --shadow:       rgba(0,0,0,.75);
   --toast-bg:     rgba(16,16,16,.96);
   --main-glow-1:  rgba(55,50,75,.05);
-  --main-glow-2:  rgba(150,85,25,.05);
+  --main-glow-2:  rgba(60,72,100,.05);  /* 原来是 26° 的橙，整页笼一层暖褐 */
   /* canvas 用（JS 通过 themeRGB() 读取） */
   --star-rgb:     168,137,58;
   --star-hi-rgb:  255,245,210;
@@ -78,7 +90,6 @@
   --bg:           #f0eee6;  /* ivory-medium：页面底 */
   --panel:        #faf9f5;  /* ivory-light：卡片/面板，比背景亮 */
   --surface-2:    #fdfdfb;
-  --surface-3:    #ffffff;
   --border:       #e2dfd4;  /* ivory-dark 系 */
   --border-hi:    #cfcbbc;
   --border-hover: #c9971a;
@@ -86,8 +97,6 @@
   --accent-bright:#8f6a05;  /* 标题/强调，保证可读对比度 */
   --accent-dim:   #ddc88e;
   --accent-muted: #f5eeda;
-  --accent-bg:    #faf5e6;
-  --green:        #3d7a4a;
   --green-bright: #256b32;
   --green-dim:    #9cc0a2;
   --green-muted:  #e6f0e6;
@@ -95,9 +104,7 @@
   --red-bright:   #a32e20;
   --red-dim:      #d9a89f;
   --red-muted:    #f7e3de;
-  --amber:        #a8760c;
   --ib:           #faf5e6;
-  --ibr:          #e2dfd4;
   --text:         #38322a;  /* 偏褐的深灰，避开纯黑 */
   --muted:        #6b6255;
   --text-faint:   #a09788;
@@ -108,9 +115,7 @@
   --hover-solid:  #ffffff;  /* hover 同样是「更抬升」，所以更白 */
   --shadow-rgb:   60,58,52;
   --vignette:     #ddd9cc;
-  --grid-rgb:     60,58,52;
   --collapse-title: #554c3f;  /* 浅色下用褐色，比正文略浅 */
-  --text-rgb:     56,50,42;
   --panel-glass:  #f7f6f1;
   --overlay:      rgba(45,43,38,.35);
   --shadow:       rgba(60,58,52,.16);
