@@ -157,3 +157,23 @@ body:has(.tl-modal-overlay.show) #modal-backdrop{display:block}
 }
 .cb-item{padding:8px 12px;cursor:pointer;font-size:13px;transition:background .12s}
 .cb-item:hover{background:var(--hover-tint);color:var(--accent)}
+
+/* ── 全屏图片查看器（core/ui.js openImageViewer）──
+   z-index 530 在 .tl-modal-overlay(520) 之上：可以从人物详情弹窗里打开。
+   touch-action:none 是必须的，否则 pointer 事件会被浏览器滚动抢走，
+   而站点 viewport 是 user-scalable=no，原生缩放也指望不上。
+   图片尺寸和位置全部由 JS 的 transform 控制，这里不设 max-width/height。 */
+.img-viewer{
+  display:none;position:fixed;inset:0;z-index:530;
+  background:rgba(var(--shadow-rgb),.82);
+  overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;
+  cursor:grab;
+}
+.img-viewer.show{display:block}
+.img-viewer:active{cursor:grabbing}
+.img-viewer-img{
+  position:absolute;top:0;left:0;transform-origin:0 0;
+  max-width:none;max-height:none;
+  border-radius:2px;box-shadow:0 0 0 1px rgba(var(--accent-rgb),.25);
+  -webkit-user-drag:none;
+}

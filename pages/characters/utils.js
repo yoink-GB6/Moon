@@ -26,22 +26,6 @@ export function pickRandomUrl(urls) {
 }
 
 /**
- * 弹出全屏图片查看器
- */
-export function openImageViewer(url) {
-  let viewer = document.getElementById('char-img-viewer');
-  if (!viewer) {
-    viewer = document.createElement('div');
-    viewer.id = 'char-img-viewer';
-    viewer.className = 'char-img-viewer';
-    document.body.appendChild(viewer);
-  }
-  viewer.innerHTML = '<img src="' + url.replace(/"/g, '&quot;') + '" class="char-img-viewer-img"/>';
-  viewer.classList.add('show');
-  viewer.addEventListener('click', function() { viewer.classList.remove('show'); }, { once: true });
-}
-
-/**
  * 关闭模态框
  */
 export function closeModal(modal) {

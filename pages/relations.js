@@ -16,6 +16,7 @@ import { parseAvatarUrls, pickRandomUrl } from './characters/utils.js';
 import { openCharReadonly } from './characters/modals/char-readonly-modal.js';
 import * as State from './characters/state.js';
 import { reflect } from '../core/router.js';
+import { createPanZoom } from '../core/pan-zoom.js';
 
 const W = 2400, H = 1600;          // 世界坐标尺寸
 const R_NODE = 26;                 // 节点半径
@@ -29,7 +30,7 @@ const DAMP   = 0.82;
 let _container = null;
 let _nodes = [], _links = [], _byId = new Map();
 let _selected = null;
-let _view = { x: 0, y: 0, k: 1 };
+let _pz = null;    // core/pan-zoom.js 实例，视口状态 {x,y,k} 由它持有
 let _cleanup = [];
 let _pendingRoute = null;
 let _loaded = false;
@@ -395,9 +396,9 @@ function _applyHighlight() {
 
 function _select(id) { _selected = id; _applyHighlight(); reflect('relations', id || ''); }
 
-function _applyView() {
+function _applyView(v) {
   const world = _container?.querySelector('#rel-world');
-  if (world) world.style.transform = `translate(${_view.x}px,${_view.y}px) scale(${_view.k})`;
+  if (world) world.style.transform = `translate(${v.x}px,${v.y}px) scale(${v.k})`;
 }
 
 // 只框住节点实际占的范围。原来按整个世界尺寸缩，节点再少也被压得很小。
@@ -417,20 +418,20 @@ function _fit() {
   const bw = (x1 - x0) + pad * 2, bh = (y1 - y0) + pad * 2;
   const k = Math.max(K_MIN, Math.min(K_MAX, Math.min(box.width / bw, box.height / bh)));
 
-  _view.k = k;
-  _view.x = box.width  / 2 - ((x0 + x1) / 2) * k;
-  _view.y = box.height / 2 - ((y0 + y1) / 2) * k;
-  _applyView();
+  _pz.view.k = k;
+  _pz.view.x = box.width  / 2 - ((x0 + x1) / 2) * k;
+  _pz.view.y = box.height / 2 - ((y0 + y1) / 2) * k;
+  _pz.apply();
 }
 
 function _centerOn(id) {
   const nd = _byId.get(id);
   if (!nd) return;
   const box = _container.querySelector('#rel-canvas').getBoundingClientRect();
-  _view.k = Math.max(_view.k, 0.7);
-  _view.x = box.width / 2  - nd.x * _view.k;
-  _view.y = box.height / 2 - nd.y * _view.k;
-  _applyView();
+  _pz.view.k = Math.max(_pz.view.k, 0.7);
+  _pz.view.x = box.width / 2  - nd.x * _pz.view.k;
+  _pz.view.y = box.height / 2 - nd.y * _pz.view.k;
+  _pz.apply();
 }
 
 function _on(el, type, fn, opts) {
@@ -441,109 +442,37 @@ function _on(el, type, fn, opts) {
 function _bindViewport() {
   const canvas = _container.querySelector('#rel-canvas');
 
-  // canvas 上是 touch-action:none，浏览器自带的双指缩放被禁掉了，
-  // 所以得自己按 pointer 事件实现。这里同时维护所有按下的指针。
-  const pts = new Map();
-  const drag = { on: false, sx: 0, sy: 0, ox: 0, oy: 0, moved: false, node: null, id: null };
-  let pinch = null;
+  // 按下时命中的节点必须当场记住：setPointerCapture 之后，
+  // pointerup 的 target 全变成 canvas，那时再 closest() 就找不到了
+  let downId = null;
 
-  const rect = () => canvas.getBoundingClientRect();
+  // 手势力学在 core/pan-zoom.js，和图片查看器共用。
+  // 这里不传 clamp / onDoubleTap / onGestureEnd —— 于是无边界、无双击、无退出手势。
+  _pz = createPanZoom(canvas, {
+    min: 0.15, max: 3,
+    apply: _applyView,
 
-  function startPinch() {
-    const [a, b] = [...pts.values()];
-    const box = rect();
-    const mx = (a.x + b.x) / 2 - box.left;
-    const my = (a.y + b.y) / 2 - box.top;
-    pinch = {
-      d0: Math.hypot(a.x - b.x, a.y - b.y) || 1,
-      k0: _view.k,
-      // 记住捏合起点下方对应的世界坐标，缩放时把它钉在手指中点
-      wx: (mx - _view.x) / _view.k,
-      wy: (my - _view.y) / _view.k,
-    };
-    drag.on = false; drag.node = null; drag.id = null;
-  }
-
-  _on(canvas, 'pointerdown', e => {
-    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    canvas.setPointerCapture(e.pointerId);
-
-    if (pts.size === 2) { startPinch(); return; }
-    if (pts.size > 2) return;
-
-    const nodeEl = e.target.closest('.rel-node');
-    drag.on = true; drag.moved = false;
-    drag.sx = e.clientX; drag.sy = e.clientY;
-    // 必须在这里记住命中的节点：setPointerCapture 之后，
-    // 后续 pointermove/up 的 target 全变成 canvas，再 closest 就找不到节点了
-    drag.id   = nodeEl ? nodeEl.dataset.id : null;
-    drag.node = drag.id ? _byId.get(drag.id) : null;
-    if (drag.node) { drag.ox = drag.node.x; drag.oy = drag.node.y; }
-    else { drag.ox = _view.x; drag.oy = _view.y; }
-  });
-
-  _on(canvas, 'pointermove', e => {
-    if (!pts.has(e.pointerId)) return;
-    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    if (pinch && pts.size >= 2) {
-      const [a, b] = [...pts.values()];
-      const box = rect();
-      const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-      const mx = (a.x + b.x) / 2 - box.left;
-      const my = (a.y + b.y) / 2 - box.top;
-      _view.k = Math.max(0.15, Math.min(3, pinch.k0 * (d / pinch.d0)));
-      // 手指中点始终对着同一个世界坐标，所以缩放和平移一起完成
-      _view.x = mx - pinch.wx * _view.k;
-      _view.y = my - pinch.wy * _view.k;
-      _applyView();
-      return;
-    }
-
-    if (!drag.on) return;
-    const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) drag.moved = true;
-    if (drag.node) {
-      // 拖节点只是临时挪一下，不入库
-      drag.node.x = drag.ox + dx / _view.k;
-      drag.node.y = drag.oy + dy / _view.k;
+    // 命中节点就接管这次拖拽，否则返回 null 交给模块平移画布
+    onDragStart: e => {
+      const el = e.target.closest('.rel-node');
+      downId = el ? el.dataset.id : null;
+      const nd = downId ? _byId.get(downId) : null;
+      return nd ? { nd, ox: nd.x, oy: nd.y } : null;
+    },
+    onDrag: (h, dx, dy, k) => {
+      // 拖节点只是临时挪一下，不入库；dx/dy 是屏幕像素，要除以 k 换成世界坐标
+      h.nd.x = h.ox + dx / k;
+      h.nd.y = h.oy + dy / k;
       _updatePositions();
-    } else {
-      _view.x = drag.ox + dx; _view.y = drag.oy + dy;
-      _applyView();
-    }
+    },
+
+    onTap: () => {
+      if (!downId) { _select(null); return; }
+      // 已经选中的再点一次 → 打开人物详情（触屏上比双击好用）
+      if (_selected === downId) _openChar(downId); else _select(downId);
+    },
   });
-
-  const end = e => {
-    pts.delete(e.pointerId);
-    try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
-    if (pts.size < 2) pinch = null;
-    // 捏合抬起后剩的那根手指不该被当成点击或拖拽
-    if (pts.size > 0) { drag.on = false; drag.node = null; drag.id = null; return; }
-
-    if (!drag.on) return;
-    drag.on = false;
-    const id = drag.id;
-    drag.node = null; drag.id = null;
-    if (drag.moved) return;
-    if (!id) { _select(null); return; }
-    // 已经选中的再点一次 → 打开人物详情（触屏上比双击好用）
-    if (_selected === id) _openChar(id); else _select(id);
-  };
-  _on(canvas, 'pointerup', end);
-  _on(canvas, 'pointercancel', end);
-
-  _on(canvas, 'wheel', e => {
-    e.preventDefault();
-    const box = rect();
-    const mx = e.clientX - box.left, my = e.clientY - box.top;
-    const k2 = Math.max(0.15, Math.min(3, _view.k * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));
-    // 以光标为锚点缩放
-    _view.x = mx - (mx - _view.x) * (k2 / _view.k);
-    _view.y = my - (my - _view.y) * (k2 / _view.k);
-    _view.k = k2;
-    _applyView();
-  }, { passive: false });
+  _cleanup.push(() => { _pz.destroy(); _pz = null; });
 
   _on(_container.querySelector('#rel-search'), 'input', e =>
     _renderList(e.target.value.trim().toLowerCase()));

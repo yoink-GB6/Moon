@@ -1,9 +1,9 @@
 // pages/characters/modals/char-readonly-modal.js
 // 只读人物弹窗 —— 供 geo-detail 和 characters-tab 共用
 
-import { escHtml } from '../../../core/ui.js';
+import { escHtml, openImageViewer } from '../../../core/ui.js';
 import * as State from '../state.js';
-import { parseAvatarUrls, pickRandomUrl, openImageViewer, parseCharSections, sectionsHTML } from '../utils.js';
+import { parseAvatarUrls, pickRandomUrl, parseCharSections, sectionsHTML } from '../utils.js';
 import { reflect, go } from '../../../core/router.js';
 
 export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
