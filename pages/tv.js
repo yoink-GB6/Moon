@@ -244,6 +244,9 @@ function _bindInteractions(container) {
 
   const onDown = (e) => {
     if (!e.touches && e.button !== 0) return;
+    // 触屏上不存在悬停，所以也不该有任何列因为 hover 停着。
+    // 万一某个浏览器仍然补发出 mouse 型的 enter，这里兜底解开
+    if (e.touches) _cols.forEach(col => { col.paused = false; });
     const colEl = e.target.closest('.tv-col');
     if (!colEl) return;
     const idx = Array.prototype.indexOf.call(colsEl.children, colEl);
@@ -313,11 +316,19 @@ function _bindInteractions(container) {
 }
 
 // 悬停暂停（逐列，桌面有效）。重排后需要重新绑，所以单独抽出来。
+//
+// 必须过滤 pointerType：触屏点一下浏览器会补发一整套鼠标事件（含 enter），
+// 但没有「把指针移开」这回事，leave 永远不来 —— 那一列就永久停住了。
+// 表现就是关掉图片查看器后，手指落点所在的那列不动了。
 function _bindColHover() {
   if (!_container) return;
   _container.querySelectorAll('.tv-col').forEach((el, i) => {
-    _addListener(el, 'mouseenter', () => { if (_cols[i]) _cols[i].paused = true; });
-    _addListener(el, 'mouseleave', () => { if (_cols[i]) _cols[i].paused = false; });
+    _addListener(el, 'pointerenter', e => {
+      if (e.pointerType === 'mouse' && _cols[i]) _cols[i].paused = true;
+    });
+    _addListener(el, 'pointerleave', e => {
+      if (e.pointerType === 'mouse' && _cols[i]) _cols[i].paused = false;
+    });
   });
 }
 
