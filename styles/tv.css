@@ -31,6 +31,8 @@
   cursor: grabbing;
 }
 
+/* 卡片直接放这里，一张图一个节点；滚出上边的会被搬到队尾（见 tv.js 的 _normalize）。
+   轨道因此只有一屏多一点高，合成层不会大到被切成瓦片。 */
 .tv-col-track {
   position: absolute;
   top: 0;
@@ -40,13 +42,6 @@
   flex-direction: column;
   gap: 18px;
   will-change: transform;
-}
-
-/* 一份副本；两份上下拼接实现无缝循环 */
-.tv-half {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
 }
 
 .tv-card {
@@ -84,5 +79,5 @@
 
 @media (max-width: 600px) {
   .tv-cols { gap: 10px; padding: 0 10px; }
-  .tv-col-track, .tv-half { gap: 10px; }
+  .tv-col-track { gap: 10px; }
 }

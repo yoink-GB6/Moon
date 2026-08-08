@@ -27,6 +27,7 @@ let _raf = null;
 let _lastT = 0;
 let _resizeTimer = null;
 let _colCount = 0;
+let _firstRender = true;
 
 export async function mount(container) {
   _container = container;
@@ -62,6 +63,7 @@ export function unmount() {
   _urls = [];
   _cols = [];
   _colCount = 0;
+  _firstRender = true;
 }
 
 function _skeleton() {
@@ -141,11 +143,15 @@ function _renderCols() {
 
   _measure();
 
-  // 每张图在窗口内随机时刻点亮
+  // 每张图在窗口内随机时刻点亮。
+  // 只有首次进页面才演这一下——resize 会整体重排，每拖一次窗口边就重放一遍太吵。
   const FADE_MAX = 1600;
+  const instant = !_firstRender;
+  _firstRender = false;
   requestAnimationFrame(() => {
     colsEl.querySelectorAll('.tv-card').forEach(card => {
-      card.style.transitionDelay = (Math.random() * FADE_MAX).toFixed(0) + 'ms';
+      if (instant) card.style.transition = 'none';
+      else card.style.transitionDelay = (Math.random() * FADE_MAX).toFixed(0) + 'ms';
       card.classList.add('show');
     });
   });
