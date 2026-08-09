@@ -177,3 +177,7 @@ body:has(.tl-modal-overlay.show) #modal-backdrop{display:block}
   border-radius:2px;box-shadow:0 0 0 1px rgba(var(--accent-rgb),.25);
   -webkit-user-drag:none;
 }
+/* 拖动关闭没拖够时的回弹；只在那一下挂上，平时不能有过渡，
+   否则手势的每一帧都会被插值，跟手感全没了 */
+.img-viewer.img-viewer-anim{transition:opacity .3s ease}
+.img-viewer-img.img-viewer-anim{transition:transform .3s cubic-bezier(.22,1,.36,1)}

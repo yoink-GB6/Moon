@@ -309,7 +309,11 @@ function _bindInteractions(container) {
     const card = e.target.closest('.tv-card');
     if (!card) return;
     const img = card.querySelector('img');
-    if (img && img.src) openImageViewer(img.src);
+    if (!img || !img.src) return;
+    // 查看器盖住整屏，后面滚了也没人看见 —— 全冻住，关掉之后整面墙还在原位，
+    // 才找得到刚才那张图旁边的几张。不靠 hover 判断：触屏根本没有 hover。
+    _stopAutoScroll();
+    openImageViewer(img.src, () => { if (_container) _startAutoScroll(); });
   });
 
   _bindColHover();

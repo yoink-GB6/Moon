@@ -53,10 +53,20 @@ export function escHtml(s) {
 // 图片按自然尺寸渲染 + transform-origin:0 0，于是 k 就是真实缩放倍率，
 // 边界夹紧的数学才写得简单。手势力学在 core/pan-zoom.js。
 //
-// 关闭有两条路，互补对方的盲区：
-//   点图外 —— fit 状态下长图是一条竖签，周围全是空白，好点
+// 关闭有四条路，互补彼此的盲区：
+//   点图外   —— fit 状态下长图是一条竖签，周围全是空白，好点
 //   捏合缩小 —— 放大后图铺满屏幕、没有「图外」可点时靠它
+//   滚轮缩小 —— 桌面上捏合的等价物，停下来才判定，滚过头能往回滚救
+//   拖动甩开 —— 仅触屏，未放大时单指拖着走，够远或够快就松手关闭
 // 单击图片本身不关闭，那一下留给双击跳挡（否则双击的第一下会先把它关掉）。
+//
+// 明确不做「放大状态下拖到顶边继续下拉也关闭」：那个很容易在扒拉到底时误关。
+// 放大状态下单指只平移，想关先双击回 fit 或者捏出去。
+
+const DISMISS_DIST   = 0.18;  // 拖过屏幕高度的这个比例就算数
+const DISMISS_VEL    = 800;   // 或者松手速度超过这个（px/s），快速一甩也该走
+const DISMISS_SHRINK = 0.4;   // 拖到最远时缩到 1 - 这个
+const DISMISS_SCALE  = 0.72;  // 捏合/滚轮缩到 fit 的这个比例以下就关
 
 let _iv = null;
 
@@ -76,12 +86,15 @@ export function closeImageViewer(byPointer) {
   _iv = null;
   s.pz.destroy();
   document.removeEventListener('keydown', s.onKey);
-  s.el.classList.remove('show');
+  s.el.classList.remove('show', 'img-viewer-anim');
+  s.img.classList.remove('img-viewer-anim');
   s.el.style.opacity = '';
   if (byPointer) _swallowNextClick();
+  if (s.onClose) s.onClose();
 }
 
-export function openImageViewer(url) {
+// onClose 供调用方在查看器打开期间暂停自己的动画（上电视页的自动滚动）
+export function openImageViewer(url, onClose) {
   closeImageViewer();
 
   let el = document.getElementById('img-viewer');
@@ -94,7 +107,8 @@ export function openImageViewer(url) {
   }
   const img = el.querySelector('.img-viewer-img');
 
-  const s = { el, img, iw: 0, ih: 0, cw: 0, ch: 0, kFit: 1, kZoom: 1, downOnImg: false };
+  const s = { el, img, onClose, iw: 0, ih: 0, cw: 0, ch: 0,
+              kFit: 1, kZoom: 1, downOnImg: false, dismiss: null };
   s.onKey = e => { if (e.key === 'Escape') closeImageViewer(); };
   document.addEventListener('keydown', s.onKey);
 
@@ -106,23 +120,66 @@ export function openImageViewer(url) {
       el.style.opacity = t < 1 ? String(0.3 + 0.7 * t) : '';
     },
     clamp(v) {
-      if (!s.iw) return;
+      if (!s.iw || s.dismiss) return;   // 拖动关闭时要能自由离开画面
       const w = s.iw * v.k, h = s.ih * v.k;
       // 比容器小就居中锁死，比容器大就夹住别让边缘缩进画面
       v.x = w <= s.cw ? (s.cw - w) / 2 : Math.min(0, Math.max(s.cw - w, v.x));
       v.y = h <= s.ch ? (s.ch - h) / 2 : Math.min(0, Math.max(s.ch - h, v.y));
     },
-    // 只借这个钩子记住按下时命中的是不是图片本身：
-    // setPointerCapture 之后 pointerup 的 target 全变成容器，那时再判断就晚了
-    onDragStart(e) { s.downOnImg = (e.target === img); return null; },
+
+    onDragStart(e) {
+      // 记住按下时命中的是不是图片本身：setPointerCapture 之后
+      // pointerup 的 target 全变成容器，那时再判断就晚了
+      s.downOnImg = (e.target === img);
+      // 弹回动画还没演完就又按下了，先摘掉过渡免得后面每帧都被插值
+      img.classList.remove('img-viewer-anim');
+      el.classList.remove('img-viewer-anim');
+
+      // 拖动关闭只给触屏：鼠标随手一拖就关掉太容易，桌面有点图外和 Esc
+      if (e.pointerType === 'mouse' || !s.iw) return null;
+      if (pz.view.k > s.kFit * 1.02) return null;   // 已放大 → 交还模块做平移
+      s.dismiss = {
+        dx: 0, dy: 0,
+        // 记住图片中心的当前位置，拖动时让中心跟着手指走
+        cx: pz.view.x + s.iw * pz.view.k / 2,
+        cy: pz.view.y + s.ih * pz.view.k / 2,
+      };
+      return s.dismiss;
+    },
+    onDrag(d, dx, dy) {
+      d.dx = dx; d.dy = dy;
+      const t = Math.min(1, Math.hypot(dx, dy) / (s.ch * 0.5));
+      const k = s.kFit * (1 - DISMISS_SHRINK * t);
+      // 绕着自身中心缩小，同时中心跟着手指——不这么算的话
+      // transform-origin:0 0 会让它往左上角瘪过去
+      pz.view.k = k;
+      pz.view.x = d.cx + dx - s.iw * k / 2;
+      pz.view.y = d.cy + dy - s.ih * k / 2;
+      pz.apply();   // 交给调用方的拖拽，模块不会自己 apply
+    },
+
     onTap() { if (!s.downOnImg) closeImageViewer(true); },
     onDoubleTap(e, x, y) {
       pz.zoomAt(pz.view.k > s.kFit * 1.05 ? s.kFit : s.kZoom, x, y);
     },
-    onGestureEnd() {
-      if (pz.view.k < s.kFit * 0.72) return closeImageViewer(true);
-      if (pz.view.k < s.kFit) _fitViewer(s, pz);   // 缩得不够多，弹回去
-      el.style.opacity = '';
+
+    // src: 'pointer' 手指抬起 / 'wheel' 滚轮停下。
+    // 只有 pointer 需要吞掉紧随其后的 click，滚轮没有那个补发过程。
+    onGestureEnd(src) {
+      const byPointer = src === 'pointer';
+      const d = s.dismiss;
+      s.dismiss = null;
+      if (d) {
+        if (!d.dx && !d.dy) return;                       // 只是点了一下，没拖
+        const far  = Math.hypot(d.dx, d.dy) > s.ch * DISMISS_DIST;
+        const fast = Math.hypot(pz.vx, pz.vy) > DISMISS_VEL;
+        if (far || fast) return closeImageViewer(true);
+        return _springBack(s, pz);
+      }
+      // 捏合和滚轮共用这一条：缩到 fit 的七成以下就关，缩得不够就弹回 fit
+      if (pz.view.k < s.kFit * DISMISS_SCALE) return closeImageViewer(byPointer);
+      if (pz.view.k < s.kFit) _springBack(s, pz);
+      else el.style.opacity = '';
     },
   });
   s.pz = pz;
@@ -160,6 +217,21 @@ function _fitViewer(s, pz) {
   pz.view.x = (s.cw - s.iw * s.kFit) / 2;
   pz.view.y = (s.ch - s.ih * s.kFit) / 2;
   pz.apply();
+}
+
+// 拖得不够远/不够快 → 挂上过渡再写回 fit，让 CSS 演那一下回弹
+function _springBack(s, pz) {
+  s.img.classList.add('img-viewer-anim');
+  s.el.classList.add('img-viewer-anim');
+  _fitViewer(s, pz);
+  s.el.style.opacity = '';
+  const done = () => {
+    s.img.classList.remove('img-viewer-anim');
+    s.el.classList.remove('img-viewer-anim');
+    s.img.removeEventListener('transitionend', done);
+  };
+  s.img.addEventListener('transitionend', done);
+  setTimeout(done, 400);   // 值没变化时 transitionend 不会来，兜一手
 }
 
 // ── Combobox（可输入搜索的下拉）────────────────────────────

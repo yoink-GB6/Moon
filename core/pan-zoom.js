@@ -8,9 +8,10 @@
 // 站点 viewport 是 user-scalable=no，浏览器原生缩放全站被禁，
 // 所以这里必须自己按 pointer 事件实现，容器还要有 touch-action:none。
 
-const TAP_SLOP   = 4;    // 超过这个位移就算拖拽，不算点击
-const DTAP_MS    = 300;  // 双击的时间窗
-const DTAP_SLOP  = 30;   // 双击两下之间允许的位移
+const TAP_SLOP     = 4;    // 超过这个位移就算拖拽，不算点击
+const DTAP_MS      = 300;  // 双击的时间窗
+const DTAP_SLOP    = 30;   // 双击两下之间允许的位移
+const WHEEL_SETTLE = 180;  // 滚轮停这么久才算一次手势结束
 
 /**
  * @param {HTMLElement} el 手势容器
@@ -21,7 +22,7 @@ const DTAP_SLOP  = 30;   // 双击两下之间允许的位移
  *   onDrag(handle, dx, dy, k)       接管时每帧回调，dx/dy 是屏幕像素
  *   onTap(e)                        单指、没移动过的点击
  *   onDoubleTap(e, x, y)            容器局部坐标；不传则 onTap 无延迟立即触发
- *   onGestureEnd()                  最后一根手指抬起后调用
+ *   onGestureEnd(src)               'pointer' = 最后一根手指抬起；'wheel' = 滚轮停下
  *   min, max                        k 的上下限
  */
 export function createPanZoom(el, opts = {}) {
@@ -30,8 +31,11 @@ export function createPanZoom(el, opts = {}) {
   const drag = { on: false, sx: 0, sy: 0, ox: 0, oy: 0, moved: false, handle: null };
   let pinch = null;
   let lastTap = null;
+  // 松手速度：判「快速一甩」用。只看位移的话手感很粘，甩不掉
+  const vel = { t: 0, x: 0, y: 0 };
+  let wheelTimer = null;
 
-  const api = { view, min: opts.min ?? 0.15, max: opts.max ?? 3, apply, destroy };
+  const api = { view, min: opts.min ?? 0.15, max: opts.max ?? 3, vx: 0, vy: 0, apply, destroy };
 
   const rect  = () => el.getBoundingClientRect();
   const clampK = k => Math.max(api.min, Math.min(api.max, k));
@@ -74,6 +78,10 @@ export function createPanZoom(el, opts = {}) {
     if (pts.size === 2) { startPinch(); return; }
     if (pts.size > 2) return;
 
+    clearTimeout(wheelTimer); wheelTimer = null;   // 别让滚轮的判定插进手势里
+    api.vx = api.vy = 0;
+    vel.t = performance.now(); vel.x = e.clientX; vel.y = e.clientY;
+
     drag.on = true; drag.moved = false;
     drag.sx = e.clientX; drag.sy = e.clientY;
     // 必须在这里就把命中目标记下来：setPointerCapture 之后，
@@ -101,6 +109,16 @@ export function createPanZoom(el, opts = {}) {
     }
 
     if (!drag.on) return;
+
+    const now = performance.now();
+    const dtms = now - vel.t;
+    if (dtms > 0) {
+      // 平滑一下，否则松手前最后一帧的抖动会主导整个判定
+      api.vx = api.vx * 0.4 + ((e.clientX - vel.x) / dtms * 1000) * 0.6;
+      api.vy = api.vy * 0.4 + ((e.clientY - vel.y) / dtms * 1000) * 0.6;
+      vel.t = now; vel.x = e.clientX; vel.y = e.clientY;
+    }
+
     const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
     if (Math.abs(dx) > TAP_SLOP || Math.abs(dy) > TAP_SLOP) drag.moved = true;
     if (drag.handle) {
@@ -114,19 +132,21 @@ export function createPanZoom(el, opts = {}) {
   function onUp(e) {
     pts.delete(e.pointerId);
     try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+    // 手指停住一会儿再松开，不该还算「甩」
+    if (performance.now() - vel.t > 80) api.vx = api.vy = 0;
     const wasPinch = !!pinch;
     if (pts.size < 2) pinch = null;
 
     // 捏合抬手后剩下的那根手指既不算点击也不算拖拽
     if (pts.size > 0) { drag.on = false; drag.handle = null; return; }
 
-    if (wasPinch) { opts.onGestureEnd?.(); return; }
+    if (wasPinch) { opts.onGestureEnd?.('pointer'); return; }
     if (!drag.on) return;
 
     drag.on = false;
     const moved = drag.moved;
     drag.handle = null;
-    opts.onGestureEnd?.();
+    opts.onGestureEnd?.('pointer');
     if (moved) return;
 
     if (opts.onDoubleTap) {
@@ -147,6 +167,12 @@ export function createPanZoom(el, opts = {}) {
     e.preventDefault();
     const box = rect();
     zoomAt(view.k * (e.deltaY < 0 ? 1.12 : 1 / 1.12), e.clientX - box.left, e.clientY - box.top);
+    // 滚轮没有「抬起」这个动作，所以用停顿来断句。
+    // 防抖也顺便给了后悔的机会：滚过头了往回滚一下就不算数。
+    if (opts.onGestureEnd) {
+      clearTimeout(wheelTimer);
+      wheelTimer = setTimeout(() => { wheelTimer = null; opts.onGestureEnd('wheel'); }, WHEEL_SETTLE);
+    }
   }
 
   el.addEventListener('pointerdown',   onDown);
@@ -161,6 +187,7 @@ export function createPanZoom(el, opts = {}) {
     el.removeEventListener('pointerup',     onUp);
     el.removeEventListener('pointercancel', onUp);
     el.removeEventListener('wheel',         onWheel, { passive: false });
+    clearTimeout(wheelTimer); wheelTimer = null;
     pts.clear();
   }
 
