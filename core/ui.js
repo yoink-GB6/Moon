@@ -157,6 +157,9 @@ export function openImageViewer(url, onClose) {
       pz.view.y = d.cy + dy - s.ih * k / 2;
       pz.apply();   // 交给调用方的拖拽，模块不会自己 apply
     },
+    // 第二根手指落下 → 这次不是拖拽关闭而是捏合，退出拖拽模式，
+    // 把 clamp 还回去，也让 onGestureEnd 走缩放那条判定
+    onDragCancel() { s.dismiss = null; },
 
     onTap() { if (!s.downOnImg) closeImageViewer(true); },
     onDoubleTap(e, x, y) {
@@ -169,8 +172,8 @@ export function openImageViewer(url, onClose) {
       const byPointer = src === 'pointer';
       const d = s.dismiss;
       s.dismiss = null;
-      if (d) {
-        if (!d.dx && !d.dy) return;                       // 只是点了一下，没拖
+      // 真的拖动过才按拖拽关闭判定；只是点了一下就落到下面的缩放判定去（无害）
+      if (d && (d.dx || d.dy)) {
         const far  = Math.hypot(d.dx, d.dy) > s.ch * DISMISS_DIST;
         const fast = Math.hypot(pz.vx, pz.vy) > DISMISS_VEL;
         if (far || fast) return closeImageViewer(true);

@@ -20,6 +20,7 @@ const WHEEL_SETTLE = 180;  // 滚轮停这么久才算一次手势结束
  *   clamp(view)                     可选，每次变更后夹紧平移范围
  *   onDragStart(e)   → handle|null  返回 truthy 表示这次拖拽由调用方接管
  *   onDrag(handle, dx, dy, k)       接管时每帧回调，dx/dy 是屏幕像素
+ *   onDragCancel(handle)            第二根手指落下、拖拽被捏合接管时调用
  *   onTap(e)                        单指、没移动过的点击
  *   onDoubleTap(e, x, y)            容器局部坐标；不传则 onTap 无延迟立即触发
  *   onGestureEnd(src)               'pointer' = 最后一根手指抬起；'wheel' = 滚轮停下
@@ -71,6 +72,9 @@ export function createPanZoom(el, opts = {}) {
       cx: (mx - view.x) / view.k,
       cy: (my - view.y) / view.k,
     };
+    // 拖拽被捏合接管了，得通知调用方它拿到的那个 handle 已经作废，
+    // 否则它会以为自己那套逻辑还在生效（查看器就因此漏掉了捏合关闭）
+    if (drag.handle) opts.onDragCancel?.(drag.handle);
     drag.on = false; drag.handle = null;
     hadPinch = true;
   }
