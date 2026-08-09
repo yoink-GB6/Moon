@@ -30,6 +30,9 @@ export function createPanZoom(el, opts = {}) {
   const pts  = new Map();          // 同时按下的所有指针
   const drag = { on: false, sx: 0, sy: 0, ox: 0, oy: 0, moved: false, handle: null };
   let pinch = null;
+  // pinch 在第一根手指抬起时就被置空了，可最后一根抬起时才该做判定，
+  // 所以要另记一个「这次手势捏合过」的标志，跨越整个手势
+  let hadPinch = false;
   let lastTap = null;
   // 松手速度：判「快速一甩」用。只看位移的话手感很粘，甩不掉
   const vel = { t: 0, x: 0, y: 0 };
@@ -69,11 +72,13 @@ export function createPanZoom(el, opts = {}) {
       cy: (my - view.y) / view.k,
     };
     drag.on = false; drag.handle = null;
+    hadPinch = true;
   }
 
   function onDown(e) {
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     el.setPointerCapture(e.pointerId);
+    if (pts.size === 1) hadPinch = false;   // 新手势起头
 
     if (pts.size === 2) { startPinch(); return; }
     if (pts.size > 2) return;
@@ -134,13 +139,18 @@ export function createPanZoom(el, opts = {}) {
     try { el.releasePointerCapture(e.pointerId); } catch (_) {}
     // 手指停住一会儿再松开，不该还算「甩」
     if (performance.now() - vel.t > 80) api.vx = api.vy = 0;
-    const wasPinch = !!pinch;
     if (pts.size < 2) pinch = null;
 
     // 捏合抬手后剩下的那根手指既不算点击也不算拖拽
     if (pts.size > 0) { drag.on = false; drag.handle = null; return; }
 
-    if (wasPinch) { opts.onGestureEnd?.('pointer'); return; }
+    // 以下是最后一根手指抬起
+    if (hadPinch) {
+      hadPinch = false;
+      drag.on = false; drag.handle = null;
+      opts.onGestureEnd?.('pointer');
+      return;
+    }
     if (!drag.on) return;
 
     drag.on = false;
