@@ -28,11 +28,14 @@ let _lastT = 0;
 let _resizeTimer = null;
 let _colCount = 0;
 let _firstRender = true;
+let _mountSeq = 0;   // mount 里有两次 await 网络，期间可能已经切走了
 
 export async function mount(container) {
+  const seq = ++_mountSeq;
   _container = container;
   container.innerHTML = _skeleton();
   await _fetch();
+  if (seq !== _mountSeq || !_container) return;   // 已经切走或又挂了一次
 
   if (_urls.length > 0) {
     await Promise.all(
@@ -47,6 +50,8 @@ export async function mount(container) {
       }))
     );
   }
+
+  if (seq !== _mountSeq || !_container) return;
 
   _renderCols();
   _bindInteractions(container);
@@ -64,6 +69,7 @@ export function unmount() {
   _cols = [];
   _colCount = 0;
   _firstRender = true;
+  _mountSeq++;          // 让还在 await 里的那个 mount 作废
 }
 
 function _skeleton() {
@@ -160,9 +166,13 @@ function _renderCols() {
 // 量一次高度存进节点，之后每帧只做加减，不再读布局。
 // 用 getBoundingClientRect().height 而不是 offsetHeight：后者返回取整值，
 // 而图片按比例缩放出来的高度是小数，取整会让传送带每搬一次就错半个像素。
-function _measure() {
+function _measure(attempt = 0) {
   requestAnimationFrame(() => {
+    if (!_container) return;
+    let bad = false;
     _cols.forEach(c => {
+      // attempt>0 是「补量」：已经量好的列别再碰，否则 offset 归零会让它跳回顶部
+      if (attempt > 0 && c.ready) return;
       const gap  = parseFloat(getComputedStyle(c.track).rowGap) || 0;
       const colH = c.track.parentElement.clientHeight;
       c.gap = gap;
@@ -175,20 +185,30 @@ function _measure() {
       const total = () => cards.reduce((sum, el) => sum + hOf(el) + gap, 0);
       const maxH  = () => Math.max(...cards.map(hOf));
 
+      // 图片还没排好版时高度会读成 0，这时量出来的一切都是错的。
+      // 绝不能带着错数据标 ready —— _h 是一次性存的、之后每帧只做加减，
+      // 错了自己永远纠不回来。宁可下一帧重量。
+      if (!colH || cards.some(el => hOf(el) <= 0)) { bad = true; return; }
+
       // 队列里的卡必须够盖住一屏：归一化后 offset 最多是队首那张的高度，
-      // 所以总高要 ≥ 列高 + 最高的一张 + 两道 gap，否则传送带中间会露空
+      // 所以总高要 ≥ 列高 + 最高的一张 + 两道 gap，否则传送带中间会露空 ——
+      // 表现就是每转一圈闪一下，而且刷新之前不会自愈
       let guard = 0;
       while (total() < colH + maxH() + gap * 2 && guard++ < 8) {
         cards.forEach(el => c.track.appendChild(el.cloneNode(true)));
         cards = Array.from(c.track.children);
       }
-      if (!total()) return;
+      // 克隆 8 轮还盖不住，说明量到的高度本身就不对劲
+      if (total() < colH + maxH() + gap * 2) { bad = true; return; }
 
       cards.forEach(el => { el._h = hOf(el) + gap; });
       c.offset = 0;
       c.ready = true;
       _applyCol(c);
     });
+
+    // 只重试有限次，免得图片真的加载失败时无限刷
+    if (bad && attempt < 30) _measure(attempt + 1);
   });
 }
 
@@ -204,6 +224,9 @@ function _normalize(c) {
   while (guard++ < 500) {
     const first = t.firstElementChild;
     if (!first) return;
+    // _h 不是正数就说明这一列的测量作废了。继续走下去 while 会每帧空转到
+    // 500 次上限、每帧搬 500 个 DOM 节点，所以直接停掉这一列并要求重量。
+    if (!(first._h > 0)) { c.ready = false; _measure(1); return; }
     if (c.offset >= first._h) {
       c.offset -= first._h;
       t.appendChild(first);
