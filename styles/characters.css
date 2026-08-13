@@ -234,6 +234,10 @@
      没带的也是它当初被写出来时的环境，两个主题下表现一致。 */
   padding:0;background:#fff;color:#111;overflow:hidden;
   border:1px solid var(--border-hover);
+  /* 撤掉 modal-center 那圈 0 0 0 1px 的 --accent-muted：
+     它在深色主题是半透明金，浅色主题却是不透明奶白(#f5eeda)，
+     围在深色稿子外面就是一条白边。只留下面那层投影。 */
+  box-shadow:0 24px 80px rgba(var(--shadow-rgb),.65);
 }
 #char-readonly-modal .char-html-modal::before,
 #char-readonly-modal .char-html-modal::after{content:none}
@@ -241,6 +245,17 @@
 /* 人物只读弹窗：让遮罩层滚动，模态框不截断，确保装饰角跟随卡片底部 */
 #char-readonly-modal{overflow-y:auto;align-items:flex-start;padding:20px 0}
 #char-readonly-modal .tl-modal{max-height:none;overflow-y:visible;margin:auto}
+
+/* ── 手机端：自定义 HTML 铺满整屏 ──
+   那些稿子是当整版画的，300px 里塞不下。常规弹窗（姓名/年龄/小节那套）
+   内容少，铺满反而空旷难看，所以保持原来的卡片形态不动。
+   铺满后没有遮罩可点，退出靠系统返回键（见 router.js 的 reflectPush）。 */
+@media(max-width:768px){
+  #char-readonly-modal:has(.char-html-modal){padding:0}
+  #char-readonly-modal .char-html-modal{
+    width:100%;max-width:none;border:none;border-radius:0;margin:0;
+  }
+}
 
 /* ── 弹窗默认底：本次抽中的立绘等比放大 + 高斯模糊 ──
    放大是为了盖住模糊后四周的虚边，所以盒子必须裁切。

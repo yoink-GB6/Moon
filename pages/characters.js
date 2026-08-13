@@ -7,7 +7,7 @@ import * as State from './characters/state.js';
 import { loadAllData, subscribeRealtime, unsubscribeRealtime } from './characters/data-loader.js';
 import { renderCharactersTab, bindCharactersTab, buildCharCardHTML, bindCharCard } from './characters/characters-tab.js';
 import { setupCharModal, openImageManager } from './characters/modals/character-modal.js';
-import { openCharReadonly } from './characters/modals/char-readonly-modal.js';
+import { openCharReadonly, syncCharReadonlyClosed } from './characters/modals/char-readonly-modal.js';
 import { reflect } from '../core/router.js';
 
 let _unsubAuth = null;
@@ -32,7 +32,7 @@ export async function mount(container) {
 export function applyRoute(parts) {
   const id = parts && parts[0];
   if (!id) {
-    document.querySelector('#char-readonly-modal')?.classList.remove('show');
+    syncCharReadonlyClosed();
     return;
   }
   const open = () => {

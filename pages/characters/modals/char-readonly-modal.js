@@ -5,8 +5,12 @@ import { escHtml, openImageViewer } from '../../../core/ui.js';
 import * as State from '../state.js';
 import { parseAvatarUrls, pickRandomUrl, parseCharSections, sectionsHTML } from '../utils.js';
 import { hasCustomHtml, mountCharHtml, pickCharHtml } from '../html-render.js';
-import { reflect, go } from '../../../core/router.js';
+import { reflect, reflectPush, go } from '../../../core/router.js';
 import { dominantColor } from '../dominant-color.js';
+
+// 打开弹窗时是否往历史里压了一条。压了的话关闭就走 history.back()，
+// 这样手机上按系统返回键 = 关弹窗，不需要屏幕上再挂一个叉。
+let _pushedEntry = false;
 
 // 开着就关掉并返回 true，供外部“先退出弹窗再说”的判断
 export function closeCharReadonly() {
@@ -17,9 +21,18 @@ export function closeCharReadonly() {
   return true;
 }
 
+// 路由已经把地址退回去了（用户按了返回键），这里只收尾，别再退一次
+export function syncCharReadonlyClosed() {
+  _pushedEntry = false;
+  const c = State.pageContainer;
+  const overlay = c && c.querySelector('#char-readonly-modal');
+  if (overlay) overlay.classList.remove('show');
+}
+
 function closeOverlay(overlay) {
   overlay.classList.remove('show');
-  reflect('characters');
+  if (_pushedEntry) { _pushedEntry = false; history.back(); }
+  else reflect('characters');
 }
 
 // 关闭弹窗需要完整的一次点击（mousedown + mouseup 均在遮罩上）
@@ -93,6 +106,12 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
     overlay.className = 'tl-modal-overlay modal-center';
     container.appendChild(overlay);
   }
+  // 已经开着时只是换个人，改地址就行；从关闭状态打开才压一条历史给返回键用
+  const wasOpen = overlay.classList.contains('show');
+  const markRoute = function(id) {
+    if (wasOpen) reflect('characters', id);
+    else if (reflectPush('characters', id)) _pushedEntry = true;
+  };
 
   // 有自定义 HTML 时整个弹窗内容由它接管，expandPath 对应旧折叠结构，忽略
   if (hasCustomHtml(char)) {
@@ -105,7 +124,7 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
     applyBgLayer(overlay, avatar);
     const root = mountCharHtml(overlay.querySelector('#char-ro-html'), pickCharHtml(char), avatar);
     overlay.classList.add('show');
-    reflect('characters', char.id);
+    markRoute(char.id);
     bindHtmlHooks(root, overlay);
     bindOverlayClose(overlay);
     return;
@@ -162,7 +181,7 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
 
   applyBgLayer(overlay, avatarUrl);
   overlay.classList.add('show');
-  reflect('characters', char.id);   // 地址栏带上这个人，可直接分享
+  markRoute(char.id);   // 地址栏带上这个人，可直接分享
 
   // 交叉引用跳转。这些节点每次打开都随 innerHTML 重建，
   // 所以不用 signal 也不会累积监听器（用了反而会被下面的 abort 清掉）

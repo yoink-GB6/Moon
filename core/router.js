@@ -38,6 +38,18 @@ export function reflect(page, ...parts) {
   history.replaceState(null, '', location.pathname + location.search + next);
 }
 
+// 同 reflect，但写一条历史：手机端靠系统返回键关弹窗。
+// 用 pushState 而不是改 location.hash —— 打开时不触发 hashchange（否则会回头再驱动一次
+// 弹窗逻辑，重新渲染、重抽随机图），但之后按返回键退回上一条时 hash 变了，
+// hashchange 照常触发，走既有的 applyRoute 把弹窗关掉。
+// 返回值表示这次是否真的压了一条历史（深链进来时地址已经对了，不压）。
+export function reflectPush(page, ...parts) {
+  const next = build(page, parts);
+  if (location.hash === next) return false;
+  history.pushState(null, '', location.pathname + location.search + next);
+  return true;
+}
+
 export function onRouteChange(fn) {
   window.addEventListener('hashchange', () => fn(parseHash()));
 }
