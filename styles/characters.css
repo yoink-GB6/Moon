@@ -246,14 +246,32 @@
 #char-readonly-modal{overflow-y:auto;align-items:flex-start;padding:20px 0}
 #char-readonly-modal .tl-modal{max-height:none;overflow-y:visible;margin:auto}
 
+/* ── 自定义 HTML：不够一屏就贴着底，从下往上展开 ──
+   用 margin-top:auto 而不是 align-items:flex-end —— 自动外边距把剩余空间全吃到上面，
+   内容矮时被顶到底部；内容比容器高时剩余空间是 0，auto 自动失效，照常从顶部滚。
+   条件判断交给布局引擎，不用测量。
+   （align-items:flex-end 在这里不行：内容超高时会往上溢出且滚不到，是老毛病） */
+#char-readonly-modal .char-html-modal{
+  margin-top:auto;margin-bottom:0;
+  animation:char-html-rise .26s cubic-bezier(.22,1,.36,1);
+}
+/* 用 translate 而不是 transform：gacha 的进场动画会写行内 transform，
+   两者是各自独立的属性，同时生效不会互相顶掉 */
+@keyframes char-html-rise{
+  from{translate:0 22px;opacity:0}
+  to{translate:none;opacity:1}
+}
+
 /* ── 手机端：自定义 HTML 铺满整屏 ──
    那些稿子是当整版画的，300px 里塞不下。常规弹窗（姓名/年龄/小节那套）
    内容少，铺满反而空旷难看，所以保持原来的卡片形态不动。
    铺满后没有遮罩可点，退出靠系统返回键（见 router.js 的 reflectPush）。 */
 @media(max-width:768px){
   #char-readonly-modal:has(.char-html-modal){padding:0}
+  /* 左右吃满，上下继续沿用「矮了贴底」那条规则 */
   #char-readonly-modal .char-html-modal{
-    width:100%;max-width:none;border:none;border-radius:0;margin:0;
+    width:100%;max-width:none;border:none;border-radius:0;
+    margin-left:0;margin-right:0;
   }
 }
 

@@ -97,6 +97,22 @@ function applyBgLayer(overlay, avatarUrl) {
   });
 }
 
+// 给自定义 HTML 喂几个「别人」：随机挑非本人的角色，做群聊之类的场景用。
+// 暴露成 --other-N-avatar（url）和 --other-N-name（带引号的字符串，可直接给 content 用），N 从 1 起。
+function injectOtherChars(hostEl, char, count) {
+  const pool = State.allChars.filter(function(c) { return c.id !== char.id; });
+  for (let i = pool.length - 1; i > 0; i--) {          // 洗牌，保证每次开都不一样
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+  }
+  pool.slice(0, count).forEach(function(c, i) {
+    const n = i + 1;
+    const url = pickRandomUrl(parseAvatarUrls(c.avatar_url));
+    if (url) hostEl.style.setProperty('--other-' + n + '-avatar', 'url("' + url.replace(/["\\]/g, '\\$&') + '")');
+    hostEl.style.setProperty('--other-' + n + '-name', JSON.stringify(c.name));
+  });
+}
+
 export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
   const container = State.pageContainer;
   let overlay = container.querySelector('#char-readonly-modal');
@@ -113,7 +129,7 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
     else if (reflectPush('characters', id)) _pushedEntry = true;
   };
 
-  // 有自定义 HTML 时整个弹窗内容由它接管，expandPath 对应旧折叠结构，忽略
+  // 有自定义 HTML 就由它接管，expandPath 对应旧折叠结构，忽略
   if (hasCustomHtml(char)) {
     const avatar = fixedAvatarUrl || pickRandomUrl(parseAvatarUrls(char.avatar_url));
     overlay.innerHTML =
@@ -122,7 +138,9 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
         '<div id="char-ro-html"></div>' +
       '</div>';
     applyBgLayer(overlay, avatar);
-    const root = mountCharHtml(overlay.querySelector('#char-ro-html'), pickCharHtml(char), avatar);
+    const host = overlay.querySelector('#char-ro-html');
+    injectOtherChars(host, char, 6);
+    const root = mountCharHtml(host, pickCharHtml(char), avatar);
     overlay.classList.add('show');
     markRoute(char.id);
     bindHtmlHooks(root, overlay);
