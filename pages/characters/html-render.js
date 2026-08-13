@@ -13,13 +13,15 @@ const BASE_CSS =
   'img{max-width:100%;height:auto}' +
   'a{color:var(--accent);text-decoration:none}';
 
-// 现成的人物介绍常常整段裹在 ```html … ``` 里，存和渲染都把这层剥掉
-const FENCE = /^```[a-zA-Z]*[ \t]*\r?\n([\s\S]*?)\r?\n?```$/;
+// 现成的人物介绍常常整段裹在 ```html … ``` 里，存和渲染都把这层剥掉。
+// 一份稿子里可能有好几段各自成对的围栏，只剥最外层会把中间那些留成可见文字，
+// 所以认准“开头就是围栏”之后，把所有独占一行的围栏标记全删掉。
+const FENCE_LINE = /^[ \t]*```[a-zA-Z0-9+#-]*[ \t]*$/;
 
 export function stripCodeFence(s) {
   const t = (s || '').trim();
-  const m = t.match(FENCE);
-  return m ? m[1].trim() : t;
+  if (!t.startsWith('```')) return t;
+  return t.split(/\r?\n/).filter(function(line) { return !FENCE_LINE.test(line); }).join('\n').trim();
 }
 
 export function hasCustomHtml(char) {
