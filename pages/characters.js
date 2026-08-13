@@ -92,6 +92,7 @@ function buildHTML() {
     <label>所属国家 / 势力</label><div class="tl-select" id="char-country-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-country"/><label>所属城市</label><div class="tl-select" id="char-city-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-city"/>
     <label>自定义 HTML（填写后弹窗整体由它渲染，留空则用下面的小节）</label>
     <textarea id="char-html" rows="8" placeholder="&lt;div&gt;…&lt;/div&gt;"></textarea>
+    <div class="cm-md-guide">多套写法：中间用独占一行的 &lt;!-- SPLIT --&gt; 隔开，每次打开随机展示一套。可用 var(--char-avatar) 拿到本次抽中的立绘。</div>
     <div id="char-sec-container"></div>
     <label>人物关系</label>
     <div id="char-rel-section" style="margin-bottom:16px">

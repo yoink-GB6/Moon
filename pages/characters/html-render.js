@@ -8,7 +8,8 @@ const URL_ATTRS = ['href', 'src', 'xlink:href'];
 const BAD_URL   = /^\s*(javascript:|data:text\/html)/i;
 
 const BASE_CSS =
-  ':host{display:block}' +
+  // flow-root 而不是 block：兜住内容自己的外边距，不让它塌出容器露出白边
+  ':host{display:flow-root}' +
   '*{box-sizing:border-box}' +
   'img{max-width:100%;height:auto}' +
   'a{color:var(--accent);text-decoration:none}';
@@ -22,6 +23,23 @@ export function stripCodeFence(s) {
   const t = (s || '').trim();
   if (!t.startsWith('```')) return t;
   return t.split(/\r?\n/).filter(function(line) { return !FENCE_LINE.test(line); }).join('\n').trim();
+}
+
+// 一个人可以存好几套 HTML，用独占一行的 <!-- SPLIT --> 隔开，打开时随机取一套，
+// 和头像多图是同一个套路
+const SPLIT_LINE = /^[ \t]*<!--[ \t]*SPLIT[ \t]*-->[ \t]*$/im;
+
+export function splitCharHtml(raw) {
+  return stripCodeFence(raw)
+    .split(SPLIT_LINE)
+    .map(function(s) { return s.trim(); })
+    .filter(Boolean);
+}
+
+export function pickCharHtml(char) {
+  const list = splitCharHtml(char && char.description_html);
+  if (!list.length) return '';
+  return list[Math.floor(Math.random() * list.length)];
 }
 
 export function hasCustomHtml(char) {
@@ -45,7 +63,9 @@ function sanitize(html) {
   return frag;
 }
 
-export function mountCharHtml(hostEl, html) {
+export function mountCharHtml(hostEl, html, avatarUrl) {
+  // 把这次抽到的立绘交给 HTML：里面写 background-image:var(--char-avatar) 就能用
+  if (avatarUrl) hostEl.style.setProperty('--char-avatar', 'url("' + avatarUrl.replace(/["\\]/g, '\\$&') + '")');
   const root = hostEl.attachShadow({ mode: 'open' });
   // CSS 自定义属性是继承属性，会穿透 shadow 边界，
   // 所以自定义 HTML 里直接写 var(--accent) 就能跟随主题

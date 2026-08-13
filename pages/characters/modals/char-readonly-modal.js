@@ -4,8 +4,9 @@
 import { escHtml, openImageViewer } from '../../../core/ui.js';
 import * as State from '../state.js';
 import { parseAvatarUrls, pickRandomUrl, parseCharSections, sectionsHTML } from '../utils.js';
-import { hasCustomHtml, mountCharHtml } from '../html-render.js';
+import { hasCustomHtml, mountCharHtml, pickCharHtml } from '../html-render.js';
 import { reflect, go } from '../../../core/router.js';
+import { dominantColor } from '../dominant-color.js';
 
 // 开着就关掉并返回 true，供外部“先退出弹窗再说”的判断
 export function closeCharReadonly() {
@@ -65,6 +66,24 @@ function bindHtmlHooks(root, overlay) {
   });
 }
 
+// 弹窗默认底：本次抽中的立绘。放大 + 模糊由 CSS 做，这里只喂图。
+const BG_LAYER = '<div class="char-bg-layer"></div>';
+
+function applyBgLayer(overlay, avatarUrl) {
+  const layer = overlay.querySelector('.char-bg-layer');
+  if (!layer || !avatarUrl) return;
+  // 先铺模糊图，主色取到了再换成色块；取不到（图床没开 CORS）就一直是模糊图
+  layer.style.backgroundImage = 'url("' + avatarUrl.replace(/["\\]/g, '\\$&') + '")';
+  dominantColor(avatarUrl).then(function(rgb) {
+    if (!rgb || !layer.isConnected) return;
+    const c = rgb.join(',');
+    // 渐变必须也写成行内的：上面那句 backgroundImage 是行内样式，样式表里的规则盖不掉它
+    layer.style.backgroundImage =
+      'linear-gradient(155deg,rgba(' + c + ',.9),rgba(' + c + ',.28))';
+    layer.classList.add('char-bg-solid');
+  });
+}
+
 export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
   const container = State.pageContainer;
   let overlay = container.querySelector('#char-readonly-modal');
@@ -77,11 +96,14 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
 
   // 有自定义 HTML 时整个弹窗内容由它接管，expandPath 对应旧折叠结构，忽略
   if (hasCustomHtml(char)) {
+    const avatar = fixedAvatarUrl || pickRandomUrl(parseAvatarUrls(char.avatar_url));
     overlay.innerHTML =
       '<div class="tl-modal char-modal-box char-html-modal" onmousedown="event.stopPropagation()">' +
+        BG_LAYER +
         '<div id="char-ro-html"></div>' +
       '</div>';
-    const root = mountCharHtml(overlay.querySelector('#char-ro-html'), char.description_html);
+    applyBgLayer(overlay, avatar);
+    const root = mountCharHtml(overlay.querySelector('#char-ro-html'), pickCharHtml(char), avatar);
     overlay.classList.add('show');
     reflect('characters', char.id);
     bindHtmlHooks(root, overlay);
@@ -107,6 +129,7 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
 
   overlay.innerHTML =
     '<div class="tl-modal char-modal-box" onmousedown="event.stopPropagation()">' +
+      BG_LAYER +
       '<div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px">' +
         '<div class="geo-person-av" style="width:56px;height:56px;font-size:22px;flex-shrink:0' + (avatarUrl ? ';cursor:pointer' : '') + '"' + (avatarUrl ? ' data-viewimg="' + escHtml(avatarUrl) + '"' : '') + '>' +
           (avatarUrl
@@ -137,6 +160,7 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
       })() +
     '</div>';
 
+  applyBgLayer(overlay, avatarUrl);
   overlay.classList.add('show');
   reflect('characters', char.id);   // 地址栏带上这个人，可直接分享
 
