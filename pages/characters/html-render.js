@@ -13,15 +13,24 @@ const BASE_CSS =
   'img{max-width:100%;height:auto}' +
   'a{color:var(--accent);text-decoration:none}';
 
+// 现成的人物介绍常常整段裹在 ```html … ``` 里，存和渲染都把这层剥掉
+const FENCE = /^```[a-zA-Z]*[ \t]*\r?\n([\s\S]*?)\r?\n?```$/;
+
+export function stripCodeFence(s) {
+  const t = (s || '').trim();
+  const m = t.match(FENCE);
+  return m ? m[1].trim() : t;
+}
+
 export function hasCustomHtml(char) {
-  return !!(char && char.description_html && char.description_html.trim());
+  return !!(char && stripCodeFence(char.description_html));
 }
 
 function sanitize(html) {
   // 用 template 而不是 DOMParser：内容是惰性的（脚本不跑、图片不加载），
   // 而且不会把开头的 <style> 拆进 <head> 丢掉
   const tpl = document.createElement('template');
-  tpl.innerHTML = html;
+  tpl.innerHTML = stripCodeFence(html);
   const frag = tpl.content;
   frag.querySelectorAll(DROP_TAGS.join(',')).forEach(function(el) { el.remove(); });
   frag.querySelectorAll('*').forEach(function(el) {

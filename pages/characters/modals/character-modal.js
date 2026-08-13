@@ -4,6 +4,7 @@ import { showToast, escHtml, confirmDialog, bindCombobox } from '../../../core/u
 import * as State from '../state.js';
 import { closeModal, parseAvatarUrls, parseCharSections } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
+import { stripCodeFence } from '../html-render.js';
 
 let _editImages = [];
 let _originalStorageUrls = [];
@@ -856,7 +857,7 @@ async function _doSave(container) {
 
   const ageVal      = container.querySelector('#char-age').value.trim();
   const linkVal     = container.querySelector('#char-link').value.trim();
-  const htmlVal     = container.querySelector('#char-html').value.trim();
+  const htmlVal     = stripCodeFence(container.querySelector('#char-html').value);
   const cityIdVal   = container.querySelector('#char-city').value;
   const countryIdVal = container.querySelector('#char-country').value;
   const modal     = container.querySelector('#char-modal');
