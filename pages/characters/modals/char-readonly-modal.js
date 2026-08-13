@@ -4,7 +4,66 @@
 import { escHtml, openImageViewer } from '../../../core/ui.js';
 import * as State from '../state.js';
 import { parseAvatarUrls, pickRandomUrl, parseCharSections, sectionsHTML } from '../utils.js';
+import { hasCustomHtml, mountCharHtml } from '../html-render.js';
 import { reflect, go } from '../../../core/router.js';
+
+// 开着就关掉并返回 true，供外部“先退出弹窗再说”的判断
+export function closeCharReadonly() {
+  const c = State.pageContainer;
+  const overlay = c && c.querySelector('#char-readonly-modal.show');
+  if (!overlay) return false;
+  closeOverlay(overlay);
+  return true;
+}
+
+function closeOverlay(overlay) {
+  overlay.classList.remove('show');
+  reflect('characters');
+}
+
+// 关闭弹窗需要完整的一次点击（mousedown + mouseup 均在遮罩上）
+// 用 AbortController 避免每次打开重复累积监听器
+function bindOverlayClose(overlay) {
+  if (overlay._closeCtrl) overlay._closeCtrl.abort();
+  overlay._closeCtrl = new AbortController();
+  const signal = overlay._closeCtrl.signal;
+  let _mdOnOverlay = false;
+  overlay.addEventListener('mousedown', function(e) {
+    _mdOnOverlay = (e.target === overlay);
+  }, { signal });
+  overlay.addEventListener('mouseup', function(e) {
+    if (_mdOnOverlay && e.target === overlay) closeOverlay(overlay);
+    _mdOnOverlay = false;
+  }, { signal });
+  // 右键遮罩也是退出，别弹原生菜单
+  overlay.addEventListener('contextmenu', function(e) {
+    if (e.target !== overlay) return;
+    e.preventDefault();
+    closeOverlay(overlay);
+  }, { signal });
+  // 挂在 document 上，所以要确认 overlay 没被换页拆掉，否则会在别的页面改地址栏
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && overlay.isConnected && overlay.classList.contains('show')) closeOverlay(overlay);
+  }, { signal });
+}
+
+// 让自定义 HTML 也能用站点能力：写 data-geo-kind / data-viewimg 即可
+function bindHtmlHooks(root, overlay) {
+  root.addEventListener('click', function(e) {
+    const geo = e.target.closest('[data-geo-kind]');
+    if (geo) {
+      e.stopPropagation();
+      overlay.classList.remove('show');
+      go('geo', geo.dataset.geoKind, geo.dataset.geoId);
+      return;
+    }
+    const img = e.target.closest('[data-viewimg]');
+    if (img) {
+      e.stopPropagation();
+      openImageViewer(img.dataset.viewimg);
+    }
+  });
+}
 
 export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
   const container = State.pageContainer;
@@ -14,6 +73,20 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
     overlay.id = 'char-readonly-modal';
     overlay.className = 'tl-modal-overlay modal-center';
     container.appendChild(overlay);
+  }
+
+  // 有自定义 HTML 时整个弹窗内容由它接管，expandPath 对应旧折叠结构，忽略
+  if (hasCustomHtml(char)) {
+    overlay.innerHTML =
+      '<div class="tl-modal char-modal-box char-html-modal" onmousedown="event.stopPropagation()">' +
+        '<div id="char-ro-html"></div>' +
+      '</div>';
+    const root = mountCharHtml(overlay.querySelector('#char-ro-html'), char.description_html);
+    overlay.classList.add('show');
+    reflect('characters', char.id);
+    bindHtmlHooks(root, overlay);
+    bindOverlayClose(overlay);
+    return;
   }
 
   const city    = char.city_id    ? State.allCities.find(function(c)  { return c.id  === char.city_id;    }) : null;
@@ -114,17 +187,5 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
     }
   }
 
-  // 关闭弹窗需要完整的一次点击（mousedown + mouseup 均在遮罩上）
-  // 用 AbortController 避免每次打开重复累积监听器
-  if (overlay._closeCtrl) overlay._closeCtrl.abort();
-  overlay._closeCtrl = new AbortController();
-  const signal = overlay._closeCtrl.signal;
-  let _mdOnOverlay = false;
-  overlay.addEventListener('mousedown', function(e) {
-    _mdOnOverlay = (e.target === overlay);
-  }, { signal });
-  overlay.addEventListener('mouseup', function(e) {
-    if (_mdOnOverlay && e.target === overlay) { overlay.classList.remove('show'); reflect('characters'); }
-    _mdOnOverlay = false;
-  }, { signal });
+  bindOverlayClose(overlay);
 }

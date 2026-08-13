@@ -1,11 +1,10 @@
 // pages/characters/characters-tab.js
 // 人物标签页渲染和交互
 
-import { isEditor } from '../../core/auth.js';
 import { escHtml } from '../../core/ui.js';
 import * as State from './state.js';
 import { openCharModal } from './modals/character-modal.js';
-import { openCharReadonly } from './modals/char-readonly-modal.js';
+import { bindCharOpen } from './char-open.js';
 import { getLocationPath, parseAvatarUrls, pickRandomUrl } from './utils.js';
 
 
@@ -54,18 +53,13 @@ export function buildCharCardHTML(char, avatarUrl) {
  * 为单张人物卡片绑定点击事件
  */
 export function bindCharCard(card, char) {
-  card.addEventListener('click', (e) => {
-    if (isEditor()) {
-      openCharModal(char);
-    } else {
-      const fixedAvatar = card.dataset.avatar || undefined;
-      const toggle = e.target.closest('.collapse-h2, .collapse-header');
-      if (toggle && card.contains(toggle)) {
-        openCharReadonly(char, getTogglePath(toggle, card), fixedAvatar);
-      } else {
-        openCharReadonly(char, undefined, fixedAvatar);
-      }
-    }
+  bindCharOpen(card, (e) => {
+    const toggle = e.target.closest && e.target.closest('.collapse-h2, .collapse-header');
+    return {
+      char,
+      expandPath: (toggle && card.contains(toggle)) ? getTogglePath(toggle, card) : undefined,
+      avatar: card.dataset.avatar || undefined,
+    };
   });
 }
 

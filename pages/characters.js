@@ -90,6 +90,8 @@ function buildHTML() {
     <label>年龄</label><input id="char-age" type="number" min="0" placeholder="0"/>
     <label>链接</label><input id="char-link" type="text" placeholder="[名称](https://...) [名称2](https://...)"/>
     <label>所属国家 / 势力</label><div class="tl-select" id="char-country-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-country"/><label>所属城市</label><div class="tl-select" id="char-city-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-city"/>
+    <label>自定义 HTML（填写后弹窗整体由它渲染，留空则用下面的小节）</label>
+    <textarea id="char-html" rows="8" placeholder="&lt;div&gt;…&lt;/div&gt;"></textarea>
     <div id="char-sec-container"></div>
     <label>人物关系</label>
     <div id="char-rel-section" style="margin-bottom:16px">

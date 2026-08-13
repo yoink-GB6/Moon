@@ -220,10 +220,21 @@
 .cm-custom-row input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none}
 .cm-custom-row input:focus{border-color:var(--accent)}
 .cm-custom-row .btn{padding:6px 10px;font-size:12px;line-height:normal}
+/* 长按 = 编辑，别让 iOS 弹出选中/存图的原生菜单抢走手势 */
+.intro-card,.geo-person-item{-webkit-touch-callout:none}
 .tl-modal-overlay.modal-center{align-items:center;justify-content:center}
 .tl-modal-overlay.modal-center .tl-modal{border-radius:4px;width:calc(100% - 32px);max-height:90vh;box-shadow:0 0 0 1px var(--accent-muted),0 24px 80px rgba(var(--shadow-rgb),.65)}
 /* 人物卡片：随屏幕比例伸缩，宽屏不再受限于固定像素 */
 .char-modal-box{max-width:clamp(300px,72vw,860px)}
+/* 自定义 HTML 弹窗：去掉内边距和装饰角，只留一圈金色细线跟站点柔和过渡，
+   内部整块交给 HTML。overflow:hidden 让 HTML 自己的背景裁到圆角里。 */
+#char-readonly-modal .char-html-modal{
+  padding:0;background:transparent;overflow:hidden;
+  border:1px solid var(--border-hover);
+}
+#char-readonly-modal .char-html-modal::before,
+#char-readonly-modal .char-html-modal::after{content:none}
+#char-ro-html{display:block}
 /* 人物只读弹窗：让遮罩层滚动，模态框不截断，确保装饰角跟随卡片底部 */
 #char-readonly-modal{overflow-y:auto;align-items:flex-start;padding:20px 0}
 #char-readonly-modal .tl-modal{max-height:none;overflow-y:visible;margin:auto}

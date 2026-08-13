@@ -744,6 +744,7 @@ export function openCharModal(char) {
   container.querySelector('#char-name').value = char ? char.name || '' : '';
   container.querySelector('#char-age').value  = (char && char.base_age != null) ? char.base_age : '';
   container.querySelector('#char-link').value = char ? char.link_url || '' : '';
+  container.querySelector('#char-html').value = char ? char.description_html || '' : '';
   // ── 初始化小节编辑器 ──
   const sections = parseCharSections(char ? char.description : null);
   const usedTitles = new Set(sections.map(function(s) { return s.title; }));
@@ -855,6 +856,7 @@ async function _doSave(container) {
 
   const ageVal      = container.querySelector('#char-age').value.trim();
   const linkVal     = container.querySelector('#char-link').value.trim();
+  const htmlVal     = container.querySelector('#char-html').value.trim();
   const cityIdVal   = container.querySelector('#char-city').value;
   const countryIdVal = container.querySelector('#char-country').value;
   const modal     = container.querySelector('#char-modal');
@@ -891,6 +893,7 @@ async function _doSave(container) {
       city_id:     cityIdVal   ? parseInt(cityIdVal)    : null,
       country_id:  countryIdVal ? parseInt(countryIdVal) : null,
       description: desc,
+      description_html: htmlVal || null,
       avatar_url:  avatarUrlValue,
     };
 

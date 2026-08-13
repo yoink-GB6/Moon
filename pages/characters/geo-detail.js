@@ -5,8 +5,7 @@ import * as State from './state.js';
 import { openCountryModal, mdToChildren } from './modals/country-modal.js';
 import { openCityModal } from './modals/city-modal.js';
 import { openLandmarkModal } from './modals/landmark-modal.js';
-import { openCharModal } from './modals/character-modal.js';
-import { openCharReadonly } from './modals/char-readonly-modal.js';
+import { bindCharOpen } from './char-open.js';
 import { parseAvatarUrls, pickRandomUrl, childHTML } from './utils.js';
 import { renderGeoTree } from './geo-tree.js';
 
@@ -190,13 +189,14 @@ function renderCityDetail(detail) {
     });
   }
 
-  // 人物点击：编辑模式打开编辑框，只读模式打开介绍弹窗
+  // 人物点击：左键看介绍，编辑模式下右键/长按进编辑框
   detail.querySelectorAll('[data-char-id]').forEach(function(item) {
-    item.addEventListener('click', function() {
-      const id   = parseInt(item.dataset.charId);
-      const char = State.allChars.find(function(c) { return c.id === id; });
-      if (!char) return;
-      if (isEditor()) { openCharModal(char); } else { openCharReadonly(char, undefined, item.dataset.avatar || undefined); }
+    bindCharOpen(item, function() {
+      const id = parseInt(item.dataset.charId);
+      return {
+        char: State.allChars.find(function(c) { return c.id === id; }),
+        avatar: item.dataset.avatar || undefined,
+      };
     });
   });
 
