@@ -5,12 +5,15 @@ import { escHtml, openImageViewer } from '../../../core/ui.js';
 import * as State from '../state.js';
 import { parseAvatarUrls, pickRandomUrl, parseCharSections, sectionsHTML } from '../utils.js';
 import { hasCustomHtml, mountCharHtml, pickCharHtml } from '../html-render.js';
-import { reflect, reflectPush, go } from '../../../core/router.js';
+import { reflect, parseHash, go } from '../../../core/router.js';
+import { bindModalBack, releaseModalBack, forgetModalBack } from '../../../core/modal-history.js';
 import { dominantColor } from '../dominant-color.js';
 
-// 打开弹窗时是否往历史里压了一条。压了的话关闭就走 history.back()，
-// 这样手机上按系统返回键 = 关弹窗，不需要屏幕上再挂一个叉。
-let _pushedEntry = false;
+// 只藏弹窗、顺手收拾地址栏，历史交给 modal-history 统一管
+function hideOverlay(overlay) {
+  overlay.classList.remove('show');
+  if (overlay._ownsRoute) reflect('characters');
+}
 
 // 开着就关掉并返回 true，供外部“先退出弹窗再说”的判断
 export function closeCharReadonly() {
@@ -21,18 +24,17 @@ export function closeCharReadonly() {
   return true;
 }
 
-// 路由已经把地址退回去了（用户按了返回键），这里只收尾，别再退一次
+// 路由已经把地址退回去了（深链切走等），这里只收尾，别再退一次
 export function syncCharReadonlyClosed() {
-  _pushedEntry = false;
   const c = State.pageContainer;
   const overlay = c && c.querySelector('#char-readonly-modal');
   if (overlay) overlay.classList.remove('show');
+  forgetModalBack();
 }
 
 function closeOverlay(overlay) {
-  overlay.classList.remove('show');
-  if (_pushedEntry) { _pushedEntry = false; history.back(); }
-  else reflect('characters');
+  hideOverlay(overlay);
+  releaseModalBack();
 }
 
 // 关闭弹窗需要完整的一次点击（mousedown + mouseup 均在遮罩上）
@@ -68,6 +70,7 @@ function bindHtmlHooks(root, overlay) {
     if (geo) {
       e.stopPropagation();
       overlay.classList.remove('show');
+      forgetModalBack();                 // 马上要往前跳，别再退一格
       go('geo', geo.dataset.geoKind, geo.dataset.geoId);
       return;
     }
@@ -122,11 +125,14 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
     overlay.className = 'tl-modal-overlay modal-center';
     container.appendChild(overlay);
   }
-  // 已经开着时只是换个人，改地址就行；从关闭状态打开才压一条历史给返回键用
-  const wasOpen = overlay.classList.contains('show');
+  // 只有人物页把弹窗反映进地址（那里 #/characters/45 是可分享的深链）。
+  // 别的页面（gacha、关系图）开的是同一个弹窗，但那只是页面内状态，不该改地址 ——
+  // 以前一律写成 characters/<id>，于是 gacha 上地址栏在说谎、返回键也没人接。
+  // 返回键关弹窗的行为由 modal-history 统一提供，跟在哪个页面无关。
+  overlay._ownsRoute = parseHash().page === 'characters';
   const markRoute = function(id) {
-    if (wasOpen) reflect('characters', id);
-    else if (reflectPush('characters', id)) _pushedEntry = true;
+    if (overlay._ownsRoute) reflect('characters', id);
+    bindModalBack(function() { hideOverlay(overlay); });
   };
 
   // 有自定义 HTML 就由它接管，expandPath 对应旧折叠结构，忽略
