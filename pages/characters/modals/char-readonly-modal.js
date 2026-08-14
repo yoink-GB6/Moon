@@ -148,6 +148,7 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
     injectOtherChars(host, char, 6);
     const root = mountCharHtml(host, pickCharHtml(char), avatar);
     overlay.classList.add('show');
+    overlay.scrollTop = 0;
     markRoute(char.id);
     bindHtmlHooks(root, overlay);
     bindOverlayClose(overlay);
@@ -205,6 +206,9 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
 
   applyBgLayer(overlay, avatarUrl);
   overlay.classList.add('show');
+  // 遮罩层是复用的同一个节点，滚动位置记在它身上：不归零的话
+  // 新开一个人会停在上一个人翻到的地方
+  overlay.scrollTop = 0;
   markRoute(char.id);   // 地址栏带上这个人，可直接分享
 
   // 交叉引用跳转。这些节点每次打开都随 innerHTML 重建，
