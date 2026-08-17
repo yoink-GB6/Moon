@@ -74,7 +74,8 @@ let _iv = null;
 // 之后浏览器才把这次触摸补发成一个 click —— 那时重新命中，就落到下面的卡片上
 // 又开了一张图。桌面的 click 紧跟 mouseup 同帧派发，目标早已定好，所以没这个问题。
 // 因此由指针手势触发的关闭，要把紧随其后的那一个 click 吞掉。
-function _swallowNextClick() {
+// 任何“指针一抬就把自己藏起来”的浮层都是这个毛病，所以导出共用。
+export function swallowNextClick() {
   const kill = e => { e.stopPropagation(); e.preventDefault(); };
   document.addEventListener('click', kill, true);
   setTimeout(() => document.removeEventListener('click', kill, true), 400);
@@ -89,7 +90,7 @@ export function closeImageViewer(byPointer) {
   s.el.classList.remove('show', 'img-viewer-anim');
   s.img.classList.remove('img-viewer-anim');
   s.el.style.opacity = '';
-  if (byPointer) _swallowNextClick();
+  if (byPointer) swallowNextClick();
   if (s.onClose) s.onClose();
 }
 

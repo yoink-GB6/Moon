@@ -1,7 +1,7 @@
 // pages/characters/modals/char-readonly-modal.js
 // 只读人物弹窗 —— 供 geo-detail 和 characters-tab 共用
 
-import { escHtml, openImageViewer } from '../../../core/ui.js';
+import { escHtml, openImageViewer, swallowNextClick } from '../../../core/ui.js';
 import * as State from '../state.js';
 import { parseAvatarUrls, pickRandomUrl, parseCharSections, sectionsHTML } from '../utils.js';
 import { hasCustomHtml, mountCharHtml, pickCharHtml } from '../html-render.js';
@@ -53,6 +53,8 @@ function bindOverlayClose(overlay) {
     // 按住遮罩拖着滚页面不算点击
     if (Math.abs(e.clientX - s.x) > 8 || Math.abs(e.clientY - s.y) > 8) return;
     closeOverlay(overlay);
+    // 遮罩这一抬手就 display:none 了，补发的 click 会重新命中底下的人物卡把它点开
+    swallowNextClick();
   }, { signal });
   // 右键遮罩也是退出，别弹原生菜单
   overlay.addEventListener('contextmenu', function(e) {
