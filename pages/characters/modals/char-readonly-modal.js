@@ -9,12 +9,6 @@ import { reflect, parseHash, go } from '../../../core/router.js';
 import { bindModalBack, releaseModalBack, forgetModalBack } from '../../../core/modal-history.js';
 import { dominantColor } from '../dominant-color.js';
 
-// 只藏弹窗、顺手收拾地址栏，历史交给 modal-history 统一管
-function hideOverlay(overlay) {
-  overlay.classList.remove('show');
-  if (overlay._ownsRoute) reflect('characters');
-}
-
 // 开着就关掉并返回 true，供外部“先退出弹窗再说”的判断
 export function closeCharReadonly() {
   const c = State.pageContainer;
@@ -32,8 +26,10 @@ export function syncCharReadonlyClosed() {
   forgetModalBack();
 }
 
+// 地址栏不用自己收拾：压历史时压的就是「开弹窗之前」的地址，
+// releaseModalBack 退那一格，浏览器顺手就把地址还原了
 function closeOverlay(overlay) {
-  hideOverlay(overlay);
+  overlay.classList.remove('show');
   releaseModalBack();
 }
 
@@ -43,13 +39,20 @@ function bindOverlayClose(overlay) {
   if (overlay._closeCtrl) overlay._closeCtrl.abort();
   overlay._closeCtrl = new AbortController();
   const signal = overlay._closeCtrl.signal;
-  let _mdOnOverlay = false;
-  overlay.addEventListener('mousedown', function(e) {
-    _mdOnOverlay = (e.target === overlay);
+  // 用 pointer 而不是 mouse：触屏上的 mousedown/mouseup 是 touchend 之后补发的，
+  // 而遮罩本身可滚动（overflow-y:auto），浏览器要先分辨点击还是滚动，
+  // 手指稍微一动就把补发的那对事件吞了 —— 于是手机上点遮罩关不掉弹窗。
+  let start = null;
+  overlay.addEventListener('pointerdown', function(e) {
+    start = (e.target === overlay) ? { x: e.clientX, y: e.clientY } : null;
   }, { signal });
-  overlay.addEventListener('mouseup', function(e) {
-    if (_mdOnOverlay && e.target === overlay) closeOverlay(overlay);
-    _mdOnOverlay = false;
+  overlay.addEventListener('pointercancel', function() { start = null; }, { signal });
+  overlay.addEventListener('pointerup', function(e) {
+    const s = start; start = null;
+    if (!s || e.target !== overlay) return;
+    // 按住遮罩拖着滚页面不算点击
+    if (Math.abs(e.clientX - s.x) > 8 || Math.abs(e.clientY - s.y) > 8) return;
+    closeOverlay(overlay);
   }, { signal });
   // 右键遮罩也是退出，别弹原生菜单
   overlay.addEventListener('contextmenu', function(e) {
@@ -129,10 +132,13 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
   // 别的页面（gacha、关系图）开的是同一个弹窗，但那只是页面内状态，不该改地址 ——
   // 以前一律写成 characters/<id>，于是 gacha 上地址栏在说谎、返回键也没人接。
   // 返回键关弹窗的行为由 modal-history 统一提供，跟在哪个页面无关。
-  overlay._ownsRoute = parseHash().page === 'characters';
+  const ownsRoute = parseHash().page === 'characters';
   const markRoute = function(id) {
-    if (overlay._ownsRoute) reflect('characters', id);
-    bindModalBack(function() { hideOverlay(overlay); });
+    // 顺序要紧：先压历史再改地址。反过来的话压进去的是「已经带 id」的地址，
+    // 关弹窗时 back() 回到的还是 #/characters/<id>，路由当成深链又把弹窗开一遍 ——
+    // 表现就是点遮罩毫无反应。
+    bindModalBack(function() { overlay.classList.remove('show'); });
+    if (ownsRoute) reflect('characters', id);
   };
 
   // 有自定义 HTML 就由它接管，expandPath 对应旧折叠结构，忽略
