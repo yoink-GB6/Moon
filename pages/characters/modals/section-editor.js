@@ -185,9 +185,12 @@ export function createSectionEditor(config) {
       if (!tags.querySelector('.cm-tag')) tags.innerHTML = '<span class="cm-tags-empty">所有预设已添加</span>';
     });
 
-    modal.querySelector('#' + id.add)?.addEventListener('click', function() {
-      appendRow(modal, '', '');
-    });
+    // 人物弹窗的添加按钮是静态 HTML，每次打开都 bind 会叠加监听，点一下加好几行
+    const addBtn = modal.querySelector('#' + id.add);
+    if (addBtn && !addBtn._addBound) {
+      addBtn._addBound = true;
+      addBtn.addEventListener('click', function() { appendRow(modal, '', ''); });
+    }
 
     const list = modal.querySelector('#' + id.list);
     list?.addEventListener('click', function(e) {

@@ -2,7 +2,7 @@
 import { supaClient, dbError } from '../../../core/supabase-client.js';
 import { showToast, escHtml, confirmDialog, bindCombobox } from '../../../core/ui.js';
 import * as State from '../state.js';
-import { closeModal, parseAvatarUrls, parseCharSections } from '../utils.js';
+import { closeModal, openModal, parseAvatarUrls, parseCharSections } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
 import { stripCodeFence } from '../html-render.js';
 
@@ -219,6 +219,15 @@ export function setupCharModal() {
   container.querySelector('#char-url-input')?.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.preventDefault(); _addUrlImage(); }
   });
+  // 生日：只收数字，边打边补斜杠，格式固定 dd/mm/yyyy
+  const birthdayInput = container.querySelector('#char-birthday');
+  birthdayInput?.addEventListener('input', function() {
+    const d = birthdayInput.value.replace(/\D/g, '').slice(0, 8);
+    birthdayInput.value = d.length > 4 ? d.slice(0, 2) + '/' + d.slice(2, 4) + '/' + d.slice(4)
+                        : d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2)
+                        : d;
+  });
+
   container.querySelector('#char-library-btn')?.addEventListener('click', function() {
     _openLibraryPicker(container);
   });
@@ -586,6 +595,7 @@ export function openCharModal(char) {
   container.querySelector('#char-modal-title').textContent = char ? '编辑人物' : '新建人物';
   container.querySelector('#char-name').value = char ? char.name || '' : '';
   container.querySelector('#char-age').value  = (char && char.base_age != null) ? char.base_age : '';
+  container.querySelector('#char-birthday').value = char ? char.birthday || '' : '';
   container.querySelector('#char-link').value = char ? char.link_url || '' : '';
   container.querySelector('#char-html').value = char ? char.description_html || '' : '';
   // ── 初始化小节编辑器 ──
@@ -683,6 +693,8 @@ async function _doSave(container) {
   if (!name) return showToast('请输入名字');
 
   const ageVal      = container.querySelector('#char-age').value.trim();
+  const birthdayVal = container.querySelector('#char-birthday').value.trim();
+  if (birthdayVal && !/^\d{2}\/\d{2}(\/\d{4})?$/.test(birthdayVal)) return showToast('生日格式应为 dd/mm 或 dd/mm/yyyy');
   const linkVal     = container.querySelector('#char-link').value.trim();
   const htmlVal     = stripCodeFence(container.querySelector('#char-html').value);
   const cityIdVal   = container.querySelector('#char-city').value;
@@ -717,6 +729,7 @@ async function _doSave(container) {
     const payload = {
       name,
       base_age:    ageVal !== '' ? parseInt(ageVal) : null,
+      birthday:    birthdayVal || null,
       link_url:    linkVal || null,
       city_id:     cityIdVal   ? parseInt(cityIdVal)    : null,
       country_id:  countryIdVal ? parseInt(countryIdVal) : null,
