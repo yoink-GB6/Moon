@@ -14,7 +14,7 @@ export async function loadAllData() {
       supaClient.from('characters').select('*').order('name'),
       supaClient.from('countries').select('*').order('name'),
       supaClient.from('cities').select('*').order('name'),
-      supaClient.from('landmarks').select('*').order('created_at'),
+      supaClient.from('landmarks').select('*').order('sort_order').order('id'),
       supaClient.from('character_relations').select('*')
     ]);
 

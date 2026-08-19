@@ -1,112 +1,90 @@
 // pages/characters/modals/landmark-modal.js
-// 地标编辑模态框
+// 地标编辑：一个城市的所有地标当成「地标建筑」这一块的小节来编辑。
+// 每行 = 一个地标（标题是地标名，正文是介绍），行的增删排序就是地标的增删排序。
 
 import { supaClient } from '../../../core/supabase-client.js';
 import { showToast, confirmDialog } from '../../../core/ui.js';
 import * as State from '../state.js';
 import { closeModal } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
+import { renderGeoTree } from '../geo-tree.js';
 import { renderGeoDetail } from '../geo-detail.js';
+import { createSectionEditor } from './section-editor.js';
+
+// 地标千差万别，预设标题反而碍事，名字一律自己填
+const editor = createSectionEditor({
+  prefix: 'cm-lm',
+  presets: [],
+  hint: '填地标名添加；点 ✎ 写介绍；拖 ⠿ 可排序',
+});
 
 export function setupLandmarkModal() {
-  const container = State.pageContainer;
-  const modal = container.querySelector('#landmark-modal');
-  
-  // 只绑定关闭行为，保存/删除在 open 时绑定，避免事件丢失
-  container.querySelector('#landmark-cancel-btn')?.addEventListener('click', () => closeModal(modal));
-  
+  const modal = State.pageContainer.querySelector('#landmark-modal');
   let _mdOnModal = false;
   modal.addEventListener('mousedown', (e) => { _mdOnModal = (e.target === modal); });
   modal.addEventListener('mouseup', (e) => { if (_mdOnModal && e.target === modal) closeModal(modal); _mdOnModal = false; });
 }
 
-export function openLandmarkModal(landmark, preselectedCityId = null) {
-  const container = State.pageContainer;
-  State.setEditingLandmarkId(landmark?.id || null);
-  
-  if (!preselectedCityId && !landmark) {
-    if (!State.selectedCity) {
-      showToast('请先选择一个城市');
-      return;
-    }
-    preselectedCityId = State.selectedCity.id;
-  }
-  
-  const modal = container.querySelector('#landmark-modal');
-  container.querySelector('#landmark-modal-title').textContent = landmark ? '编辑地标' : '新建地标';
-  container.querySelector('#landmark-name').value = landmark?.name || '';
-  container.querySelector('#landmark-desc').value = landmark?.description || '';
-  
-  modal.dataset.cityId = landmark?.city_id || preselectedCityId;
-  
-  const deleteBtn = container.querySelector('#landmark-delete-btn');
-  deleteBtn.style.display = landmark ? 'block' : 'none';
+export function openLandmarksModal(cityId) {
+  const city = State.allCities.find(function(c) { return c.id === cityId; });
+  if (!city) return showToast('请先选择一个城市');
 
-  // 每次打开时重新绑定保存/删除，防止旧监听器残留或未绑上
-  const saveBtn = container.querySelector('#landmark-save-btn');
-  const newSaveBtn = saveBtn.cloneNode(true);
-  saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-  newSaveBtn.addEventListener('click', saveLandmark);
+  const modal = State.pageContainer.querySelector('#landmark-modal');
+  modal.dataset.cityId = cityId;
+  const rows = State.allLandmarks
+    .filter(function(l) { return l.city_id === cityId; })
+    .map(function(l) { return { id: l.id, title: l.name, content: l.description || '' }; });
 
-  const newDeleteBtn = deleteBtn.cloneNode(true);
-  deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
-  newDeleteBtn.style.display = landmark ? 'block' : 'none';
-  newDeleteBtn.addEventListener('click', deleteLandmark);
-  
+  modal.querySelector('.tl-modal').innerHTML =
+    '<h2>' + '编辑地标建筑' + '</h2>' +
+    editor.html(rows) +
+    '<div class="modal-actions"><div class="modal-actions-right">' +
+      '<button class="btn bp modal-btn" id="cm-lm-save">保存</button>' +
+      '<button class="btn bn modal-btn" id="cm-lm-cancel">取消</button>' +
+    '</div></div>';
+
+  modal.querySelector('#cm-lm-cancel')?.addEventListener('click', () => closeModal(modal));
+  modal.querySelector('#cm-lm-save')?.addEventListener('click', _save);
+  editor.bind(modal);
+
   modal.classList.add('show');
-  setTimeout(() => container.querySelector('#landmark-name').focus(), 100);
+  setTimeout(() => modal.querySelector('#cm-lm-custom')?.focus(), 100);
 }
 
-async function saveLandmark() {
-  const container = State.pageContainer;
-  const name = container.querySelector('#landmark-name').value.trim();
-  if (!name) return showToast('请输入名称');
-  
-  const description = container.querySelector('#landmark-desc').value.trim();
-  const modal = container.querySelector('#landmark-modal');
+async function _save() {
+  const modal  = State.pageContainer.querySelector('#landmark-modal');
   const cityId = parseInt(modal.dataset.cityId);
-  
   if (!cityId) return showToast('城市ID缺失');
-  
+
+  const rows     = editor.collect(modal);
+  const existing = State.allLandmarks.filter(function(l) { return l.city_id === cityId; });
+  const keptIds  = new Set(rows.filter(function(r) { return r.id; }).map(function(r) { return parseInt(r.id); }));
+  const removed  = existing.filter(function(l) { return !keptIds.has(l.id); });
+
+  if (removed.length &&
+      !await confirmDialog('将删除 ' + removed.length + ' 个地标：' + removed.map(function(l) { return l.name; }).join('、') + '，确定吗？')) return;
+
   try {
-    const payload = {
-      city_id: cityId,
-      name,
-      description: description || null
-    };
-    
-    if (State.editingLandmarkId) {
-      const { error } = await supaClient.from('landmarks').update(payload).eq('id', State.editingLandmarkId);
-      if (error) throw error;
-      showToast('已更新');
-    } else {
-      const { error } = await supaClient.from('landmarks').insert(payload);
-      if (error) throw error;
-      showToast('已创建');
+    if (removed.length) {
+      const result = await supaClient.from('landmarks').delete().in('id', removed.map(function(l) { return l.id; }));
+      if (result.error) throw result.error;
     }
-    
+    for (let i = 0; i < rows.length; i++) {
+      const payload = {
+        city_id: cityId,
+        name: rows[i].title || '未命名',
+        description: rows[i].content || null,
+        sort_order: i,
+      };
+      const result = rows[i].id
+        ? await supaClient.from('landmarks').update(payload).eq('id', parseInt(rows[i].id))
+        : await supaClient.from('landmarks').insert(payload);
+      if (result.error) throw result.error;
+    }
+    showToast('已保存');
     closeModal(modal);
     await loadAllData();
-    if (State.selectedCity) renderGeoDetail();
-  } catch (e) {
-    console.error('Save landmark failed:', e);
-    showToast('保存失败: ' + e.message);
-  }
-}
-
-async function deleteLandmark() {
-  if (!await confirmDialog('确定要删除这个地标吗？')) return;
-  
-  try {
-    const { error } = await supaClient.from('landmarks').delete().eq('id', State.editingLandmarkId);
-    if (error) throw error;
-    
-    showToast('已删除');
-    closeModal(State.pageContainer.querySelector('#landmark-modal'));
-    await loadAllData();
-    if (State.selectedCity) renderGeoDetail();
-  } catch (e) {
-    console.error('Delete landmark failed:', e);
-    showToast('删除失败: ' + e.message);
-  }
+    renderGeoTree();
+    renderGeoDetail();
+  } catch (e) { showToast('保存失败: ' + e.message); }
 }

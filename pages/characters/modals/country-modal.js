@@ -7,22 +7,29 @@ import { closeModal } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
 import { renderGeoTree } from '../geo-tree.js';
 import { renderGeoDetail } from '../geo-detail.js';
-
-const PRESETS = [
-  { title: '概述',       ph: '简要介绍这个国家/势力...' },
-  { title: '地理位置',   ph: '地形、地貌、所处区域...' },
-  { title: '政治体系',   ph: '政府形式、权力结构、统治阶层...' },
-  { title: '经济状况',   ph: '主要产业、贸易往来、货币制度...' },
-  { title: '文化习俗',   ph: '语言、宗教、节庆、民俗传统...' },
-  { title: '军事力量',   ph: '军队组成、战斗力、武器装备...' },
-  { title: '历史背景',   ph: '建国由来、重大事件、历史变迁...' },
-  { title: '地标建筑',   ph: '著名建筑、重要场所...' },
-  { title: '与他国关系', ph: '外交关系、盟友、敌对势力...' },
-];
+import { navReflect } from '../geo-nav.js';
+import { createSectionEditor, parseSections } from './section-editor.js';
 
 // ── markdown 工具（从独立模块导入，避免循环依赖）─────────────────
 import { mdToChildren, childrenToMd } from './md-utils.js';
 export { mdToChildren, childrenToMd };
+
+// 国家内容层级深，正文里用 # ## ### 写子小节
+const editor = createSectionEditor({
+  prefix: 'cm',
+  md: true,
+  presets: [
+    { title: '概述',       ph: '简要介绍这个国家/势力...' },
+    { title: '地理位置',   ph: '地形、地貌、所处区域...' },
+    { title: '政治体系',   ph: '政府形式、权力结构、统治阶层...' },
+    { title: '经济状况',   ph: '主要产业、贸易往来、货币制度...' },
+    { title: '文化习俗',   ph: '语言、宗教、节庆、民俗传统...' },
+    { title: '军事力量',   ph: '军队组成、战斗力、武器装备...' },
+    { title: '历史背景',   ph: '建国由来、重大事件、历史变迁...' },
+    { title: '地标建筑',   ph: '著名建筑、重要场所...' },
+    { title: '与他国关系', ph: '外交关系、盟友、敌对势力...' },
+  ],
+});
 
 // ── setup / open ──────────────────────────────────────────────
 
@@ -36,14 +43,8 @@ export function setupCountryModal() {
 export function openCountryModal(country) {
   State.setEditingCountryId(country ? country.id : null);
   const modal = State.pageContainer.querySelector('#country-modal');
-  let sections = [];
-  if (country && country.description) {
-    try {
-      const parsed = JSON.parse(country.description);
-      sections = Array.isArray(parsed) ? parsed : [{ title: '概述', content: country.description }];
-    } catch (_) { sections = [{ title: '概述', content: country.description }]; }
-  }
-  modal.querySelector('.tl-modal').innerHTML = _buildHTML(country, sections);
+  modal.querySelector('.tl-modal').innerHTML =
+    _buildHTML(country, parseSections(country && country.description));
   _bindEvents(modal);
   modal.classList.add('show');
   setTimeout(function() { const n = modal.querySelector('#cm-name'); if (n) n.focus(); }, 100);
@@ -52,31 +53,12 @@ export function openCountryModal(country) {
 // ── HTML ──────────────────────────────────────────────────────
 
 function _buildHTML(country, sections) {
-  const usedTitles = new Set(sections.map(function(s) { return s.title; }));
-  const presetBtns = PRESETS
-    .filter(function(p) { return !usedTitles.has(p.title); })
-    .map(function(p) {
-      return '<button class="cm-tag" data-title="' + escHtml(p.title) + '" data-ph="' + escHtml(p.ph) + '">' + escHtml(p.title) + '</button>';
-    }).join('');
-  const del     = country ? 'inline-flex' : 'none';
-  const heading = country ? '编辑国家 / 势力' : '新建国家 / 势力';
-  const nameV   = escHtml(country ? country.name || '' : '');
-  const presets = presetBtns || '<span class="cm-tags-empty">所有预设已添加</span>';
-  const secRows = sections.map(function(s) { return _rowHTML(s); }).join('');
+  const del = country ? 'inline-flex' : 'none';
 
-  return '<h2>' + heading + '</h2>' +
+  return '<h2>' + (country ? '编辑国家 / 势力' : '新建国家 / 势力') + '</h2>' +
     '<label>名称</label>' +
-    '<input id="cm-name" type="text" value="' + nameV + '"/>' +
-    '<div class="cm-sec-hdr">' +
-      '<span>内容小节</span>' +
-      '<span class="cm-hint">拖 ⠿ 排序 · 展开后用 # ## ### 写子小节</span>' +
-    '</div>' +
-    '<div class="cm-tags" id="cm-tags">' + presets + '</div>' +
-    '<div class="cm-custom-row">' +
-      '<input type="text" id="cm-custom" placeholder="自定义小节标题..." maxlength="30" autocomplete="off"/>' +
-      '<button class="btn bn" id="cm-custom-add">＋ 添加</button>' +
-    '</div>' +
-    '<div id="cm-list" class="cm-list">' + secRows + '</div>' +
+    '<input id="cm-name" type="text" value="' + escHtml(country ? country.name || '' : '') + '"/>' +
+    editor.html(sections) +
     '<div class="modal-actions">' +
       '<button class="btn br modal-btn-delete" id="cm-delete" style="display:' + del + '">删除</button>' +
       '<div class="modal-actions-right">' +
@@ -86,37 +68,6 @@ function _buildHTML(country, sections) {
     '</div>';
 }
 
-function _rowHTML(sec) {
-  const mdText  = childrenToMd(sec);
-  const ph      = PRESETS.find(function(p) { return p.title === sec.title; })?.ph || '在此填写内容...\n\n# 子小节标题\n内容\n\n## 更深一层';
-  const preview = mdText.trim().replace(/\n/g, ' ').slice(0, 55) || '恭喜你，哥伦布';
-  const previewHTML = mdText.trim()
-    ? escHtml(preview) + (mdText.trim().length > 55 ? '…' : '')
-    : '<span style="color:var(--muted);font-style:italic">恭喜你，哥伦布</span>';
-
-  return '<div class="cm-row" draggable="false">' +
-    // 折叠态
-    '<div class="cm-row-collapsed">' +
-      '<span class="cm-row-grip" title="拖拽排序">⠿</span>' +
-      '<div class="cm-row-summary">' +
-        '<span class="cm-row-label">' + escHtml(sec.title || '未命名') + '</span>' +
-        '<span class="cm-row-preview">' + previewHTML + '</span>' +
-      '</div>' +
-      '<button class="cm-row-edit" title="编辑">✎</button>' +
-      '<button class="cm-row-del" title="删除">✕</button>' +
-    '</div>' +
-    // 展开态：textarea + 提示
-    '<div class="cm-row-expanded" style="display:none">' +
-      '<div class="cm-row-expanded-hdr">' +
-        '<input class="cm-row-title" type="text" value="' + escHtml(sec.title || '') + '" placeholder="小节标题" maxlength="30"/>' +
-        '<button class="cm-row-collapse">▲ 收起</button>' +
-      '</div>' +
-      '<div class="cm-md-guide"># 子小节 &nbsp; ## 子子小节 &nbsp; ### 三级</div>' +
-      '<textarea class="cm-row-body" rows="6" placeholder="' + escHtml(ph) + '">' + escHtml(mdText) + '</textarea>' +
-    '</div>' +
-  '</div>';
-}
-
 // ── 事件绑定 ─────────────────────────────────────────────────
 
 function _bindEvents(modal) {
@@ -124,159 +75,7 @@ function _bindEvents(modal) {
   modal.querySelector('#cm-delete')?.addEventListener('click', _deleteCountry);
   modal.querySelector('#cm-save')?.addEventListener('click', _saveCountry);
 
-  modal.querySelector('#cm-tags')?.addEventListener('click', function(e) {
-    const btn = e.target.closest('.cm-tag');
-    if (!btn) return;
-    _appendRow(modal.querySelector('#cm-list'), btn.dataset.title, '', btn.dataset.ph);
-    btn.remove();
-    const tags = modal.querySelector('#cm-tags');
-    if (!tags.querySelector('.cm-tag')) tags.innerHTML = '<span class="cm-tags-empty">所有预设已添加</span>';
-  });
-
-  const ci = modal.querySelector('#cm-custom');
-  function doAdd() {
-    const t = ci.value.trim();
-    if (!t) { ci.focus(); return; }
-    _appendRow(modal.querySelector('#cm-list'), t, '', '');
-    ci.value = ''; ci.focus();
-  }
-  modal.querySelector('#cm-custom-add')?.addEventListener('click', doAdd);
-  ci?.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
-
-  const list = modal.querySelector('#cm-list');
-  list?.addEventListener('click', function(e) {
-    const row = e.target.closest('.cm-row');
-    if (!row) return;
-    if (e.target.closest('.cm-row-edit'))     { _expandRow(row); return; }
-    if (e.target.closest('.cm-row-collapse')) { _collapseRow(row); return; }
-    if (e.target.closest('.cm-row-del')) {
-      const titleEl = row.querySelector('.cm-row-title');
-      const labelEl = row.querySelector('.cm-row-label');
-      const t = (titleEl ? titleEl.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '');
-      row.remove();
-      _restorePresetTag(modal, t);
-    }
-  });
-
-  _bindDragSort(list);
-}
-
-function _expandRow(row) {
-  row.querySelector('.cm-row-collapsed').style.display = 'none';
-  row.querySelector('.cm-row-expanded').style.display  = 'flex';
-  const ta = row.querySelector('.cm-row-body');
-  if (ta) ta.focus();
-}
-
-function _collapseRow(row) {
-  const titleInput = row.querySelector('.cm-row-title');
-  const bodyInput  = row.querySelector('.cm-row-body');
-  const title   = titleInput ? titleInput.value.trim() : '';
-  const content = bodyInput  ? bodyInput.value.trim()  : '';
-  const label   = row.querySelector('.cm-row-label');
-  const preview = row.querySelector('.cm-row-preview');
-  if (label) label.textContent = title || '未命名';
-  if (preview) {
-    const txt = content.replace(/\n/g, ' ').slice(0, 55);
-    preview.innerHTML = content
-      ? escHtml(txt) + (content.length > 55 ? '…' : '')
-      : '<span style="color:var(--muted);font-style:italic">恭喜你，哥伦布</span>';
-  }
-  row.querySelector('.cm-row-collapsed').style.display = '';
-  row.querySelector('.cm-row-expanded').style.display  = 'none';
-}
-
-function _restorePresetTag(modal, title) {
-  const preset = PRESETS.find(function(p) { return p.title === title; });
-  if (!preset) return;
-  const tags = modal.querySelector('#cm-tags');
-  if (!tags) return;
-  const empty = tags.querySelector('.cm-tags-empty');
-  if (empty) empty.remove();
-  if (!tags.querySelector('[data-title="' + title + '"]')) {
-    const tag = document.createElement('button');
-    tag.className = 'cm-tag';
-    tag.dataset.title = preset.title;
-    tag.dataset.ph    = preset.ph;
-    tag.textContent   = preset.title;
-    tags.appendChild(tag);
-  }
-}
-
-function _appendRow(list, title, content, ph) {
-  if (!list) return;
-  const tmp = document.createElement('div');
-  tmp.innerHTML = _rowHTML({ title: title, content: content || '' });
-  const row = tmp.firstElementChild;
-  if (ph) { const ta = row.querySelector('.cm-row-body'); if (ta) ta.placeholder = ph; }
-  list.appendChild(row);
-  _expandRow(row);
-}
-
-// ── 拖拽排序 ─────────────────────────────────────────────────
-
-function _bindDragSort(list) {
-  if (!list || list._dragSortBound) return;
-  list._dragSortBound = true;
-  let dragging = null;
-
-  // mousedown 在 grip 上 → 开启该行的 draggable
-  list.addEventListener('mousedown', function(e) {
-    const grip = e.target.closest('.cm-row-grip');
-    if (!grip) return;
-    const row = grip.closest('.cm-row');
-    if (row && row.parentElement === list) row.draggable = true;
-  });
-  list.addEventListener('mouseup', function() {
-    list.querySelectorAll('.cm-row').forEach(function(r) { r.draggable = false; });
-  });
-
-  list.addEventListener('dragstart', function(e) {
-    const row = e.target.closest('.cm-row');
-    if (!row || row.parentElement !== list) return;
-    dragging = row;
-    row.classList.add('cm-row-dragging');
-    e.dataTransfer.effectAllowed = 'move';
-  });
-  list.addEventListener('dragend', function() {
-    if (dragging) { dragging.classList.remove('cm-row-dragging'); dragging.draggable = false; }
-    dragging = null;
-    list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
-  });
-  list.addEventListener('dragover', function(e) {
-    e.preventDefault();
-    const row = e.target.closest('.cm-row');
-    if (!row || row.parentElement !== list || !dragging || dragging === row) return;
-    list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
-    row.classList.add('cm-row-drag-over');
-    const rect = row.getBoundingClientRect();
-    list.insertBefore(dragging, e.clientY < rect.top + rect.height / 2 ? row : row.nextSibling);
-  });
-  list.addEventListener('dragleave', function(e) {
-    if (!list.contains(e.relatedTarget)) {
-      list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
-    }
-  });
-  list.addEventListener('drop', function(e) { e.preventDefault(); });
-}
-
-// ── 收集数据 ─────────────────────────────────────────────────
-
-function _collectSections(modal) {
-  const out = [];
-  modal.querySelectorAll('#cm-list .cm-row').forEach(function(row) {
-    const titleInput = row.querySelector('.cm-row-title');
-    const labelEl    = row.querySelector('.cm-row-label');
-    const bodyInput  = row.querySelector('.cm-row-body');
-    const title  = (titleInput ? titleInput.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '') || '';
-    const mdText = bodyInput ? bodyInput.value : '';
-    if (!title) return;
-    const parsed = mdToChildren(mdText);
-    const sec = { title: title, content: parsed.content };
-    if (parsed.children) sec.children = parsed.children;
-    out.push(sec);
-  });
-  return out;
+  editor.bind(modal);
 }
 
 // ── 保存 / 删除 ───────────────────────────────────────────────
@@ -285,7 +84,7 @@ async function _saveCountry() {
   const modal = State.pageContainer.querySelector('#country-modal');
   const name  = modal.querySelector('#cm-name')?.value.trim() || '';
   if (!name) return showToast('请输入名称');
-  const sections    = _collectSections(modal);
+  const sections    = editor.collect(modal);
   const description = sections.length ? JSON.stringify(sections) : null;
   const payload     = { name, description };
   try {
@@ -318,6 +117,8 @@ async function _deleteCountry() {
     showToast('已删除');
     closeModal(State.pageContainer.querySelector('#country-modal'));
     State.setSelectedCountry(null);
+    State.setSelectedCity(null);
+    navReflect();
     await loadAllData();
     renderGeoTree();
     renderGeoDetail();

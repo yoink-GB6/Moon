@@ -108,12 +108,16 @@
 .geo-city-link::before{content:'◇';font-size:10px;opacity:0;transform:translateX(6px);margin-right:0;transition:opacity .3s,transform .3s,margin-right .3s}
 .geo-city-link:hover{color:var(--accent-bright)}
 .geo-city-link:hover::before{opacity:1;transform:translateX(0);margin-right:8px;animation:glow-pulse 2s infinite}
-.geo-landmark-item{display:flex;justify-content:space-between;align-items:flex-start;margin:6px 0}
-.geo-landmark-block{flex:1;border-left:2px solid var(--accent-dim);padding:.4em 0 .4em 18px;margin:.6em 0}
-.geo-landmark-item:hover .geo-landmark-block{border-left-color:var(--accent)}
-.geo-landmark-name{font-weight:600;margin-bottom:4px;color:var(--border-hover);font-family:var(--font-title);letter-spacing:.1em}
-.geo-landmark-desc{font-size:13px;color:var(--muted);margin-bottom:.5em}
-.geo-landmark-desc:last-child{margin-bottom:0}
+/* 城市小节 / 地标共用的展开块：左竖线 + 首行标题 + 正文，不折叠 */
+/* 城市小节之间用 gap 补足间距，对齐地标那边（外层 .geo-landmark-item 多带 6px） */
+.geo-secs{display:flex;flex-direction:column;gap:12px;margin-bottom:8px}
+.geo-sec{flex:1;min-width:0;border-left:2px solid var(--accent-dim);padding:.4em 0 .4em 18px;margin:.6em 0;transition:border-left-color .3s}
+.geo-sec-title{font-weight:600;margin-bottom:4px;color:var(--border-hover);font-family:var(--font-title);letter-spacing:.1em}
+.geo-sec-body{font-size:13px;color:var(--muted);line-height:1.75;white-space:pre-wrap}
+.geo-sec-sub{margin-top:10px}
+.geo-sec-sub .geo-sec-sub{margin-top:6px;padding-left:12px;border-left:1px solid var(--border)}
+.geo-sec-subtitle{font-size:12px;color:var(--text);letter-spacing:.08em;margin-bottom:2px}
+.geo-sec:hover{border-left-color:var(--accent)}
 .geo-person-item{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:6px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:border-color 0.15s,background 0.15s}
 .geo-person-item:hover{border-color:var(--accent);background:rgba(var(--accent-rgb),0.06)}
 .geo-person-av{width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;overflow:hidden;flex-shrink:0}
@@ -298,34 +302,39 @@
 #country-modal .tl-modal::before,
 #country-modal .tl-modal::after,
 #city-modal .tl-modal::before,
-#city-modal .tl-modal::after{
+#city-modal .tl-modal::after,
+#landmark-modal .tl-modal::before,
+#landmark-modal .tl-modal::after{
   content:'';position:absolute;width:14px;height:14px;
   border-color:var(--accent-dim);border-style:solid;opacity:.5;pointer-events:none;
 }
 #char-readonly-modal .tl-modal::before,
 #country-modal .tl-modal::before,
-#city-modal .tl-modal::before{top:9px;left:9px;border-width:1px 0 0 1px}
+#city-modal .tl-modal::before,
+#landmark-modal .tl-modal::before{top:9px;left:9px;border-width:1px 0 0 1px}
 #char-readonly-modal .tl-modal::after,
 #country-modal .tl-modal::after,
-#city-modal .tl-modal::after{bottom:9px;right:9px;border-width:0 1px 1px 0}
-.cm-list{display:flex;flex-direction:column;gap:6px;max-height:440px;overflow-y:auto;padding-right:2px}
+#city-modal .tl-modal::after,
+#landmark-modal .tl-modal::after{bottom:9px;right:9px;border-width:0 1px 1px 0}
+/* 列表本身不设高度、不自己滚：展开小节时整块跟着长，由弹窗(.tl-modal, max-height 88~90vh)统一出滚动条，否则内层套一个 440px 的小滚动框，展开两个小节就看不见底部按钮了 */
+.cm-list{display:flex;flex-direction:column;gap:6px;padding-right:2px}
 .cm-md-guide{font-size:11px;color:var(--muted);padding:6px 12px 0;line-height:1.5}
 .cm-md-guide code{background:rgba(var(--accent-rgb),0.15);color:var(--accent);padding:1px 4px;border-radius:3px;font-size:11px}
 
 /* ── 小节行 (cm-row) ── */
 .cm-row{border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color 0.15s,box-shadow 0.15s}
 .cm-row:hover{border-color:rgba(var(--accent-rgb),0.3)}
-.cm-row-collapsed{display:flex;align-items:center;gap:8px;padding:9px 10px;min-height:42px}
-.cm-row-grip{color:var(--muted);font-size:15px;flex-shrink:0;cursor:grab;padding:2px 4px;border-radius:4px;transition:color 0.15s,background 0.15s;user-select:none}
+.cm-row-collapsed{display:flex;align-items:stretch;gap:8px;padding:0 0 0 10px;min-height:42px}
+.cm-row-grip{display:flex;align-items:center;color:var(--muted);font-size:15px;flex-shrink:0;cursor:grab;padding:2px 4px;border-radius:4px;transition:color 0.15s,background 0.15s;user-select:none}
 .cm-row-grip:hover{color:var(--accent);background:rgba(var(--accent-rgb),0.1)}
 .cm-row-grip:active{cursor:grabbing}
-.cm-row-summary{flex:1;min-width:0;overflow:hidden}
+.cm-row-summary{flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:9px 0}
 .cm-row-label{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cm-row-preview{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
-.cm-row-edit{flex-shrink:0;padding:3px 7px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;border-radius:5px;transition:all 0.15s}
-.cm-row-edit:hover{border-color:var(--accent);color:var(--accent);background:rgba(var(--accent-rgb),0.08)}
-.cm-row-del{flex-shrink:0;padding:3px 7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;border-radius:5px;transition:color 0.15s,background 0.15s}
-.cm-row-del:hover{color:var(--red-bright);background:rgba(var(--red-rgb),0.1)}
+.cm-row-toggle{flex-shrink:0;width:38px;align-self:stretch;border:none;border-left:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;line-height:1;transition:color 0.15s,background 0.15s}
+.cm-row-toggle:hover{color:var(--accent);background:rgba(var(--accent-rgb),0.08)}
+.cm-row-expanded-ft{display:flex;justify-content:center;padding:8px 10px 10px;border-top:1px solid var(--border)}
+.cm-row-del{font-size:12px;padding:4px 16px;line-height:1.5}
 .cm-row-expanded{display:flex;flex-direction:column;border-top:1px solid var(--border)}
 .cm-row-expanded-hdr{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(var(--accent-rgb),0.04);border-bottom:1px solid var(--border)}
 .cm-row-title{flex:1;border:none;background:transparent;color:var(--text);font-size:13px;font-weight:500;outline:none;padding:0}
@@ -368,9 +377,3 @@
 @media(max-width:1024px){.geo-layout{flex-direction:column}}
 
 /* ── 人物关系编辑（人物弹窗内）── */
-.char-rel-add{display:flex;gap:6px;align-items:center;margin-top:8px}
-.char-rel-add .rel-pick{flex:1;min-width:0;margin-bottom:0}
-.char-rel-add .rel-pick input{width:100%;box-sizing:border-box}
-.char-rel-add>input{flex:1;min-width:0;margin-bottom:0}
-.char-rel-add .btn{flex-shrink:0}
-.char-rel-row{border:1px solid var(--border);border-radius:4px;margin-bottom:4px;gap:8px}

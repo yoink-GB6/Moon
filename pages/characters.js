@@ -92,16 +92,16 @@ function buildHTML() {
     <label>所属国家 / 势力</label><div class="tl-select" id="char-country-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-country"/><label>所属城市</label><div class="tl-select" id="char-city-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-city"/>
     <label>自定义 HTML（填写后弹窗整体由它渲染，留空则用下面的小节）</label>
     <textarea id="char-html" rows="8" placeholder="&lt;div&gt;…&lt;/div&gt;"></textarea>
-    <div class="cm-md-guide">多套写法：中间用独占一行的 &lt;!-- SPLIT --&gt; 隔开，每次打开随机展示一套。可用 var(--char-avatar) 拿到本次抽中的立绘，var(--other-1-avatar)~(--other-6-avatar) 和 var(--other-1-name)~(--other-6-name) 拿到随机几个别人的头像和名字（名字带引号，直接给 content 用）。</div>
+    <!-- 自定义 HTML 里可用的 CSS 变量（写给自己看的，不往界面上放）：
+         var(--char-avatar)                              本次抽中的立绘
+         var(--other-1-avatar) ~ var(--other-6-avatar)   随机几个别人的头像
+         var(--other-1-name)   ~ var(--other-6-name)     对应的名字（带引号，可直接给 content 用） -->
+    <div class="cm-md-guide">多套写法：中间用独占一行的 &lt;!-- SPLIT --&gt; 隔开，每次打开随机展示一套</div>
     <div id="char-sec-container"></div>
     <label>人物关系</label>
     <div id="char-rel-section" style="margin-bottom:16px">
       <div id="char-rel-list" class="cm-list"></div>
-      <div class="char-rel-add">
-        <div class="rel-pick"><input id="char-rel-target" type="text" placeholder="输入名字搜索…" autocomplete="off"/><div class="cb-sugg"></div></div>
-        <input id="char-rel-label" type="text" placeholder="关系（如：师徒）" autocomplete="off"/>
-        <button class="btn bn" id="char-rel-add-btn">添加</button>
-      </div>
+      <div id="char-rel-empty" style="font-size:12px;color:var(--muted);padding:4px 0">さみしい……</div>
     </div>
     <label>图片</label>
     <div id="char-images-section" style="margin-bottom:16px">
@@ -110,6 +110,7 @@ function buildHTML() {
         <button class="btn bn" id="char-library-btn">🖼 图库</button>
         <button class="btn bn" id="char-upload-btn">📁 上传</button>
         <button class="btn bn" id="char-url-btn">🔗 URL</button>
+        <button class="btn bn" id="char-rel-add-btn">＋ 关系</button>
       </div>
       <input type="file" id="char-file-input" accept="image/*" multiple style="display:none"/>
       <div id="char-url-row" style="display:none;margin-top:8px">

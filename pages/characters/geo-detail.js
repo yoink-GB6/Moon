@@ -4,10 +4,11 @@ import { escHtml } from '../../core/ui.js';
 import * as State from './state.js';
 import { openCountryModal, mdToChildren } from './modals/country-modal.js';
 import { openCityModal } from './modals/city-modal.js';
-import { openLandmarkModal } from './modals/landmark-modal.js';
+import { openLandmarksModal } from './modals/landmark-modal.js';
 import { bindCharOpen } from './char-open.js';
 import { parseAvatarUrls, pickRandomUrl, childHTML } from './utils.js';
-import { renderGeoTree } from './geo-tree.js';
+import { navSelect } from './geo-nav.js';
+import { parseSections } from './modals/section-editor.js';
 
 export function renderGeoDetail() {
   const container = State.pageContainer;
@@ -21,28 +22,37 @@ export function renderGeoDetail() {
   else renderCountryDetail(detail);
 }
 
-function _parseSections(raw) {
-  if (!raw) return [];
-  try {
-    const p = JSON.parse(raw);
-    return Array.isArray(p) ? p : [{ title: '概述', content: raw }];
-  } catch (_) { return [{ title: '概述', content: raw }]; }
+// 城市 / 地标的小节：内容不长，直接摊开显示，不做折叠
+// 结构统一为「左竖线 + 首行标题 + 正文」，深层 children 往里缩一级
+function _subHTML(node) {
+  const title = node.title ? '<div class="geo-sec-subtitle">' + escHtml(node.title) + '</div>' : '';
+  const body  = node.content ? '<div class="geo-sec-body">' + escHtml(node.content) + '</div>' : '';
+  const kids  = (node.children && node.children.length)
+    ? node.children.map(_subHTML).join('') : '';
+  return '<div class="geo-sec-sub">' + title + body + kids + '</div>';
 }
 
-function _isJSON(str) {
-  if (!str) return false;
-  try { return Array.isArray(JSON.parse(str)); } catch (_) { return false; }
+function _flatSectionsHTML(sections) {
+  if (!sections.length) return '';
+  return '<div class="geo-secs">' + sections.map(function(s) {
+    return '<div class="geo-sec">' +
+      '<div class="geo-sec-title">' + escHtml(s.title || '未命名') + '</div>' +
+      (s.content ? '<div class="geo-sec-body">' + escHtml(s.content) + '</div>' : '') +
+      ((s.children && s.children.length) ? s.children.map(_subHTML).join('') : '') +
+    '</div>';
+  }).join('') + '</div>';
 }
 
 function _sectionsHTML(sections) {
   if (!sections.length) return '';
-  return sections.map(function(s) {
+  return sections.map(function(s, i) {
     // 兼容旧数据：若 content 里有 # 语法，解析成 children
     const parsed   = mdToChildren(s.content || '');
     const content  = parsed.content || '';
     const children = (s.children && s.children.length) ? s.children
                    : (parsed.children && parsed.children.length) ? parsed.children : [];
-    return '<div class="h2-section">' +
+    // 第一节通常是概述，默认展开，省一次点击
+    return '<div class="h2-section' + (i === 0 ? ' active' : '') + '">' +
       '<div class="collapse-h2"><span>' + escHtml(s.title || '未命名') + '</span></div>' +
       '<div class="h2-content">' +
         (content ? '<div class="collapse-inner">' + escHtml(content) + '</div>' : '') +
@@ -72,7 +82,7 @@ function _bindSectionToggles(detail) {
 function renderCountryDetail(detail) {
   const country  = State.selectedCountry;
   const cities   = State.allCities.filter(function(c) { return c.country_id === country.id; });
-  const sections = _parseSections(country.description);
+  const sections = parseSections(country.description);
 
   const citiesHTML = cities.length
     ? cities.map(function(city) {
@@ -104,10 +114,7 @@ function renderCountryDetail(detail) {
 
   detail.querySelectorAll('[data-select-city]').forEach(function(item) {
     item.addEventListener('click', function() {
-      const cityId = parseInt(item.dataset.selectCity);
-      State.setSelectedCity(State.allCities.find(function(c) { return c.id === cityId; }));
-      renderGeoDetail();
-      renderGeoTree();
+      navSelect('city', parseInt(item.dataset.selectCity));
     });
   });
 
@@ -122,30 +129,11 @@ function renderCityDetail(detail) {
   const people    = State.allChars.filter(function(c) { return c.city_id === city.id; });
   const country   = State.allCountries.find(function(c) { return c.id === city.country_id; });
 
-  let sections = _parseSections(city.overview);
-  if (!sections.length) {
-    const old = [];
-    if (city.overview  && !_isJSON(city.overview))  old.push({ title: '概述',     content: city.overview  });
-    if (city.geography && !_isJSON(city.geography)) old.push({ title: '地理位置', content: city.geography });
-    if (city.climate   && !_isJSON(city.climate))   old.push({ title: '气候',     content: city.climate   });
-    if (city.structure && !_isJSON(city.structure)) old.push({ title: '城市结构', content: city.structure });
-    if (old.length) sections = old;
-  }
+  const sections = parseSections(city.overview);
 
+  // 地标 = 「地标建筑」这一块的小节，和城市小节同一套块样式
   const landmarksHTML = landmarks.length
-    ? landmarks.map(function(lm) {
-        const descParas = lm.description
-          ? lm.description.split(/\n+/).filter(function(l) { return l.trim(); })
-              .map(function(l) { return '<p class="geo-landmark-desc">' + escHtml(l) + '</p>'; }).join('')
-          : '';
-        return '<div class="geo-landmark-item">' +
-          '<blockquote class="geo-landmark-block">' +
-            '<div class="geo-landmark-name">' + escHtml(lm.name) + '</div>' +
-            descParas +
-          '</blockquote>' +
-          (isEditor() ? '<div class="geo-item-actions"><button class="btn bn" data-edit-landmark="' + lm.id + '">✎</button></div>' : '') +
-        '</div>';
-      }).join('')
+    ? _flatSectionsHTML(landmarks.map(function(lm) { return { title: lm.name, content: lm.description || '' }; }))
     : '<div class="geo-empty" style="padding:16px 0">恭喜你，哥伦布</div>';
 
   const peopleHTML = people.length
@@ -171,22 +159,17 @@ function renderCityDetail(detail) {
       (isEditor() ? '<button class="btn bn" id="edit-city-' + city.id + '">编辑</button>' : '') +
     '</div>' +
     (country ? '<div style="color:var(--muted);margin-bottom:16px;font-size:13px">所属：' + escHtml(country.name) + '</div>' : '') +
-    _sectionsHTML(sections) +
+    _flatSectionsHTML(sections) +
     '<div class="geo-detail-section"><h3><span>地标建筑 (' + landmarks.length + ')</span>' +
-      (isEditor() ? '<button class="btn bn" id="add-landmark-' + city.id + '">+ 添加</button>' : '') +
+      (isEditor() ? '<button class="btn bn" id="edit-landmarks-' + city.id + '">编辑</button>' : '') +
     '</h3>' + landmarksHTML + '</div>' +
     '<div class="geo-detail-section"><h3>关联人物 (' + people.length + ')</h3>' + peopleHTML + '</div>';
 
   if (isEditor()) {
     detail.querySelector('#edit-city-' + city.id)
       ?.addEventListener('click', function() { openCityModal(city); });
-    detail.querySelector('#add-landmark-' + city.id)
-      ?.addEventListener('click', function() { openLandmarkModal(null, city.id); });
-    detail.querySelectorAll('[data-edit-landmark]').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        openLandmarkModal(State.allLandmarks.find(function(l) { return l.id === parseInt(btn.dataset.editLandmark); }));
-      });
-    });
+    detail.querySelector('#edit-landmarks-' + city.id)
+      ?.addEventListener('click', function() { openLandmarksModal(city.id); });
   }
 
   // 人物点击：左键看介绍，编辑模式下右键/长按进编辑框
@@ -199,8 +182,6 @@ function renderCityDetail(detail) {
       };
     });
   });
-
-  _bindSectionToggles(detail);
 }
 
 

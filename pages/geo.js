@@ -1,13 +1,12 @@
 // pages/geo.js
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { escHtml } from '../core/ui.js';
-import { reflect } from '../core/router.js';
 
 import * as State from './characters/state.js';
+import { setGeoRouteApplier, navSelect } from './characters/geo-nav.js';
 import { loadAllData, subscribeRealtime, unsubscribeRealtime } from './characters/data-loader.js';
 import { initGeographyTab } from './characters/geography-tab.js';
 import { renderGeoTree } from './characters/geo-tree.js';
-import { renderGeoDetail } from './characters/geo-detail.js';
 import { setupCountryModal } from './characters/modals/country-modal.js';
 import { setupCityModal } from './characters/modals/city-modal.js';
 import { setupLandmarkModal } from './characters/modals/landmark-modal.js';
@@ -17,6 +16,7 @@ let _dataLoaded = false;
 
 export async function mount(container) {
   State.setPageContainer(container);
+  setGeoRouteApplier(applyRoute);
   container.innerHTML = buildHTML();
   setupCountryModal();
   setupCityModal();
@@ -84,18 +84,8 @@ function buildHTML() {
 </div>
 
 <!-- 地标模态框 -->
-<div id="landmark-modal" class="tl-modal-overlay">
-  <div class="tl-modal" style="max-width:500px" onmousedown="event.stopPropagation()">
-    <h2 id="landmark-modal-title">编辑地标</h2>
-    <label>名称</label><input id="landmark-name" type="text"/>
-    <label>描述</label><textarea id="landmark-desc" rows="3" placeholder="地标详细介绍..."></textarea>
-    <div class="modal-actions">
-      <button class="btn br modal-btn-delete" id="landmark-delete-btn" style="display:none">删除</button>
-      <div class="modal-actions-right">
-        <button class="btn bp modal-btn" id="landmark-save-btn">保存</button>
-        <button class="btn bn modal-btn" id="landmark-cancel-btn">取消</button>
-      </div>
-    </div>
+<div id="landmark-modal" class="tl-modal-overlay modal-center">
+  <div class="tl-modal landmark-modal-inner" style="max-width:560px" onmousedown="event.stopPropagation()">
   </div>
 </div>
 `;
@@ -109,7 +99,11 @@ function bindControls() {
 
 // 由路由调用：#/geo/country/3 或 #/geo/city/7 → 选中并展开
 export function applyRoute(parts) {
-  if (!parts || !parts.length) return;
+  if (!parts || !parts.length) {
+    // 从 #/geo/city/7 退回裸 #/geo：回到国家视图，否则返回键看着像没反应
+    if (_dataLoaded && State.selectedCity) { State.setSelectedCity(null); render(); }
+    return;
+  }
   const [kind, id] = parts;
   const open = () => {
     if (kind === 'country') {
@@ -229,21 +223,14 @@ function _bindGeoSearch() {
   function selectHit(hit) {
     if (!hit) return;
     if (hit.type === 'country') {
-      State.setSelectedCountry(hit.obj); State.setSelectedCity(null);
-      if (!State.expandedCountries.has(hit.obj.id)) State.toggleCountryExpanded(hit.obj.id);
+      navSelect('country', hit.obj.id);
     } else if (hit.type === 'city') {
-      State.setSelectedCity(hit.obj);
-      if (hit.parentCountry) { State.setSelectedCountry(hit.parentCountry); if (!State.expandedCountries.has(hit.parentCountry.id)) State.toggleCountryExpanded(hit.parentCountry.id); }
-      if (State.expandedCities && !State.expandedCities.has(hit.obj.id)) State.toggleCityExpanded && State.toggleCityExpanded(hit.obj.id);
-    } else if (hit.type === 'landmark') {
-      if (hit.parentCity) {
-        State.setSelectedCity(hit.parentCity);
-        if (hit.parentCountry) { State.setSelectedCountry(hit.parentCountry); if (!State.expandedCountries.has(hit.parentCountry.id)) State.toggleCountryExpanded(hit.parentCountry.id); }
-        if (State.expandedCities && !State.expandedCities.has(hit.parentCity.id)) State.toggleCityExpanded && State.toggleCityExpanded(hit.parentCity.id);
-      }
+      if (!State.expandedCities.has(hit.obj.id)) State.toggleCityExpanded(hit.obj.id);
+      navSelect('city', hit.obj.id);
+    } else if (hit.type === 'landmark' && hit.parentCity) {
+      if (!State.expandedCities.has(hit.parentCity.id)) State.toggleCityExpanded(hit.parentCity.id);
+      navSelect('city', hit.parentCity.id);
     }
-    renderGeoDetail();
-    renderGeoTree();
   }
 
   freshInput.addEventListener('input', function(e) { buildResults(e.target.value); });

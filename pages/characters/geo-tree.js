@@ -2,10 +2,10 @@
 import { isEditor } from '../../core/auth.js';
 import { escHtml } from '../../core/ui.js';
 import * as State from './state.js';
-import { renderGeoDetail } from './geo-detail.js';
+import { navSelect } from './geo-nav.js';
 import { openCountryModal } from './modals/country-modal.js';
 import { openCityModal } from './modals/city-modal.js';
-import { openLandmarkModal } from './modals/landmark-modal.js';
+import { openLandmarksModal } from './modals/landmark-modal.js';
 
 export function renderGeoTree() {
   const container = State.pageContainer;
@@ -31,7 +31,7 @@ export function renderGeoTree() {
         '<span class="gt-label">' + escHtml(city.name) + '</span>' +
         (isEditor()
           ? '<span class="gt-actions">' +
-              '<button class="gt-btn" data-add-landmark="' + city.id + '" title="添加地标">＋</button>' +
+              '<button class="gt-btn" data-add-landmark="' + city.id + '" title="编辑地标建筑">＋</button>' +
               '<button class="gt-btn" data-edit-city="' + city.id + '" title="编辑城市">✏</button>' +
             '</span>'
           : '') +
@@ -46,7 +46,7 @@ export function renderGeoTree() {
               '<span class="gt-label">' + escHtml(lm.name) + '</span>' +
               (isEditor()
                 ? '<span class="gt-actions">' +
-                    '<button class="gt-btn" data-edit-landmark="' + lm.id + '" title="编辑地标">✏</button>' +
+                    '<button class="gt-btn" data-edit-landmark="' + city.id + '" title="编辑地标建筑">✏</button>' +
                   '</span>'
                 : '') +
             '</div>' +
@@ -124,24 +124,18 @@ export function bindGeoTree() {
       const id   = parseInt(item.dataset.id);
 
       if (type === 'country') {
-        State.setSelectedCountry(State.allCountries.find(function(c) { return c.id === id; }));
-        State.setSelectedCity(null);
-        State.toggleCountryExpanded(id);
-      } else if (type === 'city') {
-        const city = State.allCities.find(function(c) { return c.id === id; });
-        State.setSelectedCity(city);
-        State.setSelectedCountry(State.allCountries.find(function(co) { return co.id === (city && city.country_id); }));
-      } else if (type === 'landmark') {
-        const cityId = parseInt(item.dataset.cityId);
-        const city   = State.allCities.find(function(c) { return c.id === cityId; });
-        if (city) {
-          State.setSelectedCity(city);
-          State.setSelectedCountry(State.allCountries.find(function(co) { return co.id === city.country_id; }));
+        // 已经选中的国家再点一次 = 折叠/展开，不必再走一遍路由
+        if (State.selectedCountry && State.selectedCountry.id === id && !State.selectedCity) {
+          State.toggleCountryExpanded(id);
+          renderGeoTree();
+          return;
         }
+        navSelect('country', id);
+      } else if (type === 'city') {
+        navSelect('city', id);
+      } else if (type === 'landmark') {
+        navSelect('city', parseInt(item.dataset.cityId));
       }
-
-      renderGeoDetail();
-      renderGeoTree();
     });
   });
 
@@ -160,11 +154,14 @@ export function bindGeoTree() {
         e.stopPropagation();
         const cityId = parseInt(btn.dataset.addLandmark);
         if (!State.expandedCities.has(cityId)) State.toggleCityExpanded(cityId);
-        openLandmarkModal(null, cityId);
+        openLandmarksModal(cityId);
       });
     });
     list.querySelectorAll('[data-edit-landmark]').forEach(function(btn) {
-      btn.addEventListener('click', function(e) { e.stopPropagation(); openLandmarkModal(State.allLandmarks.find(function(l) { return l.id === parseInt(btn.dataset.editLandmark); })); });
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openLandmarksModal(parseInt(btn.dataset.editLandmark));
+      });
     });
   }
 }

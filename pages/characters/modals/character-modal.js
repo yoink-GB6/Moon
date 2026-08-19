@@ -43,187 +43,24 @@ async function _deleteStorageUrls(urls) {
 }
 import { refreshCharactersView } from '../../characters.js';
 import { renderGeoDetail } from '../geo-detail.js';
-import { mdToChildren, childrenToMd } from './md-utils.js';
+import { createSectionEditor } from './section-editor.js';
 
-// ── 人物小节预设 ───────────────────────────────────────────────
-const CHAR_PRESETS = [
-  { title: '个人简介', ph: '出身背景、成长经历...' },
-  { title: '性格特点', ph: '性格、习惯、行为模式...' },
-  { title: '能力技能', ph: '战斗技能、特殊能力、专长...' },
-  { title: '人际关系', ph: '家人、盟友、对手、情感...' },
-  { title: '历史经历', ph: '重大事件、转折点、过去...' },
-  { title: '目标动机', ph: '追求的目标、内心动机...' },
-  { title: '外貌特征', ph: '外貌描述、着装风格...' },
-];
-
-// ── 小节行 HTML（复用 cm-row 体系）──────────────────────────
-function _charRowHTML(sec) {
-  const preset  = CHAR_PRESETS.find(function(p) { return p.title === sec.title; });
-  const ph      = (preset ? preset.ph : '在此填写内容...') + '\n\n# 子小节标题\n内容\n\n## 更深一层';
-  const mdText  = childrenToMd(sec);   // 把 children 还原成 # ## 文本
-  const preview = mdText.trim().replace(/\n/g, ' ').slice(0, 60) || '';
-  const previewHTML = preview
-    ? escHtml(preview) + (mdText.trim().length > 60 ? '…' : '')
-    : '<span style="color:var(--muted);font-style:italic">恭喜你，哥伦布</span>';
-  return '<div class="cm-row" draggable="false">' +
-    '<div class="cm-row-collapsed">' +
-      '<span class="cm-row-grip" title="拖拽排序">⠿</span>' +
-      '<div class="cm-row-summary">' +
-        '<span class="cm-row-label">' + escHtml(sec.title || '未命名') + '</span>' +
-        '<span class="cm-row-preview">' + previewHTML + '</span>' +
-      '</div>' +
-      '<button class="cm-row-edit" title="编辑此小节">✎</button>' +
-      '<button class="cm-row-del"  title="删除此小节">✕</button>' +
-    '</div>' +
-    '<div class="cm-row-expanded" style="display:none">' +
-      '<div class="cm-row-expanded-hdr">' +
-        '<input class="cm-row-title" type="text" value="' + escHtml(sec.title || '') + '" placeholder="小节标题" maxlength="30"/>' +
-        '<button class="cm-row-collapse">▲ 收起</button>' +
-      '</div>' +
-      '<div class="cm-md-guide"># 一级折叠 &nbsp;&nbsp; ## 带菱形框的文本段</div>' +
-      '<textarea class="cm-row-body" rows="6" placeholder="' + escHtml(ph) + '">' + escHtml(mdText) + '</textarea>' +
-    '</div>' +
-  '</div>';
-}
-
-function _expandCharRow(row) {
-  row.querySelector('.cm-row-collapsed').style.display = 'none';
-  row.querySelector('.cm-row-expanded').style.display  = 'flex';
-  const ta = row.querySelector('.cm-row-body');
-  if (ta) ta.focus();
-}
-
-function _collapseCharRow(row) {
-  const titleInput = row.querySelector('.cm-row-title');
-  const bodyInput  = row.querySelector('.cm-row-body');
-  const title   = titleInput ? titleInput.value.trim() : '';
-  const mdText  = bodyInput  ? bodyInput.value.trim()  : '';
-  const label   = row.querySelector('.cm-row-label');
-  const preview = row.querySelector('.cm-row-preview');
-  if (label)   label.textContent = title || '未命名';
-  if (preview) {
-    const flat = mdText.replace(/\n/g, ' ').slice(0, 60);
-    preview.innerHTML = mdText
-      ? escHtml(flat) + (mdText.length > 60 ? '…' : '')
-      : '<span style="color:var(--muted);font-style:italic">恭喜你，哥伦布</span>';
-  }
-  row.querySelector('.cm-row-collapsed').style.display = '';
-  row.querySelector('.cm-row-expanded').style.display  = 'none';
-}
-
-function _restoreCharPresetTag(modal, title) {
-  const preset = CHAR_PRESETS.find(function(p) { return p.title === title; });
-  if (!preset) return;
-  const tags = modal.querySelector('#char-sec-tags');
-  if (!tags) return;
-  if (tags.querySelector('.cm-tags-empty')) tags.querySelector('.cm-tags-empty').remove();
-  if (!tags.querySelector('[data-title="' + title + '"]')) {
-    const tag = document.createElement('button');
-    tag.className    = 'cm-tag';
-    tag.dataset.title = preset.title;
-    tag.dataset.ph    = preset.ph;
-    tag.textContent   = preset.title;
-    tags.appendChild(tag);
-  }
-}
-
-function _appendCharRow(modal, title, content, ph) {
-  const list = modal.querySelector('#char-sec-list');
-  if (!list) return;
-  const tmp = document.createElement('div');
-  tmp.innerHTML = _charRowHTML({ title, content: content || '' });
-  const row = tmp.firstElementChild;
-  if (ph) row.querySelector('.cm-row-body').placeholder = ph;
-  list.appendChild(row);
-  _bindCharDragSort(list);
-  _expandCharRow(row);
-}
-
-function _bindCharDragSort(list) {
-  if (!list) return;
-  let dragging = null;
-  list.querySelectorAll('.cm-row').forEach(function(row) {
-    const grip = row.querySelector('.cm-row-grip');
-    if (!grip) return;
-    grip.addEventListener('mousedown', function() { row.draggable = true; });
-    grip.addEventListener('mouseup',   function() { row.draggable = false; });
-    row.addEventListener('dragstart', function(e) {
-      dragging = row; row.classList.add('cm-row-dragging'); e.dataTransfer.effectAllowed = 'move';
-    });
-    row.addEventListener('dragend', function() {
-      dragging = null; row.classList.remove('cm-row-dragging'); row.draggable = false;
-      list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
-    });
-    row.addEventListener('dragover', function(e) {
-      e.preventDefault();
-      if (!dragging || dragging === row) return;
-      list.querySelectorAll('.cm-row').forEach(function(r) { r.classList.remove('cm-row-drag-over'); });
-      row.classList.add('cm-row-drag-over');
-      const rect = row.getBoundingClientRect();
-      if (e.clientY < rect.top + rect.height / 2) list.insertBefore(dragging, row);
-      else list.insertBefore(dragging, row.nextSibling);
-    });
-    row.addEventListener('dragleave', function() { row.classList.remove('cm-row-drag-over'); });
-    row.addEventListener('drop',      function(e) { e.preventDefault(); row.classList.remove('cm-row-drag-over'); });
-  });
-}
-
-function _collectCharSections(modal) {
-  const out = [];
-  modal.querySelectorAll('#char-sec-list .cm-row').forEach(function(row) {
-    const titleInput = row.querySelector('.cm-row-title');
-    const labelEl    = row.querySelector('.cm-row-label');
-    const bodyInput  = row.querySelector('.cm-row-body');
-    const title  = (titleInput ? titleInput.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '') || '';
-    const mdText = bodyInput ? bodyInput.value : '';
-    if (!title) return;
-    const parsed = mdToChildren(mdText);
-    const sec = { title, content: parsed.content };
-    if (parsed.children && parsed.children.length) sec.children = parsed.children;
-    out.push(sec);
-  });
-  return out;
-}
-
-function _bindCharSectionEvents(modal) {
-  // 预设标签点击
-  modal.querySelector('#char-sec-tags')?.addEventListener('click', function(e) {
-    const btn = e.target.closest('.cm-tag');
-    if (!btn) return;
-    _appendCharRow(modal, btn.dataset.title, '', btn.dataset.ph);
-    btn.remove();
-    const tags = modal.querySelector('#char-sec-tags');
-    if (!tags.querySelector('.cm-tag')) tags.innerHTML = '<span class="cm-tags-empty">所有预设已添加</span>';
-  });
-
-  // 自定义小节
-  const ci = modal.querySelector('#char-sec-custom');
-  function doAdd() {
-    const t = ci ? ci.value.trim() : '';
-    if (!t) { if (ci) ci.focus(); return; }
-    _appendCharRow(modal, t, '');
-    if (ci) { ci.value = ''; ci.focus(); }
-  }
-  modal.querySelector('#char-sec-custom-add')?.addEventListener('click', doAdd);
-  ci?.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
-
-  // 列表内操作（展开/折叠/删除）
-  modal.querySelector('#char-sec-list')?.addEventListener('click', function(e) {
-    const row = e.target.closest('.cm-row');
-    if (!row) return;
-    if (e.target.closest('.cm-row-edit'))     { _expandCharRow(row); return; }
-    if (e.target.closest('.cm-row-collapse')) { _collapseCharRow(row); return; }
-    if (e.target.closest('.cm-row-del')) {
-      const titleInput = row.querySelector('.cm-row-title');
-      const labelEl    = row.querySelector('.cm-row-label');
-      const title = (titleInput ? titleInput.value.trim() : '') || (labelEl ? labelEl.textContent.trim() : '');
-      row.remove();
-      _restoreCharPresetTag(modal, title);
-    }
-  });
-
-  _bindCharDragSort(modal.querySelector('#char-sec-list'));
-}
+// ── 人物小节编辑器（和国家/城市/地标共用同一份实现）──────────
+const charEditor = createSectionEditor({
+  prefix: 'char-sec',
+  md: true,
+  heading: '人物介绍',
+  mdGuide: '# 一级折叠 &nbsp;&nbsp; ## 带菱形框的文本段',
+  presets: [
+    { title: '个人简介', ph: '出身背景、成长经历...' },
+    { title: '性格特点', ph: '性格、习惯、行为模式...' },
+    { title: '能力技能', ph: '战斗技能、特殊能力、专长...' },
+    { title: '人际关系', ph: '家人、盟友、对手、情感...' },
+    { title: '历史经历', ph: '重大事件、转折点、过去...' },
+    { title: '目标动机', ph: '追求的目标、内心动机...' },
+    { title: '外貌特征', ph: '外貌描述、着装风格...' },
+  ],
+});
 
 // ── 自定义下拉通用工具 ────────────────────────────────────────
 // options: [{ value, label }]，selectedValue: 当前选中值
@@ -384,6 +221,11 @@ export function setupCharModal() {
   });
   container.querySelector('#char-library-btn')?.addEventListener('click', function() {
     _openLibraryPicker(container);
+  });
+  container.querySelector('#char-rel-add-btn')?.addEventListener('click', function() {
+    addRelationRow(container, State.editingCharId
+      ? State.allChars.find(function(c) { return String(c.id) === String(State.editingCharId); })
+      : null);
   });
   container.querySelector('#char-save-btn')?.addEventListener('click', saveCharacter);
   container.querySelector('#char-delete-btn')?.addEventListener('click', deleteCharacter);
@@ -747,25 +589,10 @@ export function openCharModal(char) {
   container.querySelector('#char-link').value = char ? char.link_url || '' : '';
   container.querySelector('#char-html').value = char ? char.description_html || '' : '';
   // ── 初始化小节编辑器 ──
-  const sections = parseCharSections(char ? char.description : null);
-  const usedTitles = new Set(sections.map(function(s) { return s.title; }));
-  const presetBtns = CHAR_PRESETS
-    .filter(function(p) { return !usedTitles.has(p.title); })
-    .map(function(p) {
-      return '<button class="cm-tag" data-title="' + escHtml(p.title) + '" data-ph="' + escHtml(p.ph) + '">' + escHtml(p.title) + '</button>';
-    }).join('');
-
   const secContainer = modal.querySelector('#char-sec-container');
   if (secContainer) {
-    secContainer.innerHTML =
-      '<div class="cm-sec-hdr"><span>人物介绍</span><span class="cm-hint">点 ✎ 展开编辑；拖 ⠿ 可排序</span></div>' +
-      '<div class="cm-tags" id="char-sec-tags">' + (presetBtns || '<span class="cm-tags-empty">所有预设已添加</span>') + '</div>' +
-      '<div class="cm-custom-row">' +
-        '<input type="text" id="char-sec-custom" placeholder="自定义小节标题..." maxlength="30" autocomplete="off"/>' +
-        '<button class="btn bn" id="char-sec-custom-add">＋ 添加</button>' +
-      '</div>' +
-      '<div id="char-sec-list" class="cm-list">' + sections.map(_charRowHTML).join('') + '</div>';
-    _bindCharSectionEvents(modal);
+    secContainer.innerHTML = charEditor.html(parseCharSections(char ? char.description : null));
+    charEditor.bind(modal);
   }
 
   // 推算当前人物所属国家
@@ -861,7 +688,7 @@ async function _doSave(container) {
   const cityIdVal   = container.querySelector('#char-city').value;
   const countryIdVal = container.querySelector('#char-country').value;
   const modal     = container.querySelector('#char-modal');
-  const sections  = _collectCharSections(modal);
+  const sections  = charEditor.collect(modal);
   const desc      = sections.length ? JSON.stringify(sections) : null;
 
   try {
@@ -901,6 +728,7 @@ async function _doSave(container) {
     if (State.editingCharId) {
       const { error } = await supaClient.from('characters').update(payload).eq('id', State.editingCharId);
       if (error) throw error;
+      await _saveRelations(container, State.editingCharId);   // 关系跟着人物一起保存
       showToast('已更新');
     } else {
       const { error } = await supaClient.from('characters').insert(payload);
@@ -947,11 +775,42 @@ function _relPair(x, y) {
   return { a_id: a, b_id: b };
 }
 
+function _relRowHTML(rel, char) {
+  const otherId = rel ? (String(rel.a_id) === String(char.id) ? rel.b_id : rel.a_id) : '';
+  const other   = otherId ? State.allChars.find(function(c) { return String(c.id) === String(otherId); }) : null;
+  return '<div class="rel-edit-row"' + (rel ? ' data-rid="' + rel.id + '"' : '') + '>' +
+    '<div class="rel-pick rel-edit-cell">' +
+      '<input class="rel-edit-who" value="' + escHtml(other ? other.name : '') + '" ' +
+        'data-id="' + escHtml(String(otherId || '')) + '" placeholder="输入名字搜索…" autocomplete="off"/>' +
+      '<div class="cb-sugg"></div>' +
+    '</div>' +
+    '<input class="rel-edit-label rel-edit-cell" value="' + escHtml(rel ? rel.label || '' : '') + '" placeholder="关系（如：师徒）" autocomplete="off"/>' +
+    '<button class="rel-edit-del" title="删除">✕</button>' +
+  '</div>';
+}
+
+// 行内改动只留在 DOM 里，点人物的「保存」时才一起落库
+function _bindRelRow(container, char, row) {
+  const who = row.querySelector('.rel-edit-who');
+  bindCombobox(who, function() {
+    // 候选：排除自己，以及别的行已经选了的人（同一对人物只能有一条关系）
+    const taken = new Set(Array.from(container.querySelectorAll('.rel-edit-who'))
+      .filter(function(el) { return el !== who && el.dataset.id; })
+      .map(function(el) { return String(el.dataset.id); }));
+    return State.allChars.filter(function(c) {
+      return String(c.id) !== String(char.id) && !taken.has(String(c.id));
+    });
+  });
+  row.querySelector('.rel-edit-del').addEventListener('click', function() { row.remove(); });
+}
+
 function _renderRelations(container, char) {
   const sec = container.querySelector('#char-rel-section');
   if (!sec) return;
   // 新建人物时还没有 id，没法挂关系
   sec.style.display = char ? '' : 'none';
+  const addBtn = container.querySelector('#char-rel-add-btn');
+  if (addBtn) addBtn.style.display = char ? '' : 'none';
   if (!char) return;
 
   const list = container.querySelector('#char-rel-list');
@@ -959,56 +818,57 @@ function _renderRelations(container, char) {
     return String(r.a_id) === String(char.id) || String(r.b_id) === String(char.id);
   });
 
-  list.innerHTML = mine.length
-    ? mine.map(function(r) {
-        const otherId = String(r.a_id) === String(char.id) ? r.b_id : r.a_id;
-        const other = State.allChars.find(function(c) { return String(c.id) === String(otherId); });
-        return '<div class="cm-row-collapsed char-rel-row">' +
-          '<span style="flex:1">' + escHtml(other ? other.name : '#' + otherId) + '</span>' +
-          '<span style="color:var(--muted);font-size:12px">' + escHtml(r.label || '—') + '</span>' +
-          '<button class="cm-row-collapse" data-del-rel="' + r.id + '">删除</button>' +
-        '</div>';
-      }).join('')
-    : '<div style="font-size:12px;color:var(--muted);padding:4px 0">さみしい……</div>';
+  list.innerHTML = mine.map(function(r) { return _relRowHTML(r, char); }).join('');
+  list.querySelectorAll('.rel-edit-row').forEach(function(row) { _bindRelRow(container, char, row); });
+  _syncRelEmpty(container);
+}
 
-  list.querySelectorAll('[data-del-rel]').forEach(function(btn) {
-    btn.addEventListener('click', async function() {
-      const id = btn.dataset.delRel;
-      const { error } = await supaClient.from('character_relations').delete().eq('id', id);
-      if (error) return dbError('删除关系', error);
-      State.setAllRelations((State.allRelations || []).filter(function(r) { return String(r.id) !== String(id); }));
-      _renderRelations(container, char);
-    });
+function _syncRelEmpty(container) {
+  const list = container.querySelector('#char-rel-list');
+  const tip  = container.querySelector('#char-rel-empty');
+  if (tip) tip.style.display = list.querySelector('.rel-edit-row') ? 'none' : '';
+}
+
+function addRelationRow(container, char) {
+  if (!char) return showToast('先保存人物，再加关系');
+  const list = container.querySelector('#char-rel-list');
+  const tmp  = document.createElement('div');
+  tmp.innerHTML = _relRowHTML(null, char);
+  const row = tmp.firstElementChild;
+  list.appendChild(row);
+  _bindRelRow(container, char, row);
+  _syncRelEmpty(container);
+  row.querySelector('.rel-edit-who').focus();
+}
+
+// 把 DOM 里的行和库里现有的关系对比，落库
+async function _saveRelations(container, charId) {
+  const rows = Array.from(container.querySelectorAll('#char-rel-list .rel-edit-row'))
+    .map(function(row) {
+      return {
+        id:      row.dataset.rid || null,
+        otherId: row.querySelector('.rel-edit-who').dataset.id || '',
+        label:   row.querySelector('.rel-edit-label').value.trim(),
+      };
+    })
+    .filter(function(r) { return r.otherId; });      // 没选人的空行直接丢掉
+
+  const mine = (State.allRelations || []).filter(function(r) {
+    return String(r.a_id) === String(charId) || String(r.b_id) === String(charId);
   });
+  const keptIds = new Set(rows.filter(function(r) { return r.id; }).map(function(r) { return String(r.id); }));
+  const removed = mine.filter(function(r) { return !keptIds.has(String(r.id)); });
 
-  // 候选人：排除自己和已有关系的人。每次现取，所以只绑一次就够
-  const target = container.querySelector('#char-rel-target');
-  const taken = new Set(mine.map(function(r) {
-    return String(String(r.a_id) === String(char.id) ? r.b_id : r.a_id);
-  }));
-  if (!target._cbBound) {
-    target._cbBound = true;
-    bindCombobox(target, function() { return target._cbItems || []; });
+  if (removed.length) {
+    const { error } = await supaClient.from('character_relations')
+      .delete().in('id', removed.map(function(r) { return r.id; }));
+    if (error) throw error;
   }
-  target._cbItems = State.allChars.filter(function(c) {
-    return String(c.id) !== String(char.id) && !taken.has(String(c.id));
-  });
-  target.value = ''; target.dataset.id = '';
-
-  const addBtn = container.querySelector('#char-rel-add-btn');
-  const fresh = addBtn.cloneNode(true);          // 清掉上一次打开累积的监听
-  addBtn.parentNode.replaceChild(fresh, addBtn);
-  fresh.addEventListener('click', async function() {
-    const targetId = container.querySelector('#char-rel-target').dataset.id;
-    const label    = container.querySelector('#char-rel-label').value.trim();
-    if (!targetId) return showToast('先从候选里选一个人物');
-    const row = Object.assign(_relPair(char.id, targetId), { label: label });
-    const { data, error } = await supaClient.from('character_relations')
-      .upsert(row, { onConflict: 'a_id,b_id' }).select().single();
-    if (error) return dbError('添加关系', error);
-    const rest = (State.allRelations || []).filter(function(r) { return r.id !== data.id; });
-    State.setAllRelations(rest.concat([data]));
-    container.querySelector('#char-rel-label').value = '';
-    _renderRelations(container, char);
-  });
+  for (const r of rows) {
+    const payload = Object.assign(_relPair(charId, r.otherId), { label: r.label || null });
+    const { error } = r.id
+      ? await supaClient.from('character_relations').update(payload).eq('id', r.id)
+      : await supaClient.from('character_relations').upsert(payload, { onConflict: 'a_id,b_id' });
+    if (error) throw error;
+  }
 }

@@ -2,14 +2,13 @@
 // 地理标签页主控制器
 
 import * as State from './state.js';
-import { renderGeoTree, bindGeoTree } from './geo-tree.js';
+import { renderGeoTree } from './geo-tree.js';
 import { renderGeoDetail } from './geo-detail.js';
 import { openCountryModal } from './modals/country-modal.js';
 
 export function initGeographyTab() {
-  renderGeoTree();
+  renderGeoTree();   // 内部结尾已 bindGeoTree()，此处不要再绑一次
   renderGeoDetail();
-  bindGeoTree();
   bindAddCountry();
 
   if (!State.selectedCountry && !State.selectedCity && State.allCountries.length > 0) {
