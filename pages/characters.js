@@ -122,9 +122,10 @@ function buildHTML() {
     </div>
     <div class="modal-actions">
       <button class="btn br modal-btn-delete" id="char-delete-btn" style="display:none">删除</button>
+      <button class="btn bn modal-btn cm-add-btn" id="char-sec-add">添加</button>
       <div class="modal-actions-right">
-        <button class="btn bp modal-btn" id="char-save-btn">保存</button>
         <button class="btn bn modal-btn" id="char-cancel-btn">取消</button>
+        <button class="btn bp modal-btn" id="char-save-btn">保存</button>
       </div>
     </div>
   </div>

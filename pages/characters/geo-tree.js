@@ -31,7 +31,7 @@ export function renderGeoTree() {
         '<span class="gt-label">' + escHtml(city.name) + '</span>' +
         (isEditor()
           ? '<span class="gt-actions">' +
-              '<button class="gt-btn" data-add-landmark="' + city.id + '" title="编辑地标建筑">＋</button>' +
+              '<button class="gt-btn" data-add-landmark="' + city.id + '" title="编辑地标建筑">◈</button>' +
               '<button class="gt-btn" data-edit-city="' + city.id + '" title="编辑城市">✏</button>' +
             '</span>'
           : '') +
@@ -42,14 +42,7 @@ export function renderGeoTree() {
       if (landmarks.length) {
         landmarks.forEach(function(lm) {
           out += '<div class="gt-landmark" data-type="landmark" data-id="' + lm.id + '" data-city-id="' + city.id + '">' +
-            '<div class="gt-row">' +
-              '<span class="gt-label">' + escHtml(lm.name) + '</span>' +
-              (isEditor()
-                ? '<span class="gt-actions">' +
-                    '<button class="gt-btn" data-edit-landmark="' + city.id + '" title="编辑地标建筑">✏</button>' +
-                  '</span>'
-                : '') +
-            '</div>' +
+            '<div class="gt-row"><span class="gt-label">' + escHtml(lm.name) + '</span></div>' +
           '</div>';
         });
       } else {
@@ -155,12 +148,6 @@ export function bindGeoTree() {
         const cityId = parseInt(btn.dataset.addLandmark);
         if (!State.expandedCities.has(cityId)) State.toggleCityExpanded(cityId);
         openLandmarksModal(cityId);
-      });
-    });
-    list.querySelectorAll('[data-edit-landmark]').forEach(function(btn) {
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        openLandmarksModal(parseInt(btn.dataset.editLandmark));
       });
     });
   }

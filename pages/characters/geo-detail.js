@@ -1,10 +1,7 @@
 // pages/characters/geo-detail.js
-import { isEditor } from '../../core/auth.js';
 import { escHtml } from '../../core/ui.js';
 import * as State from './state.js';
-import { openCountryModal, mdToChildren } from './modals/country-modal.js';
-import { openCityModal } from './modals/city-modal.js';
-import { openLandmarksModal } from './modals/landmark-modal.js';
+import { mdToChildren } from './modals/country-modal.js';
 import { bindCharOpen } from './char-open.js';
 import { parseAvatarUrls, pickRandomUrl, childHTML } from './utils.js';
 import { navSelect } from './geo-nav.js';
@@ -62,6 +59,76 @@ function _sectionsHTML(sections) {
   }).join('');
 }
 
+// 关联人物：只放圆头像，一行能塞几个由 grid 自己算（同人物页的 auto-fill 思路）
+function _personTileHTML(p) {
+  const url = pickRandomUrl(parseAvatarUrls(p.avatar_url));
+  return '<div class="geo-person-item" data-char-id="' + p.id + '"' +
+      (url ? ' data-avatar="' + escHtml(url) + '"' : '') + '>' +
+    '<div class="geo-person-av">' +
+      (url ? '<img src="' + escHtml(url) + '"/>' : escHtml(p.name.charAt(0))) +
+    '</div>' +
+  '</div>';
+}
+
+// 人多时默认只铺一行：一行能放几个跟着容器宽度算，放不下就把最后一格让给 …
+// 头像每次渲染是随机抽的，所以先定好顺序和图，重排时不重抽，免得一拖窗口整排人就换了
+function _mountPeopleBox(box, people) {
+  const tiles = people.slice().sort(function() { return Math.random() - 0.5; }).map(_personTileHTML);
+  let expanded = false;
+  let lastW    = -1;
+
+  function layout() {
+    if (expanded) return;
+    box.innerHTML = '<div class="geo-person-row">' + tiles.join('') + '</div>';
+    const row  = box.querySelector('.geo-person-row');
+    const each = row.firstElementChild;
+    if (each) {
+      const gap  = parseFloat(getComputedStyle(row).columnGap) || 0;
+      const fit  = Math.max(1, Math.floor((row.clientWidth + gap) / (each.offsetWidth + gap)));
+      if (tiles.length > fit) {
+        const keep = row.querySelectorAll('.geo-person-item');
+        for (let i = fit - 1; i < keep.length; i++) keep[i].remove();
+        const more = document.createElement('button');
+        more.className   = 'geo-person-more';
+        more.title       = '展开全部';
+        more.textContent = '…';
+        more.addEventListener('click', function() {
+          expanded = true;
+          box.innerHTML = '<div class="geo-person-grid">' + tiles.join('') + '</div>';  // 展开就铺全部，不再收回去
+          _bindPeople(box);
+        });
+        row.appendChild(more);
+      }
+    }
+    _bindPeople(box);
+  }
+
+  layout();
+  lastW = box.clientWidth;
+
+  // 窗口/侧栏宽度变了重算一次；宽度没变就不动，避免 ResizeObserver 自激
+  const ro = new ResizeObserver(function() {
+    if (!box.isConnected) { ro.disconnect(); return; }
+    if (box.clientWidth === lastW) return;
+    lastW = box.clientWidth;
+    layout();
+  });
+  ro.observe(box);
+}
+
+function _bindPeople(root) {
+  // 人物点击：左键看介绍，编辑模式下右键/长按进编辑框
+  root.querySelectorAll('[data-char-id]').forEach(function(item) {
+    bindCharOpen(item, function() {
+      const id = parseInt(item.dataset.charId);
+      return {
+        char: State.allChars.find(function(c) { return c.id === id; }),
+        avatar: item.dataset.avatar || undefined,
+      };
+    });
+  });
+}
+
 function _bindSectionToggles(detail) {
   detail.querySelectorAll('.collapse-h2').forEach(function(h) {
     h.addEventListener('click', function(e) {
@@ -84,6 +151,12 @@ function renderCountryDetail(detail) {
   const cities   = State.allCities.filter(function(c) { return c.country_id === country.id; });
   const sections = parseSections(country.description);
 
+  // 国内所有人：直接挂在国家上的 + 挂在这个国家某座城市里的
+  const cityIds = new Set(cities.map(function(c) { return c.id; }));
+  const people  = State.allChars.filter(function(p) {
+    return p.country_id === country.id || (p.city_id && cityIds.has(p.city_id));
+  });
+
   const citiesHTML = cities.length
     ? cities.map(function(city) {
         return '<span class="geo-city-link" data-select-city="' + city.id + '">' +
@@ -93,24 +166,20 @@ function renderCountryDetail(detail) {
     : '<div class="geo-empty" style="padding:16px 0">恭喜你，哥伦布</div>';
 
   detail.innerHTML =
-    '<div class="geo-detail-header">' +
-      '<h2>' + escHtml(country.name) + '</h2>' +
-      (isEditor() ? '<button class="btn bn" id="edit-country-' + country.id + '">编辑</button>' : '') +
-    '</div>' +
+    '<div class="geo-detail-header"><h2>' + escHtml(country.name) + '</h2></div>' +
     _sectionsHTML(sections) +
     '<div class="geo-detail-section">' +
-      '<h3><span>城市 (' + cities.length + ')</span>' +
-        (isEditor() ? '<button class="btn bn" id="add-city-' + country.id + '">+ 添加</button>' : '') +
-      '</h3>' +
+      '<h3><span>城市 (' + cities.length + ')</span></h3>' +
       '<div class="geo-city-list">' + citiesHTML + '</div>' +
-    '</div>';
+    '</div>' +
+    (people.length
+      ? '<div class="geo-detail-section"><h3>人物 (' + people.length + ')</h3>' +
+          '<div id="geo-country-people"></div>' +
+        '</div>'
+      : '');
 
-  if (isEditor()) {
-    detail.querySelector('#edit-country-' + country.id)
-      ?.addEventListener('click', function() { openCountryModal(country); });
-    detail.querySelector('#add-city-' + country.id)
-      ?.addEventListener('click', function() { openCityModal(null, country.id); });
-  }
+  const peopleBox = detail.querySelector('#geo-country-people');
+  if (peopleBox) _mountPeopleBox(peopleBox, people);
 
   detail.querySelectorAll('[data-select-city]').forEach(function(item) {
     item.addEventListener('click', function() {
@@ -137,51 +206,18 @@ function renderCityDetail(detail) {
     : '<div class="geo-empty" style="padding:16px 0">恭喜你，哥伦布</div>';
 
   const peopleHTML = people.length
-    ? people.map(function(p) {
-        const age = (p.base_age != null && p.base_age !== '') ? String(p.base_age) + '岁' : '';
-        const pAvatarUrl = pickRandomUrl(parseAvatarUrls(p.avatar_url));
-        return '<div class="geo-person-item" data-char-id="' + p.id + '"' + (pAvatarUrl ? ' data-avatar="' + escHtml(pAvatarUrl) + '"' : '') + '>' +
-          '<div class="geo-person-av">' +
-            (pAvatarUrl ? '<img src="' + escHtml(pAvatarUrl) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>' : escHtml(p.name.charAt(0))) +
-          '</div>' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-size:13px;font-weight:500">' + escHtml(p.name) + '</div>' +
-            (age ? '<div style="font-size:11px;color:var(--muted)">' + age + '</div>' : '') +
-          '</div>' +
-          '<span style="color:var(--muted);font-size:16px">›</span>' +
-        '</div>';
-      }).join('')
+    ? '<div id="geo-city-people"></div>'
     : '<div class="geo-empty" style="padding:16px 0">さみしい……</div>';
 
   detail.innerHTML =
-    '<div class="geo-detail-header">' +
-      '<h2>' + escHtml(city.name) + '</h2>' +
-      (isEditor() ? '<button class="btn bn" id="edit-city-' + city.id + '">编辑</button>' : '') +
-    '</div>' +
+    '<div class="geo-detail-header"><h2>' + escHtml(city.name) + '</h2></div>' +
     (country ? '<div style="color:var(--muted);margin-bottom:16px;font-size:13px">所属：' + escHtml(country.name) + '</div>' : '') +
     _flatSectionsHTML(sections) +
-    '<div class="geo-detail-section"><h3><span>地标建筑 (' + landmarks.length + ')</span>' +
-      (isEditor() ? '<button class="btn bn" id="edit-landmarks-' + city.id + '">编辑</button>' : '') +
-    '</h3>' + landmarksHTML + '</div>' +
+    '<div class="geo-detail-section"><h3>地标建筑 (' + landmarks.length + ')</h3>' + landmarksHTML + '</div>' +
     '<div class="geo-detail-section"><h3>关联人物 (' + people.length + ')</h3>' + peopleHTML + '</div>';
 
-  if (isEditor()) {
-    detail.querySelector('#edit-city-' + city.id)
-      ?.addEventListener('click', function() { openCityModal(city); });
-    detail.querySelector('#edit-landmarks-' + city.id)
-      ?.addEventListener('click', function() { openLandmarksModal(city.id); });
-  }
-
-  // 人物点击：左键看介绍，编辑模式下右键/长按进编辑框
-  detail.querySelectorAll('[data-char-id]').forEach(function(item) {
-    bindCharOpen(item, function() {
-      const id = parseInt(item.dataset.charId);
-      return {
-        char: State.allChars.find(function(c) { return c.id === id; }),
-        avatar: item.dataset.avatar || undefined,
-      };
-    });
-  });
+  const peopleBox = detail.querySelector('#geo-city-people');
+  if (peopleBox) _mountPeopleBox(peopleBox, people);
 }
 
 

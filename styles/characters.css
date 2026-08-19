@@ -118,6 +118,24 @@
 .geo-sec-sub .geo-sec-sub{margin-top:6px;padding-left:12px;border-left:1px solid var(--border)}
 .geo-sec-subtitle{font-size:12px;color:var(--text);letter-spacing:.08em;margin-bottom:2px}
 .geo-sec:hover{border-left-color:var(--accent)}
+/* 关联人物：圆头像，一行放几个交给 auto-fill 算；鼠标移上去圆变方 */
+.geo-person-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:10px;margin-top:4px}
+.geo-person-grid .geo-person-item,
+.geo-person-row .geo-person-item{display:block;padding:0;margin:0;aspect-ratio:1/1;border:none;background:none}
+.geo-person-grid .geo-person-av,
+.geo-person-row .geo-person-av{width:100%;height:100%;font-size:20px;transition:border-radius .18s,box-shadow .18s}
+.geo-person-grid .geo-person-av img,
+.geo-person-row .geo-person-av img{width:100%;height:100%;object-fit:cover;display:block}
+.geo-person-grid .geo-person-item:hover .geo-person-av,
+.geo-person-row .geo-person-item:hover .geo-person-av{border-radius:3px;box-shadow:0 0 0 1px var(--accent)}
+
+/* 只铺一行：放不下的由 JS 裁掉，最后一格换成同尺寸的 … */
+.geo-person-row{display:flex;gap:10px;margin-top:4px;overflow:hidden}
+.geo-person-row .geo-person-item{flex:0 0 52px;width:52px}
+.geo-person-more{flex:0 0 52px;width:52px;aspect-ratio:1/1;border:1px solid var(--border);border-radius:50%;
+  background:transparent;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0;
+  transition:border-radius .18s,border-color .15s,color .15s,background .15s}
+.geo-person-more:hover{border-radius:3px;border-color:var(--accent);color:var(--accent);background:rgba(var(--accent-rgb),.08)}
 .geo-person-item{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:6px 0;background:var(--bg);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:border-color 0.15s,background 0.15s}
 .geo-person-item:hover{border-color:var(--accent);background:rgba(var(--accent-rgb),0.06)}
 .geo-person-av{width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;overflow:hidden;flex-shrink:0}
@@ -220,10 +238,7 @@
 .cm-tag{padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:transparent;color:var(--text);font-size:12px;cursor:pointer;transition:border-color 0.15s,background 0.15s}
 .cm-tag:hover{border-color:var(--accent);background:rgba(var(--accent-rgb),0.1);color:var(--accent)}
 .cm-tags-empty{font-size:11px;color:var(--muted);padding:4px 0}
-.cm-custom-row{display:flex;gap:8px;margin-bottom:12px}
-.cm-custom-row input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;outline:none}
-.cm-custom-row input:focus{border-color:var(--accent)}
-.cm-custom-row .btn{padding:6px 10px;font-size:12px;line-height:normal}
+
 /* 长按 = 编辑，别让 iOS 弹出选中/存图的原生菜单抢走手势 */
 .intro-card,.geo-person-item{-webkit-touch-callout:none}
 .tl-modal-overlay.modal-center{align-items:center;justify-content:center}
@@ -369,10 +384,13 @@
 }
 
 /* ── 模态框操作按钮行 ── */
+/* 底部操作栏：最左删除，中间添加，最右保存（取消在它左边）。
+   添加用 auto 外边距推到剩余空间的中央，窄的时候会自己往左让 */
 .modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:8px}
 .modal-actions-right{display:flex;gap:8px}
 .modal-btn{flex:1;min-width:80px}
 .modal-btn-delete{min-width:60px}
+.cm-add-btn{flex:0 0 auto;margin:0 auto;min-width:72px}
 
 @media(max-width:1024px){.geo-layout{flex-direction:column}}
 

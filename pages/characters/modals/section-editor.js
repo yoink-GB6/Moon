@@ -16,12 +16,12 @@ export function createSectionEditor(config) {
   const md      = !!config.md;
   const hint    = config.hint || (md ? '拖 ⠿ 排序 · 展开后用 # ## ### 写子小节' : '点 ▾ 展开编辑；拖 ⠿ 可排序');
   const heading = config.heading || '内容小节';
+  const addLabel = config.addLabel || '添加';
   const mdGuide = config.mdGuide || '# 子小节 &nbsp; ## 子子小节 &nbsp; ### 三级';
 
   const id = {
     tags:      prefix + '-tags',
-    custom:    prefix + '-custom',
-    customAdd: prefix + '-custom-add',
+    add:       prefix + '-add',
     list:      prefix + '-list',
   };
 
@@ -78,10 +78,6 @@ export function createSectionEditor(config) {
     return '<div class="cm-sec-hdr"><span>' + escHtml(heading) + '</span><span class="cm-hint">' + escHtml(hint) + '</span></div>' +
       // 没配预设就不摆标签行，免得给一堆不合身的标题
       (presets.length ? '<div class="cm-tags" id="' + id.tags + '">' + tags + '</div>' : '') +
-      '<div class="cm-custom-row">' +
-        '<input type="text" id="' + id.custom + '" placeholder="自定义小节标题..." maxlength="30" autocomplete="off"/>' +
-        '<button class="btn bn" id="' + id.customAdd + '">＋ 添加</button>' +
-      '</div>' +
       '<div id="' + id.list + '" class="cm-list">' + (sections || []).map(rowHTML).join('') + '</div>';
   }
 
@@ -112,6 +108,9 @@ export function createSectionEditor(config) {
     if (ph) { const ta = row.querySelector('.cm-row-body'); if (ta) ta.placeholder = ph; }
     list.appendChild(row);
     expandRow(row);
+    // 新加的空行先填标题，已有标题的（预设）直接进正文
+    if (!title) row.querySelector('.cm-row-title')?.focus();
+    row.scrollIntoView({ block: 'nearest' });
   }
 
   function restorePresetTag(modal, title) {
@@ -186,15 +185,9 @@ export function createSectionEditor(config) {
       if (!tags.querySelector('.cm-tag')) tags.innerHTML = '<span class="cm-tags-empty">所有预设已添加</span>';
     });
 
-    const ci = modal.querySelector('#' + id.custom);
-    function doAdd() {
-      const t = ci.value.trim();
-      if (!t) { ci.focus(); return; }
-      appendRow(modal, t, '');
-      ci.value = ''; ci.focus();
-    }
-    modal.querySelector('#' + id.customAdd)?.addEventListener('click', doAdd);
-    ci?.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
+    modal.querySelector('#' + id.add)?.addEventListener('click', function() {
+      appendRow(modal, '', '');
+    });
 
     const list = modal.querySelector('#' + id.list);
     list?.addEventListener('click', function(e) {
@@ -235,7 +228,12 @@ export function createSectionEditor(config) {
     return out;
   }
 
-  return { html, bind, collect };
+  // 放进弹窗底部操作栏，和保存/取消同行
+  function addButtonHTML() {
+    return '<button class="btn bn modal-btn cm-add-btn" id="' + id.add + '">' + escHtml(addLabel) + '</button>';
+  }
+
+  return { html, addButtonHTML, bind, collect };
 }
 
 // 存进库的是 JSON 数组；解析不出数组就当没有内容

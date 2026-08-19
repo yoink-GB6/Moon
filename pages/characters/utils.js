@@ -33,6 +33,18 @@ export function closeModal(modal) {
 }
 
 /**
+ * 打开模态框：同一时刻只留一个
+ * 连着点「编辑城市」「编辑地标」会叠出两层，所以开新的之前先把别的关掉。
+ * 只管 .tl-modal-overlay 这一层，图片管理器/图库那种是从弹窗里叫起来的，不算。
+ */
+export function openModal(modal) {
+  document.querySelectorAll('.tl-modal-overlay.show').forEach(function(el) {
+    if (el !== modal) el.classList.remove('show');
+  });
+  modal.classList.add('show');
+}
+
+/**
  * 获取地理位置路径
  * @returns {string} 格式：国家 → 城市
  */

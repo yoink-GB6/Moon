@@ -3,7 +3,7 @@ import { supaClient } from '../../../core/supabase-client.js';
 import { showToast, confirmDialog } from '../../../core/ui.js';
 import { escHtml } from '../../../core/ui.js';
 import * as State from '../state.js';
-import { closeModal } from '../utils.js';
+import { closeModal, openModal } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
 import { renderGeoTree } from '../geo-tree.js';
 import { renderGeoDetail } from '../geo-detail.js';
@@ -46,7 +46,7 @@ export function openCountryModal(country) {
   modal.querySelector('.tl-modal').innerHTML =
     _buildHTML(country, parseSections(country && country.description));
   _bindEvents(modal);
-  modal.classList.add('show');
+  openModal(modal);
   setTimeout(function() { const n = modal.querySelector('#cm-name'); if (n) n.focus(); }, 100);
 }
 
@@ -61,9 +61,10 @@ function _buildHTML(country, sections) {
     editor.html(sections) +
     '<div class="modal-actions">' +
       '<button class="btn br modal-btn-delete" id="cm-delete" style="display:' + del + '">删除</button>' +
+      editor.addButtonHTML() +
       '<div class="modal-actions-right">' +
-        '<button class="btn bp modal-btn" id="cm-save">保存</button>' +
         '<button class="btn bn modal-btn" id="cm-cancel">取消</button>' +
+        '<button class="btn bp modal-btn" id="cm-save">保存</button>' +
       '</div>' +
     '</div>';
 }

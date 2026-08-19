@@ -660,7 +660,7 @@ export function openCharModal(char) {
   container.querySelector('#char-url-row').style.display = 'none';
   container.querySelector('#char-delete-btn').style.display = char ? 'block' : 'none';
 
-  modal.classList.add('show');
+  openModal(modal);
   setTimeout(function() { container.querySelector('#char-name').focus(); }, 100);
 }
 

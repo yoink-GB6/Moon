@@ -5,7 +5,7 @@
 import { supaClient } from '../../../core/supabase-client.js';
 import { showToast, confirmDialog } from '../../../core/ui.js';
 import * as State from '../state.js';
-import { closeModal } from '../utils.js';
+import { closeModal, openModal } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
 import { renderGeoTree } from '../geo-tree.js';
 import { renderGeoDetail } from '../geo-detail.js';
@@ -15,7 +15,8 @@ import { createSectionEditor } from './section-editor.js';
 const editor = createSectionEditor({
   prefix: 'cm-lm',
   presets: [],
-  hint: '填地标名添加；点 ✎ 写介绍；拖 ⠿ 可排序',
+  heading: '地标建筑',
+  hint: '点 ▾ 写介绍；拖 ⠿ 可排序',
 });
 
 export function setupLandmarkModal() {
@@ -38,17 +39,20 @@ export function openLandmarksModal(cityId) {
   modal.querySelector('.tl-modal').innerHTML =
     '<h2>' + '编辑地标建筑' + '</h2>' +
     editor.html(rows) +
-    '<div class="modal-actions"><div class="modal-actions-right">' +
-      '<button class="btn bp modal-btn" id="cm-lm-save">保存</button>' +
-      '<button class="btn bn modal-btn" id="cm-lm-cancel">取消</button>' +
-    '</div></div>';
+    '<div class="modal-actions">' +
+      editor.addButtonHTML() +
+      '<div class="modal-actions-right">' +
+        '<button class="btn bn modal-btn" id="cm-lm-cancel">取消</button>' +
+        '<button class="btn bp modal-btn" id="cm-lm-save">保存</button>' +
+      '</div>' +
+    '</div>';
 
   modal.querySelector('#cm-lm-cancel')?.addEventListener('click', () => closeModal(modal));
   modal.querySelector('#cm-lm-save')?.addEventListener('click', _save);
   editor.bind(modal);
 
-  modal.classList.add('show');
-  setTimeout(() => modal.querySelector('#cm-lm-custom')?.focus(), 100);
+  openModal(modal);
+  setTimeout(() => modal.querySelector('.cm-row-title')?.focus(), 100);
 }
 
 async function _save() {

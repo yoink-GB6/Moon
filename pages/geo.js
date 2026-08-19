@@ -1,9 +1,10 @@
 // pages/geo.js
 import { isEditor, onAuthChange } from '../core/auth.js';
 import { escHtml } from '../core/ui.js';
+import { parseHash } from '../core/router.js';
 
 import * as State from './characters/state.js';
-import { setGeoRouteApplier, navSelect } from './characters/geo-nav.js';
+import { setGeoRouteApplier, navSelect, navReflect } from './characters/geo-nav.js';
 import { loadAllData, subscribeRealtime, unsubscribeRealtime } from './characters/data-loader.js';
 import { initGeographyTab } from './characters/geography-tab.js';
 import { renderGeoTree } from './characters/geo-tree.js';
@@ -26,6 +27,7 @@ export async function mount(container) {
   _unsubAuth = onAuthChange(() => { updateUI(); render(); });
   await loadAllData();
   _dataLoaded = true;
+  _pickRandomCountry();
   render();
   if (_pendingRoute) { const fn = _pendingRoute; _pendingRoute = null; fn(); }
   subscribeRealtime(() => render());
@@ -35,7 +37,22 @@ export async function mount(container) {
 export function unmount() {
   _dataLoaded = false;
   unsubscribeRealtime();
+  // 选中项存在模块级 State 里，不清掉的话下次进来还停在老地方，随机就不会发生
+  State.setSelectedCountry(null);
+  State.setSelectedCity(null);
   if (_unsubAuth) { _unsubAuth(); _unsubAuth = null; }
+}
+
+// 裸 #/geo 进来随机挑一个国家，免得每次都盯着同一个看腻。
+// 带了 #/geo/country/3 这种深链就不动，交给 applyRoute。
+function _pickRandomCountry() {
+  if (parseHash().parts.length) return;
+  if (State.selectedCountry || State.selectedCity) return;
+  if (!State.allCountries.length) return;
+  const pick = State.allCountries[Math.floor(Math.random() * State.allCountries.length)];
+  State.setSelectedCountry(pick);
+  if (!State.expandedCountries.has(pick.id)) State.toggleCountryExpanded(pick.id);
+  navReflect();            // 地址栏跟上，但用 replace，不往历史里塞
 }
 
 // ── HTML ──────────────────────────────────────────────────────
