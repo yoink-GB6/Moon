@@ -5,7 +5,17 @@ import { escHtml } from '../../core/ui.js';
 import * as State from './state.js';
 import { openCharModal } from './modals/character-modal.js';
 import { bindCharOpen } from './char-open.js';
-import { getLocationPath, parseAvatarUrls, pickRandomUrl } from './utils.js';
+import { openBirthdayForCharacter } from './birthday-popup.js';
+import { formatBirthdayShort, getLocationPath, parseAvatarUrls, pickRandomUrl } from './utils.js';
+
+const SECRET_BIRTHDAY_LABELS = [
+  'Motus', 'Pssssst', 'shh', 'Chitón', 'Zitto', 'Naisho', '쉿', '嘘',
+  'Tace', 'Arcanum', 'Sgr', 'चुप!', 'Σιώπα', 'Hljóð',
+];
+
+function randomSecretBirthdayLabel() {
+  return SECRET_BIRTHDAY_LABELS[Math.floor(Math.random() * SECRET_BIRTHDAY_LABELS.length)];
+}
 
 
 // 计算 toggle 在卡片内的层级索引路径，供只读弹窗定位对应小节
@@ -33,6 +43,9 @@ export function getTogglePath(toggle, cardEl) {
 export function buildCharCardHTML(char, avatarUrl) {
   const location = getLocationPath(char.city_id, State.allCities, State.allCountries, char.country_id);
   const hasAge   = char.base_age != null && char.base_age !== '';
+  const birthday = formatBirthdayShort(char.birthday);
+  const birthdayLabel = birthday || randomSecretBirthdayLabel();
+  const birthdayAria = birthday ? `查看${char.name}的生日` : `${char.name}的生日是秘密`;
   return `
     <div class="intro-card" data-id="${char.id}"${avatarUrl ? ` data-avatar="${escHtml(avatarUrl)}"` : ''}>
       <div class="intro-card-header">
@@ -44,6 +57,7 @@ export function buildCharCardHTML(char, avatarUrl) {
           ${location !== '未知' ? `<div class="intro-card-meta">${escHtml(location)}</div>` : ''}
           ${hasAge ? `<div class="intro-card-meta">年龄：${escHtml(String(char.base_age))}</div>` : ''}
         </div>
+        <button type="button" class="btn bn intro-card-birthday" aria-label="${escHtml(birthdayAria)}"${birthday ? '' : ' data-birthday-secret="true"'}>${escHtml(birthdayLabel)}</button>
       </div>
     </div>
   `;
@@ -53,6 +67,17 @@ export function buildCharCardHTML(char, avatarUrl) {
  * 为单张人物卡片绑定点击事件
  */
 export function bindCharCard(card, char) {
+  const birthdayButton = card.querySelector('.intro-card-birthday');
+  if (birthdayButton) {
+    ['mousedown', 'touchstart', 'contextmenu'].forEach(type => {
+      birthdayButton.addEventListener(type, event => event.stopPropagation());
+    });
+    birthdayButton.addEventListener('click', event => {
+      event.stopPropagation();
+      openBirthdayForCharacter(char, State.allChars);
+    });
+  }
+
   bindCharOpen(card, (e) => {
     const toggle = e.target.closest && e.target.closest('.collapse-h2, .collapse-header');
     return {

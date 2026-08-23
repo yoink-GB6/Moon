@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 280" role="img" aria-labelledby="title desc">
+  <title id="title">Camellia foreground petals</title>
+  <desc id="desc">Three translucent petals forming the near edge of an angled camellia.</desc>
+  <defs>
+    <linearGradient id="petal-left" x1=".2" y1=".05" x2=".82" y2=".9">
+      <stop offset="0" stop-color="#fff" stop-opacity=".9"/>
+      <stop offset=".55" stop-color="#eee2c8" stop-opacity=".66"/>
+      <stop offset="1" stop-color="#a9802d" stop-opacity=".35"/>
+    </linearGradient>
+    <linearGradient id="petal-right" x1=".35" y1="0" x2=".7" y2="1">
+      <stop offset="0" stop-color="#fffef9" stop-opacity=".94"/>
+      <stop offset=".6" stop-color="#f1e1bd" stop-opacity=".7"/>
+      <stop offset="1" stop-color="#b28934" stop-opacity=".38"/>
+    </linearGradient>
+    <linearGradient id="petal-front" x1=".5" y1="0" x2=".5" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".92"/>
+      <stop offset=".52" stop-color="#f4ead4" stop-opacity=".76"/>
+      <stop offset="1" stop-color="#aa812c" stop-opacity=".4"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".9"/>
+      <stop offset=".5" stop-color="#eedca4" stop-opacity=".72"/>
+      <stop offset="1" stop-color="#9a7320" stop-opacity=".52"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-35%" width="140%" height="170%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/>
+      <feOffset dy="5" result="offset"/>
+      <feFlood flood-color="#000" flood-opacity=".18"/>
+      <feComposite in2="offset" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <g transform="translate(770 0) scale(-1 1)" filter="url(#soft-shadow)" stroke="url(#edge)" stroke-width="2" stroke-linejoin="round">
+    <path fill="url(#petal-left)" d="M395 197C299 78 124 70 27 174C126 234 277 253 421 213C416 207 407 201 395 197Z"/>
+    <path fill="url(#petal-right)" d="M371 205C426 67 620 36 774 126C691 232 534 273 371 221C369 216 369 210 371 205Z"/>
+    <path fill="url(#petal-front)" d="M166 231C289 108 511 96 675 204C553 287 333 303 166 244C163 239 163 235 166 231Z"/>
+  </g>
+  <g transform="translate(770 0) scale(-1 1)" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity=".3">
+    <path d="M80 177C191 142 303 157 390 201"/>
+    <path d="M407 202C502 141 626 123 721 145"/>
+    <path d="M222 228C352 181 515 177 625 211"/>
+  </g>
+</svg>

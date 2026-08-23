@@ -25,6 +25,42 @@ export function pickRandomUrl(urls) {
   return urls[Math.floor(Math.random() * urls.length)];
 }
 
+export function parseCharLinks(raw) {
+  if (!raw) return [];
+  const links = [];
+  const re = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+  let match;
+  while ((match = re.exec(raw)) !== null) links.push({ label: match[1], url: match[2] });
+  const plain = raw.trim();
+  if (!links.length && /^https?:\/\/\S+$/.test(plain)) links.push({ label: plain, url: plain });
+  return links;
+}
+
+export function parseBirthday(raw) {
+  const match = String(raw || '').trim().match(/^(\d{2})\/(\d{2})(?:\/(\d{4}))?$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return null;
+  const maxDay = new Date(2000, month, 0).getDate();
+  if (day < 1 || day > maxDay) return null;
+  return { day, month, year: match[3] ? Number(match[3]) : null };
+}
+
+const SHORT_MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+export function formatDayMonth(day, month) {
+  const monthLabel = SHORT_MONTHS[Number(month) - 1];
+  const dayNumber = Number(day);
+  if (!monthLabel || !Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 31) return '';
+  return String(dayNumber).padStart(2, '0') + ' ' + monthLabel;
+}
+
+export function formatBirthdayShort(raw) {
+  const birthday = parseBirthday(raw);
+  return birthday ? formatDayMonth(birthday.day, birthday.month) : '';
+}
+
 /**
  * 关闭模态框
  */

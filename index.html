@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="birthday-boot">
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -9,6 +9,38 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>hello~</title>
 <meta name="theme-color" content="#101010">
+
+<style id="birthday-boot-style">
+html.birthday-boot,html.birthday-boot body{background:#000!important}
+#birthday-boot-screen{
+  position:fixed;inset:0;z-index:20000;background:#000;opacity:0;visibility:hidden;
+  pointer-events:none;transition:opacity .6s ease,visibility 0s linear .6s;
+}
+html.birthday-boot #birthday-boot-screen{opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
+</style>
+<script>
+(function(){
+  var released = false;
+  // 当天已经展示过生日页，或已经确认无人生日时，刷新不再重复经过黑色加载门。
+  try {
+    var now = new Date();
+    var dateKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    released = localStorage.getItem('moon-birthday-seen:' + dateKey) === '1'
+      || localStorage.getItem('moon-birthday-checked:' + dateKey) === '1';
+    if (released) document.documentElement.classList.remove('birthday-boot');
+  } catch (_) {}
+  window.releaseBirthdayBoot = function(){
+    if (released) {
+      document.getElementById('birthday-boot-screen')?.remove();
+      return;
+    }
+    released = true;
+    document.documentElement.classList.remove('birthday-boot');
+    setTimeout(function(){ document.getElementById('birthday-boot-screen')?.remove(); }, 700);
+  };
+  setTimeout(window.releaseBirthdayBoot, 3000);
+})();
+</script>
 
 <!-- 必须在样式表之前同步执行，否则浅色模式下会闪一帧暗色 -->
 <script>
@@ -42,10 +74,13 @@
 <link rel="stylesheet" href="styles/relations.css">
 <link rel="stylesheet" href="styles/gacha.css">
 <link rel="stylesheet" href="styles/tv.css">
+<link rel="stylesheet" href="styles/birthday.css">
 <link rel="stylesheet" href="styles/responsive.css">
 
 </head>
 <body>
+
+<div id="birthday-boot-screen" aria-hidden="true"></div>
 
 <div id="modal-backdrop"></div>
 <div id="app">
@@ -97,6 +132,7 @@ import { isEditor, tryUnlock, lock, onAuthChange, initAuth } from './core/auth.j
 import { initTheme, toggleTheme } from './core/theme.js';
 import { parseHash, go, onRouteChange } from './core/router.js';
 import { initAnalytics } from './core/analytics.js';
+import { initBirthdayPopup } from './pages/characters/birthday-popup.js';
 import { iconSun, iconCloud, iconCloudSm, iconBird, iconHorizon,
          moonCrescent, iconConstellation,
          iconStar, iconStarSm } from './core/icons.js';
@@ -330,6 +366,7 @@ document.getElementById('panel-btn').addEventListener('click', () => { lockTopba
 // scroll 不冒泡但会捕获，所以在 document 上捕获监听，按来源分别记录位置。
 const _lastScroll = new WeakMap();
 let _topbarLock = 0;
+let _topbarScroller = null;
 
 // 只认页面主内容的滚动。弹窗、侧栏、右侧面板自己的滚动不该动顶栏。
 const IGNORE_SCROLL = '.tl-modal-overlay,#pw-modal,#sidebar,.side-panel';
@@ -338,10 +375,11 @@ const IGNORE_SCROLL = '.tl-modal-overlay,#pw-modal,#sidebar,.side-panel';
 // 那不是用户滚的，不该动顶栏，所以在动画期间锁住。
 function lockTopbar(ms = 600) { _topbarLock = performance.now() + ms; }
 
-function setTopbarHidden(hide) {
+function setTopbarHidden(hide, scroller = null) {
   const topbar = document.getElementById('topbar');
   if (topbar.classList.contains('hide') === hide) return;
   topbar.classList.toggle('hide', hide);
+  _topbarScroller = hide ? scroller : null;
   // 顶栏一收，内容区就变高 → 滚动容器尺寸变化 → 又派发一次 scroll，
   // 方向相反就会来回抖。加一段冷却把这个反馈回路掐断。
   _topbarLock = performance.now() + 400;
@@ -360,8 +398,43 @@ document.addEventListener('scroll', e => {
   const d = y - prev;
   if (Math.abs(d) < 8) return;            // 忽略抖动
   if (y < 40) setTopbarHidden(false);
-  else setTopbarHidden(d > 0);
+  else setTopbarHidden(d > 0, el);
 }, true);
+
+// A short page can stop being scrollable after the topbar is hidden because the
+// newly available space makes all of its content fit. In that state no reverse
+// scroll event is emitted, so listen to the user's reverse gesture as well.
+function canRevealTopbarFrom(target) {
+  return document.getElementById('topbar').classList.contains('hide')
+    && _topbarScroller
+    && target instanceof Node
+    && _topbarScroller.contains(target)
+    && !(target instanceof Element && target.closest(IGNORE_SCROLL));
+}
+
+document.addEventListener('wheel', e => {
+  if (e.deltaY < -2 && canRevealTopbarFrom(e.target)) setTopbarHidden(false);
+}, { capture: true, passive: true });
+
+let _topbarTouchY = null;
+document.addEventListener('touchstart', e => {
+  _topbarTouchY = canRevealTopbarFrom(e.target) && e.touches.length === 1
+    ? e.touches[0].clientY
+    : null;
+}, { capture: true, passive: true });
+
+document.addEventListener('touchmove', e => {
+  if (_topbarTouchY == null || e.touches.length !== 1) return;
+  const y = e.touches[0].clientY;
+  if (y - _topbarTouchY > 12 && canRevealTopbarFrom(e.target)) {
+    _topbarTouchY = null;
+    setTopbarHidden(false);
+  }
+}, { capture: true, passive: true });
+
+for (const type of ['touchend', 'touchcancel']) {
+  document.addEventListener(type, () => { _topbarTouchY = null; }, { capture: true });
+}
 
 // ── Theme toggle ───────────────────────────────────
 document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
@@ -377,7 +450,9 @@ buildNav();
 // hash 是唯一的真实来源：地址栏变了就跟着走
 onRouteChange(({ page, parts }) => navigate(page || 'library', parts));
 const _r0 = parseHash();
-navigate(_r0.page || 'library', _r0.parts);
+const _initialPage = navigate(_r0.page || 'library', _r0.parts);
+const _initialBirthday = initBirthdayPopup(_initialPage);
+Promise.allSettled([_initialPage, _initialBirthday]).finally(window.releaseBirthdayBoot);
 </script>
 
 </body>

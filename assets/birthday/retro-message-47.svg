@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 920" role="img" aria-labelledby="title desc">
+  <title id="title">晚上好复古短信屏</title>
+  <desc id="desc">一块略微倾斜的旧式手机短信编辑屏，带点阵、扫描线和轻微彩色错位。</desc>
+  <defs>
+    <linearGradient id="screen-base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e2d9e5"/>
+      <stop offset=".52" stop-color="#d5c9da"/>
+      <stop offset="1" stop-color="#c5b8cc"/>
+    </linearGradient>
+    <linearGradient id="glass-glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".3"/>
+      <stop offset=".38" stop-color="#fff" stop-opacity=".04"/>
+      <stop offset="1" stop-color="#7a5b85" stop-opacity=".2"/>
+    </linearGradient>
+    <linearGradient id="frame-edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2b3057"/>
+      <stop offset=".5" stop-color="#090a13"/>
+      <stop offset="1" stop-color="#252a4e"/>
+    </linearGradient>
+    <pattern id="lcd-pixels" width="3" height="3" patternUnits="userSpaceOnUse">
+      <rect width="3" height="3" fill="none"/>
+      <rect x=".35" y=".35" width=".8" height=".8" fill="#3d3345" opacity=".22"/>
+      <rect x="1.35" y=".35" width=".8" height=".8" fill="#8b3f63" opacity=".12"/>
+      <rect x="2.35" y=".35" width=".4" height=".8" fill="#24859a" opacity=".13"/>
+      <rect x=".35" y="1.45" width="2.4" height=".45" fill="#382f40" opacity=".08"/>
+    </pattern>
+    <pattern id="scanlines" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="1" fill="#fff" opacity=".035"/>
+      <rect y="2" width="4" height="1" fill="#140e18" opacity=".09"/>
+    </pattern>
+    <pattern id="case-speckle" width="17" height="13" patternUnits="userSpaceOnUse">
+      <rect x="2" y="3" width="1" height="1" fill="#fff" opacity=".08"/>
+      <rect x="12" y="9" width="1" height="1" fill="#54d8e5" opacity=".07"/>
+      <rect x="7" y="1" width="1" height="1" fill="#df5a86" opacity=".06"/>
+    </pattern>
+    <filter id="drop" x="-30%" y="-30%" width="160%" height="175%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="15" result="blur"/>
+      <feOffset dx="8" dy="18" result="offset"/>
+      <feFlood flood-color="#000" flood-opacity=".72"/>
+      <feComposite in2="offset" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="soft-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.3" result="blur"/>
+      <feFlood flood-color="#303761" flood-opacity=".9" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="halo"/>
+      <feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="screen-halo" x="-12%" y="-18%" width="124%" height="136%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="7" result="blur"/>
+      <feFlood flood-color="#20284f" flood-opacity=".78" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="halo"/>
+      <feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="message-clip">
+      <rect x="122" y="186" width="556" height="338"/>
+    </clipPath>
+  </defs>
+
+  <!-- 手机纵向压扁并沉到人物下沿，只让倾斜后的一个上角被人物图压住。 -->
+  <g transform="translate(0 454) translate(400 330) scale(.7 .5) translate(-400 -330)">
+  <g transform="rotate(4.8 400 330)" filter="url(#drop)">
+    <!-- 外壳与画布使用同一纯黑色，不留下可识别的手机轮廓。 -->
+    <path d="M119 91L678 91L699 554L96 554Z" fill="#000"/>
+
+    <!-- 顶栏：像素信号、系统名、消息和电量。 -->
+    <g shape-rendering="crispEdges" fill="#d9d2e4" filter="url(#soft-glow)">
+      <rect x="132" y="115" width="7" height="7" opacity=".45"/>
+      <rect x="143" y="108" width="7" height="14" opacity=".58"/>
+      <rect x="154" y="101" width="7" height="21" opacity=".72"/>
+      <rect x="165" y="94" width="7" height="28" opacity=".86"/>
+      <rect x="176" y="87" width="7" height="35"/>
+      <path d="M132 139H145V132H158V125H171V118H184V132H171V139H158V146H132Z"/>
+      <rect x="610" y="111" width="38" height="28" fill="none" stroke="#d9d2e4" stroke-width="6"/>
+      <rect x="650" y="119" width="5" height="12"/>
+      <rect x="616" y="117" width="17" height="16" fill="#d9d2e4" opacity=".7"/>
+      <path d="M558 111H574V118H582V133H574V140H558V133H550V118H558ZM558 118V133H574V118Z" fill-rule="evenodd"/>
+    </g>
+
+    <text x="198" y="139" fill="#ddd5e1" font-family="'Courier New',monospace" font-size="31" font-weight="700" letter-spacing="-2">MOON.MSG</text>
+    <text x="492" y="163" fill="#dddce8" opacity=".92" filter="url(#soft-glow)" font-family="'Courier New',monospace" font-size="27" letter-spacing="1">05/200</text>
+
+    <!-- 短信输入屏。 -->
+    <rect x="120" y="184" width="560" height="342" fill="url(#frame-edge)" filter="url(#screen-halo)"/>
+    <rect x="125" y="189" width="550" height="332" fill="url(#screen-base)"/>
+    <rect x="125" y="189" width="550" height="332" fill="url(#glass-glow)"/>
+    <rect x="125" y="189" width="550" height="332" fill="url(#lcd-pixels)" opacity=".9"/>
+    <rect x="125" y="189" width="550" height="332" fill="url(#scanlines)"/>
+
+    <!-- 屏幕文字的双重偏移很轻，只留下旧液晶屏的彩边。 -->
+    <g clip-path="url(#message-clip)" font-family="'Fusion Pixel 12px Proportional SC','SimSun','Noto Sans Mono CJK SC',monospace" font-size="108" font-weight="700" letter-spacing="11" text-anchor="middle">
+      <text x="400" y="310" fill="#dc315f" opacity=".32" transform="translate(2 1)">晚上好</text>
+      <text x="400" y="310" fill="#168b9c" opacity=".32" transform="translate(-2 -1)">晚上好</text>
+      <text x="400" y="310" fill="#302837" stroke="#302837" stroke-width=".8" paint-order="stroke">晚上好</text>
+      <text x="400" y="310" fill="url(#lcd-pixels)" opacity=".32">晚上好</text>
+    </g>
+
+    <!-- 底部软键提示。 -->
+    <g font-family="'Fusion Pixel 12px Proportional SC','SimSun','Noto Sans Mono CJK SC',monospace" font-size="32" font-weight="700" fill="#d9d2e4" filter="url(#soft-glow)">
+      <text x="112" y="549">选项</text>
+    </g>
+    <path d="M106 532H154" stroke="#6bd6df" stroke-width="2" opacity=".32"/>
+  </g>
+
+  </g>
+</svg>

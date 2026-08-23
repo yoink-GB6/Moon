@@ -2,7 +2,7 @@
 import { supaClient } from '../core/supabase-client.js';
 import { escHtml, showToast } from '../core/ui.js';
 import { parseAvatarUrls } from './characters/utils.js';
-import { openCharReadonly } from './characters/modals/char-readonly-modal.js';
+import { openCharReadonly, animateCharReadonlyEnter } from './characters/modals/char-readonly-modal.js';
 import * as State from './characters/state.js';
 import { loadAllData } from './characters/data-loader.js';
 import { themeRGB } from '../core/theme.js';
@@ -481,7 +481,7 @@ function _openGachaViewer(url, onClose) {
         if (_viewerAC) { _viewerAC.abort(); _viewerAC = null; }
         viewer.classList.remove('show');
         openCharReadonly(char, undefined, url);
-        _animateModalEnter();
+        animateCharReadonlyEnter();
         onClose();
       } else if (!_flipped) {
         // 无角色第一次点击：换成暗图+敬请期待，再展开
@@ -519,21 +519,6 @@ function _openGachaViewer(url, onClose) {
     e => { if (e.target === viewer) dismissToHand(); },
     { signal: sig });
 }
-
-// 模态框从细条展开的进场动画
-function _animateModalEnter() {
-  const overlay = State.pageContainer?.querySelector('#char-readonly-modal');
-  if (!overlay) return;
-  const box = overlay.querySelector('.tl-modal');
-  if (!box) return;
-  box.style.transition = 'none';
-  box.style.transform  = 'scaleX(0)';
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    box.style.transition = 'transform 0.3s cubic-bezier(0.4,0,0.2,1)';
-    box.style.transform  = '';
-  }));
-}
-
 
 // ── 手牌盘 ────────────────────────────────────────────────────
 const HAND_SPACING = 52; // 固定间距，卡片始终轻微重叠

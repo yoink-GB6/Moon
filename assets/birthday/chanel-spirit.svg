@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 800 660" role="img" aria-labelledby="title desc">
+  <title id="title">Layered camellia birthday backdrop</title>
+  <desc id="desc">A translucent two-layer camellia viewed at a slight angle, opening from lower right toward upper left.</desc>
+  <defs>
+    <linearGradient id="outer-acrylic" x1=".5" y1="0" x2=".5" y2="1">
+      <stop offset="0" stop-color="#fffefa" stop-opacity=".8"/>
+      <stop offset=".55" stop-color="#eee4d1" stop-opacity=".5"/>
+      <stop offset=".82" stop-color="#c2a35e" stop-opacity=".39"/>
+      <stop offset="1" stop-color="#72561d" stop-opacity=".47"/>
+    </linearGradient>
+    <linearGradient id="inner-acrylic" x1=".5" y1="0" x2=".5" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".98"/>
+      <stop offset=".24" stop-color="#fff9e9" stop-opacity=".9"/>
+      <stop offset=".58" stop-color="#f1dfae" stop-opacity=".66"/>
+      <stop offset="1" stop-color="#a67c27" stop-opacity=".31"/>
+    </linearGradient>
+    <linearGradient id="outer-edge" x1=".5" y1="0" x2=".5" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".92"/>
+      <stop offset=".62" stop-color="#e6d39a" stop-opacity=".62"/>
+      <stop offset="1" stop-color="#6e5018" stop-opacity=".64"/>
+    </linearGradient>
+    <linearGradient id="inner-edge" x1=".5" y1="0" x2=".5" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
+      <stop offset=".34" stop-color="#fff4cf" stop-opacity=".88"/>
+      <stop offset="1" stop-color="#9b7120" stop-opacity=".48"/>
+    </linearGradient>
+    <filter id="acrylic-shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="blur"/>
+      <feOffset dy="8" result="offset"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="offset" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- 宽而圆的花瓣：中心连接处收窄，外缘保持柔和饱满。 -->
+    <path id="outer-petal" d="M0 24C-82 20-150-43-144-132C-138-215-73-272 0-266C73-272 138-215 144-132C150-43 82 20 0 24Z"/>
+    <path id="inner-petal" d="M0 18C-62 15-108-32-104-96C-99-158-51-200 0-194C51-200 99-158 104-96C108-32 62 15 0 18Z"/>
+    <path id="outer-glint" d="M-15-4C-58-46-72-126-39-201"/>
+    <path id="inner-glint" d="M-11-1C-40-34-49-90-27-143"/>
+  </defs>
+
+  <g transform="translate(400 390) rotate(18) scale(-1.08 .82)" filter="url(#acrylic-shadow)">
+    <!-- 六片外层花瓣轻微错位，形成自然的波浪外轮廓。 -->
+    <g fill="url(#outer-acrylic)" stroke="url(#outer-edge)" stroke-width="2.2" stroke-linejoin="round">
+      <use xlink:href="#outer-petal" transform="rotate(-3) scale(1 .98)"/>
+      <use xlink:href="#outer-petal" transform="rotate(58) scale(.98 1.01)"/>
+      <use xlink:href="#outer-petal" transform="rotate(119) scale(1.02 .97)"/>
+      <use xlink:href="#outer-petal" transform="rotate(181) scale(.99 1.01)"/>
+      <use xlink:href="#outer-petal" transform="rotate(241) scale(1.01 .98)"/>
+      <use xlink:href="#outer-petal" transform="rotate(301) scale(.98 1.02)"/>
+    </g>
+
+    <!-- 四片内层花瓣比外层更小，外沿更亮，并旋转错开；中心留空给人物立绘遮挡。 -->
+    <g transform="translate(26 -30) scale(.96)" fill="url(#inner-acrylic)" stroke="url(#inner-edge)" stroke-width="2" stroke-linejoin="round">
+      <use xlink:href="#inner-petal" transform="rotate(27) scale(1.08 .98)"/>
+      <use xlink:href="#inner-petal" transform="rotate(118) scale(1.04 1.02)"/>
+      <use xlink:href="#inner-petal" transform="rotate(208) scale(1.09 .97)"/>
+      <use xlink:href="#inner-petal" transform="rotate(299) scale(1.05 1.01)"/>
+    </g>
+
+    <g fill="none" stroke="#fff" stroke-width="1.25" stroke-linecap="round" opacity=".27">
+      <use xlink:href="#outer-glint" transform="rotate(-3)"/>
+      <use xlink:href="#outer-glint" transform="rotate(58)"/>
+      <use xlink:href="#outer-glint" transform="rotate(119)"/>
+      <use xlink:href="#outer-glint" transform="rotate(181)"/>
+      <use xlink:href="#outer-glint" transform="rotate(241)"/>
+      <use xlink:href="#outer-glint" transform="rotate(301)"/>
+    </g>
+    <g transform="translate(26 -30) scale(.96)" fill="none" stroke="#fffdf7" stroke-width="1.15" stroke-linecap="round" opacity=".32">
+      <use xlink:href="#inner-glint" transform="rotate(27)"/>
+      <use xlink:href="#inner-glint" transform="rotate(118)"/>
+      <use xlink:href="#inner-glint" transform="rotate(208)"/>
+      <use xlink:href="#inner-glint" transform="rotate(299)"/>
+    </g>
+  </g>
+</svg>

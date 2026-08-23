@@ -81,6 +81,33 @@ export function swallowNextClick() {
   setTimeout(() => document.removeEventListener('click', kill, true), 400);
 }
 
+export function bindOverlayDismiss(overlay, close) {
+  if (overlay._dismissCtrl) overlay._dismissCtrl.abort();
+  overlay._dismissCtrl = new AbortController();
+  const signal = overlay._dismissCtrl.signal;
+  let start = null;
+
+  overlay.addEventListener('pointerdown', e => {
+    start = e.target === overlay ? { x: e.clientX, y: e.clientY } : null;
+  }, { signal });
+  overlay.addEventListener('pointercancel', () => { start = null; }, { signal });
+  overlay.addEventListener('pointerup', e => {
+    const s = start; start = null;
+    if (!s || e.target !== overlay) return;
+    if (Math.abs(e.clientX - s.x) > 8 || Math.abs(e.clientY - s.y) > 8) return;
+    close();
+    swallowNextClick();
+  }, { signal });
+  overlay.addEventListener('contextmenu', e => {
+    if (e.target !== overlay) return;
+    e.preventDefault();
+    close();
+  }, { signal });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.isConnected && overlay.classList.contains('show')) close();
+  }, { signal });
+}
+
 export function closeImageViewer(byPointer) {
   if (!_iv) return;
   const s = _iv;

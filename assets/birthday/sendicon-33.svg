@@ -1,0 +1,463 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="98" height="104" viewBox="0 0 98 104" version="1.1" desc="Created with imagetracer.js version 1.2.6">
+  <style>
+    path[fill="rgb(255,254,255)"],
+    path[fill="rgb(254,254,254)"],
+    path[fill="rgb(254,254,250)"],
+    path[fill="rgb(254,249,254)"],
+    path[fill="rgb(251,251,253)"],
+    path[fill="rgb(247,243,244)"],
+    path[fill="rgb(255,255,255)"],
+    path[fill="rgb(249,239,253)"] { display: none; }
+  </style>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 57 0 L 60 1.5 L 57 1.5 L 57 0 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 58.5 3 L 57.5 5 L 58.5 3 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 95.5 3 L 96.5 5 L 94.5 6 L 93.5 4 L 95.5 3 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 54.5 7 L 53.5 9 L 52 8.5 L 54.5 7 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 94.5 9 L 95.5 11 L 94.5 9 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 38 16 L 43 16.5 Q 41.8 19 38 18 L 38 16 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 46.5 17 L 45.5 19 L 46.5 17 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 96.5 17 L 97 18.5 L 94 20 L 95 23.5 L 93.5 24 Q 90.8 22.8 93 21.5 L 96.5 17 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 38.5 19 L 40 19.5 L 36 22.5 L 35.5 24 L 35 22.5 L 36 20 L 38.5 19 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 89.5 21 L 90.5 23 L 88 24.5 L 88.5 26 L 86.5 25 L 85 25.5 L 89 23 L 89.5 21 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 32 22 Q 34.7 20.9 34 23.5 L 33.5 25 L 36 25.5 L 32.5 27 L 32 22 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 41.5 23 L 41.5 26 Q 38.5 24.5 41.5 23 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 37.5 28 L 36.5 30 L 37.5 28 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 81.5 30 L 84 31.5 L 82 31.5 Q 82.8 34.1 79.5 33 L 81.5 30 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 90.5 30 Q 95.3 28.7 94 32 Q 89.8 32 90.5 30 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 21.5 32 L 25.5 33 L 27 32.5 Q 22.8 34.8 24.5 37 L 23.5 36 L 19 39.5 L 20 36 Q 23.8 36.8 25 33.5 Q 20.6 33.9 21.5 32 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 77.5 36 L 78.5 38 L 77.5 36 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 16.5 37 L 18 41.5 L 16 42.5 L 16 40.5 L 16.5 37 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 26.5 37 L 26 38.5 L 24.5 41 L 25 39.5 L 26.5 37 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 74.5 38 L 75.5 40 L 74.5 38 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 76.5 41 L 78 41.5 L 75.5 43 L 76.5 41 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 19.5 44 L 21 44.5 L 18.5 46 L 19.5 44 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 1.5 47 L 4 48 Q 5.2 51.7 0 50 L 1.5 47 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 14.5 47 L 15 51 L 11 49.5 L 14 49 L 14.5 47 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 71 47 L 73 47.5 L 71.5 51 L 71 47 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 65 49 L 67 49.5 L 65 50.5 L 65 49 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 68.5 51 Q 71.1 50.3 70 53 L 67 52.5 L 68.5 51 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 6.5 52 L 7 56 L 9 56.5 L 7.5 57 Q 4.8 55.8 6.5 52 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 63.5 54 L 66 55.5 L 64 56.5 L 64.5 58 L 62 57 Q 63 60.8 60.5 62 L 58 60.5 L 60 60.5 L 59.5 58 L 58 58.5 L 59.5 56 L 61.5 57 L 64 55.5 L 63.5 54 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 0.5 56 L 1.5 58 Q -1.3 58.7 0.5 56 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 0.5 59 L 3 60.5 L 4 64.5 L 2 65.5 L 2 63.5 L 0.5 59 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 5.5 65 L 7 65.5 L 3.5 68 L 5.5 65 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 71.5 65 L 72 66.5 L 69.5 68 L 68.5 66 L 71 67 L 71.5 65 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 1.5 68 L 0.5 70 L 1.5 68 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 74.5 68 L 76 70.5 L 73.5 72 L 74 70.5 L 74.5 68 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 4.5 69 L 3.5 71 L 4.5 69 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 5.5 71 L 8 71.5 Q 5.9 74.8 5.5 71 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 70.5 72 Q 72.8 71.3 72 73.5 L 70 73.5 L 69.5 76 Q 67.8 72.9 66 74.5 Q 65.1 71.5 69.5 73 L 70.5 72 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 72.5 78 L 73 80 L 71 79.5 L 72.5 78 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 9.5 80 L 10 82.5 L 8 83.5 L 9.5 80 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 64.5 81 L 64 82.5 L 63.5 84 L 63 82.5 L 64.5 81 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 69.5 83 L 72 83.5 L 69.5 84 L 69.5 83 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 9.5 85 Q 12.5 86.5 9.5 88 Q 6.5 86.5 9.5 85 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 12.5 88 L 13 92.5 L 12 92.5 L 12.5 88 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 3.5 89 L 4 91.5 L 2.5 91 L 1 90.5 L 3.5 89 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 14.5 94 L 15.5 96 L 13 95.5 L 14.5 94 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 5.5 97 L 6 99 Q 9.7 97.8 8 103 Q 4.3 104.2 6 99 L 0.5 99 L 0.5 98 L 5.5 97 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 49 98 L 51.5 99 L 53 98.5 L 52 101.5 L 54.5 100 L 57 100.5 L 54 101.5 L 56 102.5 L 48 103 L 49 98 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 65.5 98 L 98 98.5 L 65.5 99 L 65.5 98 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 17.5 99 L 22 101 L 21.5 103 L 18.5 101 L 17 101.5 L 17.5 99 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 45.5 101 L 46.5 103 L 45.5 101 Z "/>
+  <path fill="rgb(254,254,254)" stroke="rgb(254,254,254)" stroke-width="1" opacity="1" d="M 59.5 101 L 60 103 L 58 102.5 L 59.5 101 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 60 2 L 62 2.5 L 60 3.5 L 60 2 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 90.5 2 L 91.5 4 L 90.5 2 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 95.5 2 L 96.5 4 L 94 3.5 L 95.5 2 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 48.5 5 L 51 8.5 L 49 8.5 L 50 10.5 L 48.5 10 Q 45.5 10.9 47 6.5 L 48.5 5 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 56.5 5 L 57 6.5 L 55 7.5 L 56.5 5 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 94.5 10 L 97 13.5 L 93 16.5 Q 94.1 19.8 91.5 19 L 87 22.5 Q 93.3 18.8 94.5 10 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 35 16 Q 39.1 14.7 38 18 Q 33.9 19.3 35 16 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 43.5 16 L 45 19.5 L 44.5 21 L 43.5 19 L 41.5 20 L 42 18.5 L 43.5 16 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 32 19 Q 35.3 17.9 34 22 Q 30.7 23.1 32 19 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 47.5 20 L 43.5 25 L 47.5 20 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 85.5 23 L 86 25 L 84 24.5 L 85.5 23 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 34 26 L 37 26.5 L 35 27 Q 36.1 29.7 33.5 29 L 32.5 27 L 34 27.5 L 34 26 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 41.5 26 L 36.5 32 L 41.5 26 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 83.5 26 Q 85.8 25.3 85 27.5 L 86 30 L 81.5 29 L 80 29.5 L 84 27.5 L 83.5 26 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 32.5 31 Q 35.5 32.5 32.5 34 L 32.5 31 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 27 33 L 29 33.5 L 28.5 36 L 26.5 37 L 25 34.5 L 27 34.5 L 27 33 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 76 34 Q 78.7 32.9 78 35.5 L 77.5 40 L 75 36.5 L 76 34 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 32.5 35 L 30.5 38 L 32.5 35 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 72.5 39 L 72 40.5 L 71.5 42 L 71 40.5 L 72.5 39 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 18.5 41 L 20.5 44 Q 19 41.5 17.5 45 L 16 43.5 L 18 43 L 18.5 41 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 26.5 41 L 25.5 43 L 26.5 41 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 79.5 42 L 80 45.5 L 78 44.5 L 79.5 42 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 23.5 44 L 20.5 48 L 23.5 44 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 67.5 45 L 67 46.5 L 66.5 49 L 66 46.5 L 67.5 45 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 8.5 47 L 12 48.5 L 9.5 50 L 7 49.5 L 8.5 47 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 16.5 48 L 19 48.5 L 15.5 53 L 15 51.5 Q 18.1 49.8 16.5 48 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 63 50 Q 66 48.8 65 52.5 L 63 53.5 L 63 50 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 0.5 51 L 4 53.5 Q 5.7 58.3 1.5 57 Q -1.4 55.6 0.5 51 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 10.5 56 L 12 56.5 L 9 58.5 L 10.5 56 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 58.5 57 L 57.5 59 L 58.5 57 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 7.5 58 L 8 60.5 L 6.5 64 L 6 59.5 L 7.5 58 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 55.5 61 L 58 65.5 L 56.5 66 L 54 64.5 L 55.5 61 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 62.5 62 Q 66.3 61 65 64 L 62.5 62 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 74 64 Q 77 63 76 66 Q 73 67 74 64 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 5 66 L 7 66.5 L 7 68.5 Q 7.7 71.1 5 70 L 5 66 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 60.5 66 L 62.5 67 L 64.5 66 L 64.5 67 L 60 68 Q 61.1 70.7 58.5 70 L 60 67.5 L 60.5 66 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 66.5 66 L 69.5 68 L 69.5 69 L 66.5 66 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 68.5 70 L 69 72 L 65.5 73 L 65.5 72 L 68.5 70 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 2.5 72 Q 6.5 71.5 7 74.5 L 4.5 73 L 3.5 74 L 2.5 72 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 74 73 L 77 74.5 Q 77.7 77.5 74 76 L 74 73 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 65.5 75 L 67 75.5 L 64.5 77 L 65.5 75 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 61 76 L 63 76.5 L 62 78.5 L 62.5 80 L 61 76 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 68.5 76 L 73 77.5 L 69.5 78 L 68.5 76 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 7.5 77 Q 9.8 76.3 9 78.5 L 9.5 80 L 7.5 77 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 5.5 78 L 4 80.5 L 5.5 82 L 7 81.5 L 8.5 84 L 10.5 83 L 10.5 84 Q 8.3 83.3 9 85.5 L 9.5 87 L 7.5 87 L 2.5 90 L 1.5 88 L 7 85.5 Q 8.1 82.2 5.5 83 L 2.5 82 L 0.5 83 L 0.5 82 L 3 80.5 Q 2.3 78.3 4.5 79 L 5.5 78 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 70.5 79 L 69.5 81 L 70.5 79 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 65.5 82 L 70 84.5 L 71 86.5 L 71 88.5 Q 71.5 92.5 68.5 93 L 65.5 94 L 63 90.5 L 64.5 91 L 68 89.5 L 65.5 84 L 64 84.5 L 65.5 82 Z M 68 85 L 69 87 Q 70 84 68 85 Z M 69 90 L 67 92 L 69 92 L 69 90 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 11.5 85 L 12 87.5 L 11 87.5 L 11.5 85 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 59.5 87 L 61 87.5 L 58 89.5 L 59.5 87 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 57.5 91 L 59 91.5 L 56.5 93 L 57.5 91 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 60.5 92 Q 66 93.6 65 100 L 62.5 101 L 60.5 101 L 54 100 L 53 95.5 L 54.5 93 L 56 97 L 59.5 99 L 63 99 L 64 96.5 L 62 96 L 60.5 92 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 1.5 94 Q 3 97 8 96.5 L 2 97 L 1.5 94 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 9 95 L 11 95.5 L 10 98.5 L 9.5 100 L 9 95 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 12.5 95 L 13.5 97 Q 10.7 97.7 12.5 95 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 15.5 96 L 19 98.5 L 18 100.5 Q 20.3 101.8 17.5 103 Q 14.2 104.1 15 101.5 L 18 100 L 17.5 98 L 16 98.5 L 16.5 97 L 15.5 96 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 45.5 98 L 46 100.5 L 44.5 102 L 44 99.5 L 45.5 98 Z "/>
+  <path fill="rgb(255,254,255)" stroke="rgb(255,254,255)" stroke-width="1" opacity="1" d="M 2 99 Q 4.7 97.9 4 100.5 L 2 101.5 L 2 99 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 95.5 0 L 95 1.5 L 92.5 6 L 92 4.5 L 95.5 0 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 93.5 7 L 94.5 9 L 93.5 7 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 49.5 15 L 50 17.5 L 49 17.5 L 49.5 15 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 43.5 17 Q 46.3 18.3 44 19.5 L 45 21.5 L 43 20.5 L 44 18.5 L 43.5 17 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 47.5 17 L 46.5 19 L 47.5 17 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 41.5 18 L 41 19.5 L 40.5 21 L 40 19.5 L 41.5 18 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 37.5 26 L 34.5 30 L 35 28.5 Q 34.3 26.3 36.5 27 L 37.5 26 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 86.5 28 L 88 30.5 L 85 30.5 L 86.5 28 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 83.5 30 L 82.5 32 L 83.5 30 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 27.5 32 L 26.5 34 L 27.5 32 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 31.5 32 L 30.5 34 L 28.5 35 L 29.5 33 L 31.5 32 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 75.5 38 L 78 38.5 Q 75.9 41.8 75.5 38 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 24.5 39 L 23.5 41 L 24.5 39 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 19.5 41 Q 23.2 43.2 18 45.5 L 16.5 48 L 17 46.5 L 16 44.5 Q 18 46.2 20 42.5 L 19.5 41 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 9 50 L 12 51.5 L 9 51.5 L 9 50 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 59.5 58 L 58.5 60 L 59.5 58 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 66.5 64 L 65.5 66 L 66.5 64 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 69.5 71 L 68.5 73 L 67 72.5 L 69.5 71 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 5.5 79 L 4.5 81 L 5.5 79 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 63.5 81 L 64.5 83 L 62 82.5 L 63.5 81 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 71.5 90 L 71.5 93 Q 70 90.5 68.5 94 L 66.5 95 L 67.5 93 L 71.5 90 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 14.5 93 L 13.5 95 L 14.5 93 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 10.5 94 L 11.5 96 L 10.5 94 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 16.5 97 L 17.5 99 L 16.5 97 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 61.5 100 L 64 100.5 L 62.5 103 L 61.5 100 Z "/>
+  <path fill="rgb(251,251,253)" stroke="rgb(251,251,253)" stroke-width="1" opacity="1" d="M 57.5 101 L 59 101.5 L 56.5 103 L 57.5 101 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 81.5 2 L 80.5 4 L 79 3.5 L 81.5 2 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 63.5 3 L 62.5 5 L 63.5 3 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 88.5 3 L 89.5 5 L 88.5 3 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 60.5 5 L 58.5 8 L 60.5 5 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 84.5 5 Q 86.8 5.8 86 9.5 L 85 9.5 L 84.5 5 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 64.5 6 L 63.5 8 L 60.5 10 L 62.5 7 L 64.5 6 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 88.5 7 L 89.5 9 Q 86.7 9.7 88.5 7 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 56.5 8 L 55.5 10 L 56.5 8 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 58.5 10 L 57.5 12 L 58.5 10 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 52.5 11 L 51.5 13 L 52.5 11 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 55.5 12 L 54.5 14 L 53 13.5 L 55.5 12 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 89.5 13 L 89 14.5 L 88.5 16 L 88 14.5 L 89.5 13 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 91.5 15 L 90.5 17 L 91.5 15 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 53.5 16 L 55.5 19 L 53.5 16 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 86.5 17 L 85.5 19 L 86.5 17 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 51.5 18 L 44.5 26 L 51.5 18 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 89.5 18 L 87.5 21 L 89.5 18 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 68.5 21 Q 73.9 19.1 73 22.5 L 71.5 22 Q 67.5 22.8 68.5 21 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 84.5 22 L 82.5 25 L 84.5 22 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 79.5 24 L 77.5 27 L 79.5 24 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 41.5 28 L 12.5 58 L 41.5 28 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 79.5 28 L 78.5 30 L 79.5 28 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 74.5 30 L 73.5 32 L 74.5 30 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 52.5 32 L 33.5 52 L 31 50.5 L 32.5 51 L 52.5 32 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 75.5 33 L 74.5 35 L 75.5 33 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 71.5 34 L 69.5 37 L 71.5 34 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 71.5 38 L 69.5 41 L 71.5 38 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 66.5 40 L 65.5 42 L 66.5 40 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 67.5 43 L 64.5 47 L 67.5 43 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 62.5 45 L 60.5 48 L 62.5 45 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 62.5 49 L 61.5 51 L 62.5 49 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 57.5 51 L 56.5 53 L 57.5 51 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 19.5 54 L 17.5 57 L 19.5 54 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 58.5 54 L 57.5 56 L 58.5 54 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 54.5 55 L 52.5 58 L 54.5 55 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 28.5 56 L 26.5 59 L 28.5 56 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 14.5 59 L 12.5 62 L 14.5 59 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 54.5 59 L 52.5 62 L 54.5 59 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 51.5 64 L 52.5 66 L 51.5 64 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 46.5 65 L 43.5 69 L 46.5 65 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 46.5 69 L 44.5 72 L 46.5 69 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 61.5 87 L 62.5 89 L 61.5 87 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 53.5 89 L 52.5 91 L 53.5 89 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 48.5 91 L 49.5 93 L 48.5 91 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 8.5 93 L 7.5 95 L 8.5 93 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 44.5 93 L 40.5 98 L 44.5 93 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 20.5 94 L 22.5 97 L 20.5 94 Z "/>
+  <path fill="rgb(160,128,159)" stroke="rgb(160,128,159)" stroke-width="1" opacity="1" d="M 44.5 97 L 43.5 99 L 44.5 97 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 60.5 0 L 64 0.5 Q 62.8 3.3 61.5 1 L 60.5 0 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 89 0 L 93 1.5 L 91.5 1 L 89.5 2 L 89 0 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 56 2 L 58 2.5 L 53.5 8 Q 50.2 9.1 51 6.5 L 56 3.5 L 56 2 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 95.5 5 L 96 7 L 94 6.5 L 95.5 5 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 95.5 15 L 96 17.5 L 94 18.5 L 95.5 15 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 47.5 18 L 47 19.5 Q 47.8 21.8 45.5 21 L 47.5 18 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 90 20 L 93 21.5 L 90 22 L 90 20 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 42 22 L 45 22.5 L 41 25 L 39.5 28 Q 36.9 28.7 38 26 L 42 23.5 L 42 22 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 86.5 25 Q 88.8 24.3 88 26.5 L 91 28.5 L 89.5 29 L 85 26.5 L 86.5 25 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 34 30 Q 37 29 36 32 Q 33 33 34 30 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 22.5 33 Q 24.8 32.3 24 34.5 L 21 36 L 22.5 33 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 30 34 Q 32.7 32.9 32 35.5 L 30 36.5 L 30 34 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 18.5 37 Q 20.8 36.3 20 38.5 L 19 41 L 16.5 42 L 17 40.5 L 18.5 37 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 27.5 37 L 29 37.5 L 26.5 41 Q 24.3 40.3 25 42.5 L 20 46.5 Q 20.7 49.1 18 48 Q 16.9 45.3 19.5 46 L 21 42 L 26 39.5 L 27.5 37 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 78.5 38 Q 80.8 37.3 80 39.5 L 78.5 38 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 76.5 42 Q 79.5 41.2 78 45 L 75 43.5 L 76.5 42 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 68 45 Q 70.7 43.9 70 46.5 L 68 47.5 L 68 45 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 79.5 46 L 80 48 L 78 47.5 L 79.5 46 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 12.5 51 L 12 52.5 Q 13.1 55.8 10.5 55 L 7 56 Q 4.8 50 11.5 52 L 12.5 51 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 60 54 L 62 54 Q 60.7 58.1 64 57 L 64 60.5 L 62 59.5 Q 63 55.8 60 57 L 60 54 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 3.5 59 L 7 64.5 L 4.5 65 Q 3 62.5 1.5 66 Q -1.1 66.7 0 64 L 3 64 L 3.5 59 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 57.5 59 L 59.5 62 Q 63.7 60.9 62 65 L 58 63.5 L 56 60.5 L 57.5 59 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 78 64 Q 81 63 80 66 Q 77 67 78 64 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 57 66 L 59 66.5 L 58.5 69 Q 55.5 69.7 57 66 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 70 68 Q 75.6 66.1 74 71 L 71.5 70 L 70 70.5 L 70 68 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 0 70 Q 4.1 68.7 3 72 Q -1.1 73.3 0 70 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 60 72 L 63 73.5 L 61.5 76 L 60 72 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 7.5 78 Q 9.8 78.8 9 82.5 L 7 81.5 L 6 79.5 L 7.5 78 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 0 79 L 3 79.5 L 0 81.5 L 0 79 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 73 87 Q 76 86 75 89 Q 72 90 73 87 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 11.5 88 L 12 94.5 L 11 94.5 L 10 89.5 L 11.5 88 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 60.5 89 Q 63.1 88.3 62 91 L 64 91 L 64 93.5 L 61 91.5 L 60.5 89 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 0.5 90 L 3 91.5 L 0 93.5 L 0.5 90 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 6 97 Q 9 96 8 99 Q 5 100 6 97 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 46 98 L 49 99.5 L 48.5 101 L 46 100 L 46 98 Z "/>
+  <path fill="rgb(254,254,250)" stroke="rgb(254,254,250)" stroke-width="1" opacity="1" d="M 41.5 102 L 44 102.5 L 41.5 103 L 41.5 102 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 0 0 L 47.5 0 L 49.5 1 L 50.5 0 L 57 0 Q 58.1 2.7 55.5 2 L 56 5.5 L 55.5 7 L 55 5 Q 51.6 4.3 50.5 7 Q 48.8 3.3 47 6.5 L 49 17 L 45.5 18 L 45.5 16 L 35.5 16 L 35 18 L 38 18 Q 36.9 20.7 39.5 20 L 42 20.5 Q 42.8 22.8 40.5 22 L 39.5 25 L 36.5 26 L 34 25 L 34.5 23 L 36 23.5 Q 36.7 20.9 34 22 L 34 19 L 32 19 L 32.5 30 L 34 29.5 Q 34.8 31.8 32.5 31 L 29.5 33 Q 27.8 30.3 21.5 32 L 21 34.5 L 19.5 37 L 17.5 38 L 16 37.5 Q 14.6 44.9 18 47.5 L 14 47.5 L 13.5 49 L 8.5 47 L 7 50 Q 10 49 9 52 Q 4.5 50.3 6 55.5 L 9 57.5 L 6 59.5 L 5.5 61 L 1.5 59 L 0 58.5 L 4 57 Q 5 53.2 2.5 52 L 0 50.5 L 4 50 Q 5.1 47.3 2.5 48 L 0 47.5 L 0 0 Z M 36 20 L 36 22 L 38 21 L 36 20 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 59.5 0 L 62 1.5 L 57.5 4 L 58 2.5 L 59.5 0 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 86.5 0 L 89 1.5 L 87.5 2 L 86.5 0 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 94.5 0 L 96.5 0 L 98 0.5 L 98 98 L 65.5 98 L 65 96.5 Q 61.3 94.8 64.5 93 L 67.5 95 L 70 94 L 72 90.5 L 71 87.5 L 70 84 L 72 83.5 L 65 81.5 L 69.5 81 L 71 81.5 Q 70.3 78.9 73 80 L 73 77.5 L 70 76 L 72 72 L 69.5 73 L 70.5 71 L 74.5 72 L 76 69.5 L 67.5 65 L 66 65.5 L 66.5 64 Q 63.9 63.3 65 66 L 61.5 66 L 62.5 64 Q 63.7 66.3 65 63.5 L 64 58.5 L 65 57.5 L 62.5 54 L 64 54.5 L 67 48 L 71 46.5 L 70 44.5 L 72.5 40 L 74 40.5 L 74.5 39 L 77.5 40 L 80 39.5 L 78 35.5 L 78.5 33 L 80.5 33 L 84 32 L 84.5 30 Q 85.8 32.3 87 29.5 L 86 27.5 L 87.5 28 L 89 27.5 L 88 24.5 L 89.5 23 L 95 24 L 93 18.5 L 94 18.5 L 95.5 22 L 97 17.5 L 96 14.5 L 97 12.5 L 93 5.5 L 94 5.5 L 95.5 8 L 97 3.5 L 94 1.5 L 92.5 4 L 91 1.5 Q 92.8 3.1 94.5 0 Z M 91 30 Q 90 32 94 32 Q 95 29 91 30 Z M 77 41 L 75 43 L 76 46 L 79 45 Q 80 48 77 47 L 77 48 Q 83 50 80 43 L 78 43 Q 79 40 77 41 Z M 71 47 L 72 51 L 73 48 L 71 47 Z M 69 51 L 67 53 L 70 53 Q 71 50 69 51 Z M 73 64 Q 72 67 76 66 Q 77 63 73 64 Z M 78 64 Q 77 67 80 66 Q 81 63 78 64 Z M 74 73 L 74 76 Q 78 77 77 75 L 74 73 Z M 73 87 Q 72 90 75 89 Q 76 86 73 87 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 94.5 15 L 93.5 17 L 94.5 15 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 24.5 35 L 26 37.5 L 21.5 42 L 20.5 41 L 19 40.5 L 24.5 35 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 11.5 50 L 14 51.5 L 12.5 51 L 10.5 52 L 11.5 50 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 0.5 60 L 2 64 Q -1.8 65.2 0.5 60 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 62.5 60 L 63 62 L 61 61.5 L 62.5 60 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 56.5 62 L 57.5 64 Q 54.7 64.7 56.5 62 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 3.5 65 L 5 65.5 Q 1.5 67 4 68.5 Q 3.3 70.8 5.5 70 L 4.5 72 L 3 71.5 L 3.5 70 Q 0.9 70.8 2 67.5 L 1 67.5 L 0.5 69 L 0 66 L 3.5 65 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 58.5 65 L 59.5 67 L 58.5 65 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 64.5 73 L 65.5 75 L 62.5 76 L 62 74 L 64.5 73 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 7 87 L 9.5 88 L 11 87.5 Q 7.9 89.3 9.5 91 L 7 90 L 7 87 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 5.5 88 L 5.5 91 Q 3.3 91.8 4 89.5 L 5.5 88 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 60.5 88 L 59.5 90 L 60.5 88 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 60.5 91 L 61.5 93 L 60.5 91 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 12 93 L 14 93.5 L 12 94.5 L 12 93 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 0.5 97 L 5 97.5 L 0.5 98 L 0.5 97 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 49.5 97 Q 53.3 96.3 54 98.5 Q 52.8 102.3 56.5 101 L 58 100.5 L 54.5 102 L 52 101 L 53 98.5 L 49.5 98 L 48 98.5 L 49.5 97 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 0 99 Q 3.3 97.9 2 102 L 4 102 Q 2.7 97.9 6 99 L 6 103 L 0 103 L 0 99 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 65.5 99 L 97.5 99 L 98 103 L 64.5 103 L 63 101.5 L 65.5 99 Z "/>
+  <path fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1" opacity="1" d="M 46.5 100 Q 48.8 99.3 48 101.5 L 46.5 100 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 89.5 2 L 91.5 5 L 89.5 2 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 59.5 4 L 57.5 7 L 57 5 L 59.5 4 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 49.5 8 L 52 9 L 50.5 12 L 49.5 8 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 91.5 17 L 90.5 19 L 91.5 17 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 49.5 18 L 48.5 20 L 47 19.5 L 49.5 18 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 83.5 25 L 85 25.5 L 83 26.5 L 84.5 29 L 81 27.5 L 83.5 25 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 34.5 32 L 36 32.5 L 32.5 35 L 34.5 32 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 75.5 35 L 75 36.5 L 74.5 38 L 74 36.5 L 75.5 35 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 70.5 41 L 71 42.5 L 68 44.5 L 70.5 41 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 17.5 48 L 20 48.5 L 16 51.5 Q 19.1 49.8 17.5 48 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 14.5 53 L 12.5 56 L 11 55.5 L 14.5 53 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 8.5 58 Q 11.8 59.8 8 61.5 L 7.5 66 L 7 61.5 L 8.5 58 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 52.5 63 L 55.5 65 L 57 67.5 L 52.5 63 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 60 68 L 62 68.5 L 59.5 73 L 58 70.5 L 60 70 L 60 68 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 5.5 72 L 9 76.5 L 7 77 L 5.5 73 L 4 73.5 L 5.5 72 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 60.5 76 L 62 80.5 L 61.5 84 L 64.5 85 L 66 84.5 Q 66.8 86.8 64.5 86 L 61 85 Q 62.1 87.7 59.5 87 L 60 85.5 L 60.5 76 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 65.5 76 L 68 76.5 L 65.5 77 L 65.5 76 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 0.5 78 L 4 78.5 L 0.5 79 L 0.5 78 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 69 78 L 72 78.5 L 69.5 80 L 69 78 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 5.5 81 L 4.5 83 L 2 82.5 L 5.5 81 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 9.5 84 L 12 84.5 Q 9.9 87.8 9.5 84 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 67.5 85 Q 69.8 84.3 69 86.5 L 67.5 85 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 13.5 89 L 16 93.5 L 13 91.5 L 13.5 89 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 69.5 89 L 67.5 92 L 66.5 90 Q 68 92.5 69.5 89 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 57.5 90 L 60 91.5 L 62 94.5 L 59 92.5 Q 59.8 90.3 57.5 91 L 55.5 94 L 55 92.5 L 57.5 90 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 4.5 92 L 3.5 94 L 4.5 92 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 9.5 94 L 9 95.5 L 8.5 97 L 8 95.5 L 9.5 94 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 16.5 95 L 17.5 97 L 16.5 95 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 10.5 96 Q 13.1 95.2 12 98.5 L 10 99.5 L 11 97.5 L 10.5 96 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 62 96 L 64 96.5 L 63 99 L 61 98.5 L 62 96 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 16.5 99 L 15.5 101 L 16.5 99 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 45.5 99 L 44.5 101 L 41.5 102 L 42.5 100 L 45.5 99 Z "/>
+  <path fill="rgb(254,249,254)" stroke="rgb(254,249,254)" stroke-width="1" opacity="1" d="M 21.5 100 L 24 101 L 23.5 103 L 21.5 100 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 66.5 2 L 70 3.5 L 64 6 Q 62.7 2.7 67.5 4 L 67.5 3 L 66.5 2 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 79.5 2 L 81.5 3 L 83.5 2 L 87 3.5 L 81.5 4 L 79.5 2 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 61.5 7 L 60.5 9 L 61.5 7 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 86.5 8 Q 89.5 9.5 86.5 11 L 86.5 8 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 91.5 8 L 93 11.5 L 92 15 L 89 16.5 Q 91.7 18.2 87.5 20 Q 83.7 17.7 89 15.5 L 91.5 8 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 57.5 9 L 59 9.5 L 56 11.5 L 57.5 9 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 51.5 13 L 52 14.5 L 51.5 16 Q 54.1 15.3 53 18 Q 50.3 19.1 51 16.5 L 51 14.5 L 51.5 13 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 50 20 Q 53 19 52 22 Q 49.3 20.9 50 23.5 L 48 24.5 L 50 20 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 56.5 21 L 58.5 22 L 63 21 L 61.5 24 L 56.5 22 L 56.5 21 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 67.5 22 L 68.5 24 Q 65.7 24.7 67.5 22 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 71.5 22 L 72.5 24 Q 69.7 24.7 71.5 22 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 80.5 23 L 81 24.5 L 79 25.5 L 80.5 23 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 45.5 25 L 46.5 27 L 45.5 25 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 77.5 27 L 77 28.5 L 78 30.5 L 73.5 33 L 75 30.5 L 77.5 27 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 41.5 29 L 44 29.5 Q 41.9 32.8 41.5 29 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 51.5 30 Q 55 32 50.5 34 L 50 31.5 L 51.5 30 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 37.5 33 L 39 34.5 L 34.5 39 L 32.5 40 L 33 38.5 L 33.5 37 L 35 37.5 Q 34.3 34.9 37 36 L 37.5 33 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 47.5 34 Q 50.5 35.5 47.5 37 Q 43.8 35.8 45 39.5 L 39.5 45 L 38 43.5 L 47.5 34 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 72.5 34 L 74 34.5 L 71.5 38 L 71 35.5 L 72.5 34 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 69.5 37 L 67.5 40 L 69.5 37 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 31.5 41 L 29.5 44 L 31.5 41 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 65.5 42 L 64 44.5 L 62 49 L 60 49.5 L 61 51.5 L 55.5 55 L 56.5 53 L 59 52.5 L 58 50.5 L 65.5 42 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 27.5 45 L 26.5 47 L 27.5 45 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 36.5 45 Q 38.8 44.3 38 46.5 L 33 49.5 L 33.5 51 Q 31.3 51.8 32 49.5 L 36.5 45 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 21.5 49 Q 24.1 48.3 23 51 L 20 51.5 Q 22.8 53.3 18.5 55 Q 16.3 55.8 17 53.5 L 21.5 49 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 27.5 54 Q 31.2 56.2 26 58.5 L 25.5 60 L 23 58.5 L 27.5 54 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 14.5 56 L 17 56.5 L 10.5 64 L 11 60.5 L 14.5 56 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 54.5 56 L 54.5 59 Q 52.3 58.3 53 60.5 L 49 63 L 52 67.5 L 49.5 66 Q 47.3 65.3 48 67.5 L 43 71 Q 47.1 62.2 54.5 56 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 8.5 68 Q 11.8 69.8 12 74.5 L 11 74.5 Q 11.7 71.9 9 73 L 9 70.5 L 8.5 68 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 36 68 Q 39.8 67.3 41 70.5 Q 39.3 73.8 37.5 70 Q 34.9 70.7 36 68 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 65.5 68 L 66.5 70 L 62.5 71 L 63.5 69 L 65.5 68 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 55.5 69 L 57 70.5 L 56.5 73 Q 54.3 73.8 55 71.5 Q 52.7 70.3 55.5 69 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 44.5 73 L 48 77.5 L 46 77.5 L 45.5 79 L 44 75 L 42 74.5 L 44.5 73 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 2.5 74 L 3 76 L 6 76.5 L 2.5 77 Q -0.5 75.5 2.5 74 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 12.5 76 L 14 80.5 L 12 79.5 L 12.5 76 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 57 76 L 59 76.5 L 59 78.5 L 58 81.5 L 58 83.5 L 59 85.5 L 55 88.5 L 55 90.5 Q 55.7 93.1 53 92 L 56 86.5 L 58 78.5 L 57 76 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 48.5 80 L 49 82.5 L 48 82.5 L 48.5 80 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 14.5 82 L 15 83.5 L 13.5 86 L 12 83.5 L 14 83.5 L 14.5 82 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 1 84 L 6 84 L 6 86 L 2.5 85 L 1 85.5 L 1 84 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 49.5 84 L 50 86.5 L 47.5 92 L 45.5 93 L 46 91.5 L 49.5 84 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 62.5 87 Q 66.3 86.3 67 88.5 Q 65.3 91.8 63.5 88 L 62.5 87 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 51.5 91 L 52 94 L 49 93.5 L 51.5 91 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 6.5 92 L 9 92.5 Q 6.9 95.8 6.5 92 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 17 92 L 20 93.5 L 17 93.5 L 17 92 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 57.5 94 Q 59.8 93.3 59 95.5 L 61 95.5 L 60.5 98 L 58 97 L 57.5 94 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 43.5 95 Q 45.8 94.3 45 96.5 Q 43 101 41 97.5 L 43.5 95 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 21.5 96 L 21.5 98 L 23.5 97 Q 26.5 98.5 23.5 100 L 20 97.5 L 21.5 96 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 13.5 98 Q 15.8 97.3 15 99.5 L 12.5 103 Q 9.8 101.8 12 100.5 L 13.5 98 Z "/>
+  <path fill="rgb(138,113,143)" stroke="rgb(138,113,143)" stroke-width="1" opacity="1" d="M 29.5 100 L 34 100.5 L 31.5 102 L 29.5 100 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 89.5 19 L 88.5 21 L 89.5 19 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 44.5 24 L 43.5 26 L 44.5 24 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 49.5 25 L 48.5 27 L 49.5 25 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 41.5 27 L 40.5 29 L 41.5 27 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 53.5 30 L 54.5 32 L 53.5 30 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 51.5 34 L 50.5 36 L 51.5 34 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 33.5 35 L 32.5 37 L 33.5 35 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 40.5 35 L 39.5 37 L 40.5 35 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 37.5 37 Q 40.5 38.5 37.5 40 L 37.5 37 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 25.5 41 L 26.5 43 L 25.5 41 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 24.5 44 L 23.5 46 L 24.5 44 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 21.5 45 L 21.5 48 Q 18.5 46.5 21.5 45 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 26.5 49 L 25.5 51 L 26.5 49 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 37.5 50 L 36.5 52 L 34.5 53 L 35.5 51 L 37.5 50 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 18.5 57 L 15.5 61 L 15 59 L 18.5 57 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 22.5 58 L 24 61.5 L 23 61.5 L 22.5 58 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 29.5 58 L 28.5 60 L 29.5 58 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 13.5 62 L 12.5 64 L 13.5 62 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 8.5 90 L 9.5 92 L 8.5 90 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 44.5 98 L 43.5 100 L 44.5 98 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 40.5 101 L 40.5 104 L 37 102.5 Q 38.8 104.1 40.5 101 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 0.5 103 L 10 103.5 L 0.5 104 L 0.5 103 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 15.5 103 L 27 103.5 L 15.5 104 L 15.5 103 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 42.5 103 L 47 103.5 L 42.5 104 L 42.5 103 Z "/>
+  <path fill="rgb(247,243,244)" stroke="rgb(247,243,244)" stroke-width="1" opacity="1" d="M 48.5 103 L 98 103.5 L 48.5 104 L 48.5 103 Z "/>
+  <path fill="rgb(249,239,253)" stroke="rgb(249,239,253)" stroke-width="1" opacity="1" d="M 60.5 4 L 59.5 6 L 60.5 4 Z "/>
+  <path fill="rgb(249,239,253)" stroke="rgb(249,239,253)" stroke-width="1" opacity="1" d="M 56.5 7 L 55.5 9 L 56.5 7 Z "/>
+  <path fill="rgb(249,239,253)" stroke="rgb(249,239,253)" stroke-width="1" opacity="1" d="M 80.5 28 L 79.5 30 L 80.5 28 Z "/>
+  <path fill="rgb(249,239,253)" stroke="rgb(249,239,253)" stroke-width="1" opacity="1" d="M 63.5 49 L 62.5 51 L 63.5 49 Z "/>
+  <path fill="rgb(249,239,253)" stroke="rgb(249,239,253)" stroke-width="1" opacity="1" d="M 59.5 54 L 58.5 56 L 59.5 54 Z "/>
+  <path fill="rgb(249,239,253)" stroke="rgb(249,239,253)" stroke-width="1" opacity="1" d="M 55.5 59 L 54 61.5 L 53.5 63 L 53 61.5 L 55.5 59 Z "/>
+  <path fill="rgb(249,239,253)" stroke="rgb(249,239,253)" stroke-width="1" opacity="1" d="M 18.5 97 L 20.5 100 L 18.5 97 Z "/>
+  <path fill="rgb(249,239,253)" stroke="rgb(249,239,253)" stroke-width="1" opacity="1" d="M 10.5 102 L 14 103.5 L 10 104 L 10.5 102 Z "/>
+  <path fill="rgb(249,239,253)" stroke="rgb(249,239,253)" stroke-width="1" opacity="1" d="M 26.5 102 L 27.5 103 L 38 103.5 L 27.5 104 L 26.5 102 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 62.5 3 L 61.5 5 L 62.5 3 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 89.5 3 L 91.5 6 L 89.5 3 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 91.5 16 L 90.5 18 L 91.5 16 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 48.5 20 L 45.5 24 L 48.5 20 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 52.5 21 L 55 21.5 L 52.5 22 L 52.5 21 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 86.5 21 L 85.5 23 L 86.5 21 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 73 22 L 79 22 L 79 24.5 L 41.5 70 L 38 67.5 L 67 31.5 L 70 26 L 73 24.5 L 73 22 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 83.5 24 L 82.5 26 L 83.5 24 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 78.5 30 L 77.5 32 L 78.5 30 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 74.5 35 L 73.5 37 L 74.5 35 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 70.5 40 L 69.5 42 L 70.5 40 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 66.5 45 L 64.5 48 L 66.5 45 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 35.5 50 L 34.5 52 L 35.5 50 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 61.5 51 L 60.5 53 L 61.5 51 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 57.5 56 L 55.5 59 L 57.5 56 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 17.5 57 L 16.5 59 L 17.5 57 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 27.5 58 L 26.5 60 L 27.5 58 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 10.5 59 L 9.5 61 L 10.5 59 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 14.5 60 L 13.5 62 L 14.5 60 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 52.5 62 L 52 63.5 L 57.5 70 L 51 63.5 L 52.5 62 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 11.5 65 L 12 69.5 L 11 69.5 L 11.5 65 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 49.5 67 Q 56.8 70.8 57 81.5 L 51.5 91 L 49.5 92 L 49 90.5 L 50 89.5 L 50 81.5 L 45 71.5 L 49.5 67 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 35.5 68 L 38 71.5 L 35 69.5 L 35.5 68 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 61.5 69 L 62 71.5 L 61 71.5 L 61.5 69 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 39.5 72 L 43.5 77 L 39.5 72 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 6.5 75 L 7 76.5 L 5 77.5 L 6.5 75 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 64.5 80 L 68 80.5 L 64.5 81 L 64.5 80 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 41.5 89 L 46 89.5 L 40.5 97 Q 36.5 100.5 27.5 99 L 21 94.5 Q 22.3 91.8 23.5 94 L 31.5 95 L 41.5 89 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 18.5 90 L 19.5 92 L 18.5 90 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 56.5 90 L 55.5 92 L 56.5 90 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 9.5 92 L 10 93.5 L 8 94.5 L 9.5 92 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 59.5 93 L 61.5 96 L 59.5 93 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 57.5 96 L 58.5 98 L 57.5 96 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 14.5 97 L 16 99.5 L 15 99.5 L 14.5 97 Z "/>
+  <path fill="rgb(235,215,206)" stroke="rgb(235,215,206)" stroke-width="1" opacity="1" d="M 21.5 99 L 22.5 101 L 21.5 99 Z "/>
+  <path fill="rgb(250,237,223)" stroke="rgb(250,237,223)" stroke-width="1" opacity="1" d="M 52.5 22 Q 57.5 21 56.5 24 L 63.5 24 L 66 23 Q 64.8 26 68.5 25 L 70 27.5 L 41 62.5 L 39 67 L 35 68.5 L 37.5 72 L 44 77.5 Q 47 81.8 46 89 L 41.5 89 L 31.5 95 L 26.5 95 L 22.5 93 Q 21.3 95.3 20 92.5 L 14 79.5 L 12 64.5 L 19 57.5 Q 16.3 55.7 20.5 54 L 22 54 L 22 52 Q 24.7 53.1 24 50.5 L 30 46 L 33.5 41 Q 35.8 41.8 35 39.5 L 37 38.5 L 37.5 40 Q 40.3 38.8 38 37.5 L 40.5 34 Q 42.8 34.8 42 32.5 L 46 30 L 47.5 27 L 50 25.5 L 52.5 22 Z M 52 29 L 43 36 L 42 39 Q 39 38 40 41 L 36 43 L 31 50 L 31 52 L 35 53 L 37 52 L 36 51 Q 35 48 38 49 L 38 47 L 40 47 L 46 40 Q 48 41 47 39 L 51 36 L 52 34 L 55 32 L 52 29 Z M 28 53 L 25 54 L 22 59 L 24 62 L 27 60 L 28 58 Q 32 55 28 53 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 74.5 0 L 83 1.5 L 75.5 3 L 69.5 3 L 64 4 Q 65.7 8.1 61.5 7 L 59.5 10 L 57.5 9 L 54.5 13 L 53 13 Q 54.5 16.8 51.5 16 L 52 14.5 L 53.5 11 L 64.5 3 L 74.5 0 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 87.5 3 L 88 5 Q 91.8 3.5 91 6.5 L 91 8.5 L 90.5 10 L 88.5 7 L 87.5 9 L 84.5 5 L 83 4.5 L 87.5 3 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 90.5 15 L 87 19.5 L 85.5 22 Q 82.2 20.9 83 23.5 L 76.5 31 L 77 29.5 L 78 26 L 81 24.5 L 79 21.5 L 80.5 22 L 83.5 20 L 88 17.5 L 87.5 16 Q 89 18.5 90.5 15 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 53.5 17 Q 54.9 20.6 60 20.5 Q 58.8 23.3 57.5 21 L 55.5 22 L 51 19.5 L 53.5 17 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 49.5 21 L 49 22.5 L 48 26 Q 45.3 24.9 46 27.5 L 42 30.5 Q 42.7 33.1 40 32 L 40 34 L 38 34 L 40.5 30 Q 43.1 30.8 42 27.5 L 46 26 L 49.5 21 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 67.5 21 L 71 22 Q 72.1 24.7 69.5 24 L 67.5 21 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 61.5 22 L 62.5 24 L 61.5 22 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 49.5 32 L 50 35 L 47.5 36 L 48 34.5 L 49.5 32 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 74.5 32 L 76 32.5 L 72.5 34 L 72.5 33 L 74.5 32 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 36.5 34 L 37 36 Q 34.3 34.9 35 37.5 L 34 37.5 L 36.5 34 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 70 36 L 72 36.5 L 61.5 50 L 60 49.5 L 62 49 L 70 36 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 45 37 L 47 37.5 L 45 38.5 L 45 37 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 32.5 38 Q 35.5 39.5 32.5 41 L 29 43.5 Q 29.8 45.8 27.5 45 L 23.5 50 L 22 48.5 L 32.5 38 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 43.5 39 L 41.5 42 L 43.5 39 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 39.5 43 L 39 44.5 L 38.5 46 L 37.5 44 L 39.5 43 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 16.5 54 L 17.5 56 L 14.5 58 L 15 56.5 L 16.5 54 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 56.5 54 L 58 54.5 L 55.5 58 L 54 57.5 L 56.5 54 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 10.5 62 L 11 64.5 L 10 67.5 L 11 69.5 L 8 67.5 L 10.5 62 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 51.5 62 L 51 63.5 L 52.5 66 L 55.5 68 L 54.5 70 L 52 68.5 L 49 63 L 51.5 62 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 41.5 70 L 44 71.5 Q 45.1 74.8 42.5 74 L 40 73 L 41.5 70 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 56.5 71 Q 58.8 70.3 58 72.5 L 59 76 Q 56.3 77.1 57 74.5 L 56.5 71 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 11.5 72 L 11 73.5 L 12 79.5 L 18 91.5 L 16 92.5 Q 13.3 90.2 14 84.5 L 10 77.5 L 10 73.5 L 11.5 72 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 3.5 75 L 6 75.5 L 3.5 76 L 3.5 75 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 45.5 76 L 48 78.5 L 49 85.5 L 47 86.5 L 47 81.5 L 45.5 76 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 58.5 77 L 60 80.5 L 58 81.5 L 59 78.5 L 58.5 77 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 64 78 Q 67.8 76.5 67 79.5 L 64 79.5 L 64 78 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 57.5 87 L 57 88.5 L 55.5 91 L 55.5 88 L 57.5 87 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 52.5 91 Q 55.5 92.5 52.5 94 L 52.5 91 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 46.5 92 L 51 94.5 L 45 97 L 44 94.5 L 46.5 92 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 5 93 Q 8 92 7 95 Q 4 96 5 93 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 18.5 93 L 21 97 L 23 97.5 L 21.5 98 L 18 95.5 L 18.5 93 Z "/>
+  <path fill="rgb(139,112,153)" stroke="rgb(139,112,153)" stroke-width="1" opacity="1" d="M 39.5 98 Q 43.3 97 42 100 Q 38.6 99.3 37.5 102 L 30.5 103 L 24 101 Q 22.7 97.7 27.5 99 L 31.5 102 L 39.5 98 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 73.5 3 L 82.5 4 L 85 6.5 Q 84.3 10.3 86.5 11 Q 89.1 11.7 88 9 L 90 9 L 90 12.5 L 84.5 19 L 78.5 22 L 73.5 22 L 67 21 L 68 24.5 L 66 23.5 L 65.5 22 L 63 23.5 L 64 21 Q 56.4 20.8 53 15.5 Q 52.3 13.3 54.5 14 Q 61.8 6.3 73.5 3 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 51.5 22 L 50.5 24 L 51.5 22 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 48.5 25 L 37.5 37 L 48.5 25 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 81.5 26 L 80.5 28 L 81.5 26 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 76.5 27 L 75.5 29 L 76.5 27 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 50.5 30 L 49.5 32 L 50.5 30 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 72.5 32 L 70.5 35 L 72.5 32 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 43.5 37 L 42.5 39 L 43.5 37 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 68.5 37 L 67.5 39 L 68.5 37 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 40.5 40 L 31.5 50 L 40.5 40 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 31.5 42 L 28.5 46 L 31.5 42 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 64.5 42 L 62.5 45 L 64.5 42 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 55.5 53 L 53.5 56 L 55.5 53 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 26.5 54 L 23.5 58 L 26.5 54 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 16.5 57 L 15.5 59 L 16.5 57 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 51.5 58 L 50.5 60 L 51.5 58 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 47.5 63 L 45.5 66 L 47.5 63 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 48.5 67 L 47.5 69 L 48.5 67 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 50.5 67 L 54.5 72 L 50.5 67 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 46.5 82 L 47 87.5 L 46 87.5 L 46.5 82 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 54.5 87 L 53.5 89 L 54.5 87 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 19.5 92 L 20.5 94 L 19.5 92 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 18.5 96 L 20.5 99 L 18.5 96 Z "/>
+  <path fill="rgb(218,144,173)" stroke="rgb(218,144,173)" stroke-width="1" opacity="1" d="M 29.5 99 L 35 99.5 L 29.5 100 L 29.5 99 Z "/>
+</svg>

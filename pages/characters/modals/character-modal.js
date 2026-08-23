@@ -2,7 +2,7 @@
 import { supaClient, dbError } from '../../../core/supabase-client.js';
 import { showToast, escHtml, confirmDialog, bindCombobox } from '../../../core/ui.js';
 import * as State from '../state.js';
-import { closeModal, openModal, parseAvatarUrls, parseCharSections } from '../utils.js';
+import { closeModal, openModal, parseAvatarUrls, parseBirthday, parseCharSections } from '../utils.js';
 import { loadAllData } from '../data-loader.js';
 import { stripCodeFence } from '../html-render.js';
 
@@ -694,7 +694,7 @@ async function _doSave(container) {
 
   const ageVal      = container.querySelector('#char-age').value.trim();
   const birthdayVal = container.querySelector('#char-birthday').value.trim();
-  if (birthdayVal && !/^\d{2}\/\d{2}(\/\d{4})?$/.test(birthdayVal)) return showToast('生日格式应为 dd/mm 或 dd/mm/yyyy');
+  if (birthdayVal && !parseBirthday(birthdayVal)) return showToast('请输入有效生日，格式为 dd/mm 或 dd/mm/yyyy');
   const linkVal     = container.querySelector('#char-link').value.trim();
   const htmlVal     = stripCodeFence(container.querySelector('#char-html').value);
   const cityIdVal   = container.querySelector('#char-city').value;

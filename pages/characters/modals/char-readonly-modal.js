@@ -1,13 +1,14 @@
 // pages/characters/modals/char-readonly-modal.js
 // 只读人物弹窗 —— 供 geo-detail 和 characters-tab 共用
 
-import { escHtml, openImageViewer, swallowNextClick } from '../../../core/ui.js';
+import { escHtml, openImageViewer, bindOverlayDismiss } from '../../../core/ui.js';
 import * as State from '../state.js';
-import { parseAvatarUrls, pickRandomUrl, parseCharSections, sectionsHTML } from '../utils.js';
+import { parseAvatarUrls, pickRandomUrl, parseCharLinks, parseCharSections, sectionsHTML } from '../utils.js';
 import { hasCustomHtml, mountCharHtml, pickCharHtml } from '../html-render.js';
 import { reflect, parseHash, go } from '../../../core/router.js';
 import { bindModalBack, releaseModalBack, forgetModalBack } from '../../../core/modal-history.js';
 import { dominantColor } from '../dominant-color.js';
+import { markCharacterCardOpened } from '../birthday-visit.js';
 
 // 开着就关掉并返回 true，供外部“先退出弹窗再说”的判断
 export function closeCharReadonly() {
@@ -33,39 +34,8 @@ function closeOverlay(overlay) {
   releaseModalBack();
 }
 
-// 关闭弹窗需要完整的一次点击（mousedown + mouseup 均在遮罩上）
-// 用 AbortController 避免每次打开重复累积监听器
 function bindOverlayClose(overlay) {
-  if (overlay._closeCtrl) overlay._closeCtrl.abort();
-  overlay._closeCtrl = new AbortController();
-  const signal = overlay._closeCtrl.signal;
-  // 用 pointer 而不是 mouse：触屏上的 mousedown/mouseup 是 touchend 之后补发的，
-  // 而遮罩本身可滚动（overflow-y:auto），浏览器要先分辨点击还是滚动，
-  // 手指稍微一动就把补发的那对事件吞了 —— 于是手机上点遮罩关不掉弹窗。
-  let start = null;
-  overlay.addEventListener('pointerdown', function(e) {
-    start = (e.target === overlay) ? { x: e.clientX, y: e.clientY } : null;
-  }, { signal });
-  overlay.addEventListener('pointercancel', function() { start = null; }, { signal });
-  overlay.addEventListener('pointerup', function(e) {
-    const s = start; start = null;
-    if (!s || e.target !== overlay) return;
-    // 按住遮罩拖着滚页面不算点击
-    if (Math.abs(e.clientX - s.x) > 8 || Math.abs(e.clientY - s.y) > 8) return;
-    closeOverlay(overlay);
-    // 遮罩这一抬手就 display:none 了，补发的 click 会重新命中底下的人物卡把它点开
-    swallowNextClick();
-  }, { signal });
-  // 右键遮罩也是退出，别弹原生菜单
-  overlay.addEventListener('contextmenu', function(e) {
-    if (e.target !== overlay) return;
-    e.preventDefault();
-    closeOverlay(overlay);
-  }, { signal });
-  // 挂在 document 上，所以要确认 overlay 没被换页拆掉，否则会在别的页面改地址栏
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && overlay.isConnected && overlay.classList.contains('show')) closeOverlay(overlay);
-  }, { signal });
+  bindOverlayDismiss(overlay, function() { closeOverlay(overlay); });
 }
 
 // 让自定义 HTML 也能用站点能力：写 data-geo-kind / data-viewimg 即可
@@ -121,7 +91,20 @@ function injectOtherChars(hostEl, char, count) {
   });
 }
 
-export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
+export function animateCharReadonlyEnter(container = State.pageContainer) {
+  const overlay = container?.querySelector('#char-readonly-modal');
+  const box = overlay?.querySelector('.tl-modal');
+  if (!box) return;
+  box.style.transition = 'none';
+  box.style.transform = 'scaleX(0)';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    box.style.transition = 'transform 0.3s cubic-bezier(0.4,0,0.2,1)';
+    box.style.transform = '';
+  }));
+}
+
+export function openCharReadonly(char, expandPath, fixedAvatarUrl, options = {}) {
+  markCharacterCardOpened();
   const container = State.pageContainer;
   let overlay = container.querySelector('#char-readonly-modal');
   if (!overlay) {
@@ -134,7 +117,7 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
   // 别的页面（gacha、关系图）开的是同一个弹窗，但那只是页面内状态，不该改地址 ——
   // 以前一律写成 characters/<id>，于是 gacha 上地址栏在说谎、返回键也没人接。
   // 返回键关弹窗的行为由 modal-history 统一提供，跟在哪个页面无关。
-  const ownsRoute = parseHash().page === 'characters';
+  const ownsRoute = options.reflectRoute !== false && parseHash().page === 'characters';
   const markRoute = function(id) {
     // 顺序要紧：先压历史再改地址。反过来的话压进去的是「已经带 id」的地址，
     // 关弹窗时 back() 回到的还是 #/characters/<id>，路由当成深链又把弹窗开一遍 ——
@@ -193,9 +176,7 @@ export function openCharReadonly(char, expandPath, fixedAvatarUrl) {
           (age      ? '<div style="font-size:14px;color:var(--muted)">' + age + '</div>' : '') +
           (location ? '<div style="font-size:14px;color:var(--muted)">' + location + '</div>' : '') +
           (char.link_url ? (function() {
-            var re = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, m, links = [], raw = char.link_url;
-            while ((m = re.exec(raw)) !== null) links.push({ label: m[1], url: m[2] });
-            if (!links.length && /^https?:\/\//.test(raw.trim())) links.push({ label: raw.trim(), url: raw.trim() });
+            const links = parseCharLinks(char.link_url);
             if (!links.length) return '';
             return '<div style="font-size:14px;margin-top:4px;display:flex;flex-wrap:wrap;gap:6px">' +
               links.map(function(l) {

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 24">
+  <defs>
+    <mask id="left-cut">
+      <rect width="36" height="24" fill="#fff"/>
+      <path d="M15.6 7 20.4 5.1" stroke="#000" stroke-width="3.4"/>
+    </mask>
+    <mask id="right-cut">
+      <rect width="36" height="24" fill="#fff"/>
+      <path d="m15.6 18.9 4.8-1.9" stroke="#000" stroke-width="3.4"/>
+    </mask>
+  </defs>
+  <g fill="none" stroke="#d0af4e" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="round">
+    <path d="M8 5.5a8 8 0 1 1 0 13" mask="url(#left-cut)"/>
+    <path d="M28 5.5a8 8 0 1 0 0 13" mask="url(#right-cut)"/>
+  </g>
+</svg>
