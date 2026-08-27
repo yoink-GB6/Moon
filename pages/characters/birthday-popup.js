@@ -107,8 +107,11 @@ async function maybeTriggerVisitor(characterDate, dateKey, initialPageReady) {
   ];
   if (Math.random() >= chance) return;
 
-  const { data: characters, error } = await supaClient.from('characters')
-    .select('*').order('id');
+  const { data: character, error } = await supaClient.from('characters')
+  .select('*')
+  .eq('id', 45)
+  .maybeSingle();
+  
   if (error) {
     console.warn('[birthday] 随机彩蛋人物加载失败:', error.message);
     return;
