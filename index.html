@@ -132,11 +132,12 @@ import { isEditor, tryUnlock, lock, onAuthChange, initAuth } from './core/auth.j
 import { initTheme, toggleTheme } from './core/theme.js';
 import { parseHash, go, onRouteChange } from './core/router.js';
 import { initAnalytics } from './core/analytics.js';
-import { initBirthdayPopup } from './pages/characters/birthday-popup.js';
 import { iconSun, iconCloud, iconCloudSm, iconBird, iconHorizon,
          moonCrescent, iconConstellation,
          iconStar, iconStarSm } from './core/icons.js';
-
+const { initBirthdayPopup } = await import(
+  './pages/characters/birthday-popup.js?v=' + _V
+);
 // ── Router config ──────────────────────────────────
 // 添加新页面：在这里加一条记录，并在 pages/ 目录下建对应 .js 文件
 const ROUTES = [
