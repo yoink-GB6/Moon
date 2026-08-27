@@ -117,7 +117,6 @@ async function maybeTriggerVisitor(characterDate, dateKey, initialPageReady) {
     return;
   }
   if (!characters?.length) return;
-  const character = characters[Math.floor(Math.random() * characters.length)];
 
   _today = characterDate;
   _viewMode = isBirthdayToday(character, characterDate) ? VIEW_BIRTHDAY : VIEW_TODAY;
