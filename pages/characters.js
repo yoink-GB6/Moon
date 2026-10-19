@@ -5,7 +5,7 @@ import { parseAvatarUrls, pickRandomUrl } from './characters/utils.js';
 
 import * as State from './characters/state.js';
 import { loadAllData, subscribeRealtime, unsubscribeRealtime } from './characters/data-loader.js';
-import { renderCharactersTab, bindCharactersTab, buildCharCardHTML, bindCharCard } from './characters/characters-tab.js';
+import { renderCharactersTab, bindCharactersTab, buildCharCardHTML, bindCharCard, rollAgeDisplayMode } from './characters/characters-tab.js';
 import { setupCharModal, openImageManager } from './characters/modals/character-modal.js';
 import { openCharReadonly, syncCharReadonlyClosed } from './characters/modals/char-readonly-modal.js';
 import { reflect } from '../core/router.js';
@@ -15,6 +15,7 @@ let _dataLoaded = false;
 
 export async function mount(container) {
   State.setPageContainer(container);
+  rollAgeDisplayMode();
   container.innerHTML = buildHTML();
   setupCharModal();
   bindControls();
@@ -88,7 +89,7 @@ function buildHTML() {
     <h2 id="char-modal-title">编辑人物</h2>
     <label>名字</label><input id="char-name" type="text"/>
     <label>年龄</label><input id="char-age" type="number" min="0" placeholder="0"/>
-    <label>生日</label><input id="char-birthday" type="text" placeholder="dd/mm 或 dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off"/>
+    <label>生日</label><input id="char-birthday" type="text" placeholder="mm/dd 或 yyyy/mm/dd" maxlength="10" inputmode="numeric" autocomplete="off"/>
     <label>链接</label><input id="char-link" type="text" placeholder="[名称](https://...) [名称2](https://...)"/>
     <label>所属国家 / 势力</label><div class="tl-select" id="char-country-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-country"/><label>所属城市</label><div class="tl-select" id="char-city-select"><div class="tl-select-trigger"><span class="tl-select-val">无</span><span class="tl-select-arrow">▾</span></div><div class="tl-select-dropdown"></div></div><input type="hidden" id="char-city"/>
     <label>自定义 HTML（填写后弹窗整体由它渲染，留空则用下面的小节）</label>

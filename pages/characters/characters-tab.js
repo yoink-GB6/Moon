@@ -6,7 +6,7 @@ import * as State from './state.js';
 import { openCharModal } from './modals/character-modal.js';
 import { bindCharOpen } from './char-open.js';
 import { openBirthdayForCharacter } from './birthday-popup.js';
-import { formatBirthdayShort, getLocationPath, parseAvatarUrls, pickRandomUrl } from './utils.js';
+import { formatBirthdayShort, getLocationPath, parseAvatarUrls, parseBirthday, pickRandomUrl } from './utils.js';
 
 const SECRET_BIRTHDAY_LABELS = [
   'Motus', 'Pssssst', 'shh', 'Chitón', 'Zitto', 'Naisho', '쉿', '嘘',
@@ -15,6 +15,22 @@ const SECRET_BIRTHDAY_LABELS = [
 
 function randomSecretBirthdayLabel() {
   return SECRET_BIRTHDAY_LABELS[Math.floor(Math.random() * SECRET_BIRTHDAY_LABELS.length)];
+}
+
+// 卡片上那一行显示年龄还是出生年份：每次进入页面 roll 一次，所有卡片共用
+let _showBirthYear = false;
+
+export function rollAgeDisplayMode() {
+  _showBirthYear = Math.random() < 0.5;
+}
+
+function buildAgeMetaHTML(char) {
+  if (_showBirthYear) {
+    const year = parseBirthday(char.birthday)?.year;
+    return year ? `<div class="intro-card-meta">明历${year}年生</div>` : '';
+  }
+  const hasAge = char.base_age != null && char.base_age !== '';
+  return hasAge ? `<div class="intro-card-meta">年龄：${escHtml(String(char.base_age))}</div>` : '';
 }
 
 
@@ -42,7 +58,6 @@ export function getTogglePath(toggle, cardEl) {
  */
 export function buildCharCardHTML(char, avatarUrl) {
   const location = getLocationPath(char.city_id, State.allCities, State.allCountries, char.country_id);
-  const hasAge   = char.base_age != null && char.base_age !== '';
   const birthday = formatBirthdayShort(char.birthday);
   const birthdayLabel = birthday || randomSecretBirthdayLabel();
   const birthdayAria = birthday ? `查看${char.name}的生日` : `${char.name}的生日是秘密`;
@@ -55,7 +70,7 @@ export function buildCharCardHTML(char, avatarUrl) {
         <div class="intro-card-info">
           <div class="intro-card-name">${escHtml(char.name)}</div>
           ${location !== '未知' ? `<div class="intro-card-meta">${escHtml(location)}</div>` : ''}
-          ${hasAge ? `<div class="intro-card-meta">年龄：${escHtml(String(char.base_age))}</div>` : ''}
+          ${buildAgeMetaHTML(char)}
         </div>
         <button type="button" class="btn bn intro-card-birthday" aria-label="${escHtml(birthdayAria)}"${birthday ? '' : ' data-birthday-secret="true"'}>${escHtml(birthdayLabel)}</button>
       </div>

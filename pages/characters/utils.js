@@ -37,14 +37,14 @@ export function parseCharLinks(raw) {
 }
 
 export function parseBirthday(raw) {
-  const match = String(raw || '').trim().match(/^(\d{2})\/(\d{2})(?:\/(\d{4}))?$/);
+  const match = String(raw || '').trim().match(/^(?:(\d{4})\/)?(\d{2})\/(\d{2})$/);
   if (!match) return null;
-  const day = Number(match[1]);
   const month = Number(match[2]);
+  const day = Number(match[3]);
   if (month < 1 || month > 12) return null;
   const maxDay = new Date(2000, month, 0).getDate();
   if (day < 1 || day > maxDay) return null;
-  return { day, month, year: match[3] ? Number(match[3]) : null };
+  return { day, month, year: match[1] ? Number(match[1]) : null };
 }
 
 const SHORT_MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];

@@ -219,11 +219,12 @@ export function setupCharModal() {
   container.querySelector('#char-url-input')?.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.preventDefault(); _addUrlImage(); }
   });
-  // 生日：只收数字，边打边补斜杠，格式固定 dd/mm/yyyy
+  // 生日：只收数字，边打边补斜杠；≤4 位按 mm/dd，5~8 位按 yyyy/mm/dd
   const birthdayInput = container.querySelector('#char-birthday');
   birthdayInput?.addEventListener('input', function() {
     const d = birthdayInput.value.replace(/\D/g, '').slice(0, 8);
-    birthdayInput.value = d.length > 4 ? d.slice(0, 2) + '/' + d.slice(2, 4) + '/' + d.slice(4)
+    birthdayInput.value = d.length > 6 ? d.slice(0, 4) + '/' + d.slice(4, 6) + '/' + d.slice(6)
+                        : d.length > 4 ? d.slice(0, 4) + '/' + d.slice(4)
                         : d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2)
                         : d;
   });
@@ -694,7 +695,7 @@ async function _doSave(container) {
 
   const ageVal      = container.querySelector('#char-age').value.trim();
   const birthdayVal = container.querySelector('#char-birthday').value.trim();
-  if (birthdayVal && !parseBirthday(birthdayVal)) return showToast('请输入有效生日，格式为 dd/mm 或 dd/mm/yyyy');
+  if (birthdayVal && !parseBirthday(birthdayVal)) return showToast('请输入有效生日，格式为 mm/dd 或 yyyy/mm/dd');
   const linkVal     = container.querySelector('#char-link').value.trim();
   const htmlVal     = stripCodeFence(container.querySelector('#char-html').value);
   const cityIdVal   = container.querySelector('#char-city').value;
